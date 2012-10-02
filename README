@@ -1,0 +1,1 @@
+quake3 qvm disassembler that also compares virtual code to identify what has changed and also add symbols to output indicating calls and references to original and unchanged functions.
