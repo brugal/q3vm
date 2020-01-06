@@ -1,1 +1,10 @@
-quake3 qvm disassembler that also compares virtual code to identify what has changed and also add symbols to output indicating calls and references to original and unchanged functions.
+Quake3 QVM disassembler
+
+* Labels jump locations
+* Identifies syscalls
+* Adds string reference values
+* Computes function hashes and compares to stock QVM to identify possible matches
+* Function and symbol names can be added using separate functions.dat and symbols.dat files
+
+Usage:  qvmdis <qvm file> [cgame|game]
+optionally specify cgame or game qvm to match syscalls and function hashes
