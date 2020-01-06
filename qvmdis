@@ -2,6 +2,31 @@
 import sys, struct, string, os.path
 from LEBinFile import LEBinFile
 
+# python hash() builtin gives different values for 32-bit and 64-bit implementations
+# http://effbot.org/zone/python-hash.htm
+
+def c_mul(a, b):
+    #v = eval(hex((long(a) * b) & 0xFFFFFFFFL)[:-1])
+    # 32-bit signed
+    v = a * b
+    v = v & 0xffffffffL
+
+    if v > 0x7fffffff:
+        v = -(0x100000000 - v)
+    return v
+
+
+def hash32BitSigned (str):
+    if not str:
+        return 0  # empty
+    value = ord(str[0]) << 7
+    for char in str:
+        value = c_mul(1000003, value) ^ ord(char)
+    value = value ^ len(str)
+    if value == -1:
+        value = -2
+    return value
+
 # q3vm_specs.html wrong about header
 
 BASE_DIR = "/home/acano/own_src/q3vm/"
@@ -478,7 +503,7 @@ class QvmFile(LEBinFile):
             elif name == "enter":
                 if pos > 5:   # else it's first function of file  vmMain()
                     self.functionSizes[funcStartInsNum] = funcInsCount
-                    h = hash(funcHashSum)
+                    h = hash32BitSigned(funcHashSum)
                     self.functionHashes[funcStartInsNum] = h
                     if h in self.functionRevHashes:
                         self.functionRevHashes[h].append (funcStartInsNum)
@@ -516,7 +541,7 @@ class QvmFile(LEBinFile):
                     else:
                         self.functionParmNum[prevParm] = lastArg
         self.functionSizes[funcStartInsNum] = funcInsCount
-        h = hash(funcHashSum)
+        h = hash32BitSigned(funcHashSum)
         self.functionHashes[funcStartInsNum] = h
         if h in self.functionRevHashes:
             self.functionRevHashes[h].append (funcStartInsNum)
