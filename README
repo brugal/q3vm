@@ -1,10 +1,31 @@
 Quake3 QVM disassembler
 
+Usage:  qvmdis <qvm file> [cgame|game]
+  optionally specify cgame or game qvm to match syscalls and function hashes
+
+Features:
+
 * Labels jump locations
 * Identifies syscalls
-* Adds string reference values
+* Adds comments for possible string reference values
+* Adds comments for possible data reference values
 * Computes function hashes and compares to stock QVM to identify possible matches
 * Function and symbol names can be added using separate functions.dat and symbols.dat files
+* Constants can be labeled in constants.dat
 
-Usage:  qvmdis <qvm file> [cgame|game]
-optionally specify cgame or game qvm to match syscalls and function hashes
+
+The .dat files are opened from the current working directory.
+
+Format of .dat files:
+
+---- functions.dat ----
+0x1223 CG_DrawAttacker
+
+---- symbols.dat ----
+0xab2a3 serverTime
+
+---- constants.dat ----
+0x3f31 DEFAULT_SPEED 0x0
+
+The last value in the contants.dat entry is used to double check that the value is correct.
+
