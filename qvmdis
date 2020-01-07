@@ -132,7 +132,7 @@ class QvmFile(LEBinFile):
         m = self.read_int()
         if m != self.magic:
             raise InvalidQvmFile, "not a valid qvm file  0x%x != 0x%x" % (m, self.magic)
-        
+
         self.instructionCount = self.read_int()
         self.codeSegOffset = self.read_int()
         self.codeSegLength = self.read_int()
@@ -149,27 +149,27 @@ class QvmFile(LEBinFile):
         self.seek (self.dataSegOffset)
         self.dataData = self.read(self.dataSegLength)
         self.dataData = self.dataData + "\x00\x00\x00\x00"  # for look ahead
-        
+
         self.seek (self.litSegOffset)
         self.litData = self.read(self.litSegLength)
         self.litData = self.litData + "\x00\x00\x00\x00"  # for look ahead
-        
+
         self.syscalls = {}
         self.functions = {}
-        self.functionHashes = {} 
+        self.functionHashes = {}
         self.functionRevHashes = {}  # hash -> [func1, func2, ...]
         self.functionSizes = {}
         self.functionMaxArgsCalled = {}
         self.functionParmNum = {}
-        
+
         self.baseQ3FunctionRevHashes = {}
-        
+
         self.symbols = {}
         self.constants = {}
 
         self.jumpPoints = {}  # -> []
         self.callPoints = {}
-        
+
         self.set_qvm_type (qvmtype)
         self.load_address_info ()
         self.compute_function_info ()
@@ -179,12 +179,12 @@ class QvmFile(LEBinFile):
 
         if qvmtype not in ("cgame", "game"):
             return
-        
+
         if qvmtype == "cgame":
             f = open(CGAME_SYSCALLS_ASM_FILE)
         elif qvmtype == "game":
             f = open(GAME_SYSCALLS_ASM_FILE)
-            
+
         lines = f.readlines()
         for line in lines:
             words = string.split(line)
@@ -215,7 +215,7 @@ class QvmFile(LEBinFile):
                 words = string.split(line)
                 if len(words) == 2:
                     self.symbols[string.atoi(words[0], 16)] = words[1]
-        
+
         if os.path.exists(FUNCTIONS_FILE):
             f = open(FUNCTIONS_FILE)
             lines = f.readlines()
@@ -234,7 +234,7 @@ class QvmFile(LEBinFile):
                     n = words[1]
                     val = string.atoi(words[2], 16)
                     self.constants[codeAddr] = [n, val]
-                    
+
     def print_header (self):
         print "; instruction count: 0x%x" % self.instructionCount
         print "; CODE seg offset: 0x%08x  length: 0x%x" % (self.codeSegOffset, self.codeSegLength)
@@ -244,7 +244,7 @@ class QvmFile(LEBinFile):
 
     def print_code_disassembly (self):
         pos = 0
-        
+
         count = -1
         while count < self.instructionCount - 1:
             count += 1
@@ -275,7 +275,7 @@ class QvmFile(LEBinFile):
                 for jp in self.jumpPoints[count]:
                     print "0x%x" % jp,
                 print ""
-                
+
             if name == "enter":
                 addr = count
                 stackAdjust = parm
@@ -292,7 +292,7 @@ class QvmFile(LEBinFile):
                             print "0x%x" % caller,
                     #print " */"
                     print ""
-                    
+
                 print ""
 
                 if addr in self.functions:
@@ -329,7 +329,7 @@ class QvmFile(LEBinFile):
                         comment = "FIXME constant val != to code val"
                     else:
                         comment = self.constants[count][0]
-                        
+
                 elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     chars = []
                     i = 0
@@ -350,12 +350,12 @@ class QvmFile(LEBinFile):
                     b1 = self.dataData[parm + 1]
                     b2 = self.dataData[parm + 2]
                     b3 = self.dataData[parm + 3]
-                    
+
                     print "\n  ; %02x %02x %02x %02x  (0x%x)" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0])
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
-                        
+
                 elif opcodes[nextOp][OP_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
                         comment = "%s ()" % self.syscalls[parm]
@@ -374,7 +374,7 @@ class QvmFile(LEBinFile):
                     #FIXME check that it doesn't go past??
                     if parm in self.symbols:
                         comment = self.symbols[parm]
-                        
+
             print "%08x  %-13s" % (count, name),
             sc = opcodes[opc][OP_STACK_CHANGE]
             if sc < 0:
@@ -383,7 +383,7 @@ class QvmFile(LEBinFile):
                 print "  %d" % sc,
             else:
                 print "   ",
-                
+
             if parm != None:
                 if parm < 0:
                     print " -0x%x" % -parm,
@@ -402,9 +402,9 @@ class QvmFile(LEBinFile):
             b1 = self.dataData[i + 1]
             b2 = self.dataData[i + 2]
             b3 = self.dataData[i + 3]
-                    
+
             print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0])
-            
+
             i += 4
 
     def print_lit_disassembly (self):
@@ -435,10 +435,10 @@ class QvmFile(LEBinFile):
                         chars = []
                     print " 0x%x " % ord(c),
                     pass
-                    
-                    
+
+
                 i += 1
-                    
+
             offset += 1
 
     def compute_function_info (self):
@@ -449,12 +449,12 @@ class QvmFile(LEBinFile):
         funcHashSum = ""
         maxArgs = 0x8
         lastArg = 0x0
-        
+
         opcStr = "\x00"
         opc = 0
         parmStr = "\x00"
         parm = 0
-        
+
         prevOpcStr = "\x00"
         prevOpc = 0
         prevOpcParmStr = "\x00"
@@ -468,7 +468,7 @@ class QvmFile(LEBinFile):
             prevOpc = opc
             prevParmStr = parmStr
             prevParm = parm
-            
+
             opcStr = self.codeData[pos]
             opc = ord(opcStr)
             funcInsCount += 1
@@ -548,7 +548,7 @@ class QvmFile(LEBinFile):
         else:
             self.functionRevHashes[h] = [funcStartInsNum]
         self.functionMaxArgsCalled[funcStartInsNum] = maxArgs
-        
+
     def print_function_hashes (self):
         ks = self.functionHashes.keys()
         ks.sort ()
@@ -559,8 +559,8 @@ class QvmFile(LEBinFile):
                 for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
                     print n,
             print ""
-        
-            
+
+
 def main ():
     if len(sys.argv) < 2:
         usage ()
@@ -576,9 +576,9 @@ def main ():
             usage ()
     else:
         arg = ""
-        
+
     q = QvmFile(sys.argv[1], arg)
-    
+
     print ";; header"
     q.print_header ()
     print ""
@@ -597,8 +597,8 @@ def main ():
 
     print ";; lit segment"
     q.print_lit_disassembly ()
-    
+
 
 if __name__ == "__main__":
     main ()
-    
+
