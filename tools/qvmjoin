@@ -21,7 +21,7 @@ def main ():
 
     f = open("x.code")
     codeData = f.read()
-    
+
     ins = 0
     pos = 0
     while 1:
@@ -54,8 +54,8 @@ def main ():
 
     codeSegOffset = 0x20
     dataSegOffset = codeSegOffset + codeSegLength
-    
-    of = open(sys.argv[1], "w")    
+
+    of = open(sys.argv[1], "w")
     #of.write ('\x44\x14\x72\x12')  # qvm magic 0x12721444
     of.write(struct.pack("<l", QVM_MAGIC))
     of.write(struct.pack("<l", ins))   # instruction count
@@ -74,10 +74,7 @@ def main ():
 
     of.write(litData)
     of.write('\x00' * (len(litData) % 4))
-    
 
-    
 
 if __name__ == "__main__":
     main ()
-    

@@ -25,4 +25,3 @@ class LEBinFile:
     def tell (self):
         return self._file.tell()
 
-    

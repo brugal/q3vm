@@ -19,20 +19,19 @@ def main ():
     f = open("header-info.txt", "w")
     f.write ("instruction count: %d\n" % qvm.instructionCount)
     f.write ("bss segment length: %d\n" % qvm.bssSegLength)
-    
+
     fcodew = open("x.code", "w")
     # unpadded code
     fcodew.write(qvm.get_code())
 
     fcode = open("xpadded.code", "w")
     fcode.write(qvm.codeData[:qvm.codeSegLength])
-    
+
     fdata = open("x.data", "w")
     fdata.write (qvm.dataData[:qvm.dataSegLength])
 
     flit = open("x.lit", "w")
     flit.write (qvm.litData[:qvm.litSegLength])
-    
+
 if __name__ == "__main__":
     main ()
-    

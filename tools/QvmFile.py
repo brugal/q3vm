@@ -90,13 +90,13 @@ class InvalidQvmFile(Exception):
 
 class QvmFile(LEBinFile):
     magic = 0x12721444
-    
+
     def __init__ (self, fname):
         self._file = open(fname)
         m = self.read_int()
         if m != self.magic:
             raise InvalidQvmFile, "not a valid qvm file  0x%x != 0x%x" % (m, self.magic)
-        
+
         self.instructionCount = self.read_int()
         self.codeSegOffset = self.read_int()
         self.codeSegLength = self.read_int()
@@ -109,10 +109,10 @@ class QvmFile(LEBinFile):
 
         self.seek (self.codeSegOffset)
         self.codeData = self.read(self.codeSegLength)
-        
+
         self.seek (self.dataSegOffset)
         self.dataData = self.read(self.dataSegLength)
-        
+
         self.seek (self.litSegOffset)
         self.litData = self.read(self.litSegLength)
 
@@ -157,7 +157,7 @@ class QvmFile(LEBinFile):
                 origPos = self.tell()
                 nextOp = self.read_byte()
                 self.seek (origPos)
-                    
+
                 if parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     #print "\"%s\"" % litData[parm - self.dataSegLength]
                     chars = []
@@ -179,19 +179,19 @@ class QvmFile(LEBinFile):
                     b1 = self.dataData[parm + 1]
                     b2 = self.dataData[parm + 2]
                     b3 = self.dataData[parm + 3]
-                    
+
                     #print "\n  %02x %02x %02x %02x  (0x%x)" % (ord
                     print "\n  %02x %02x %02x %02x  (0x%x)" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0])
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
-                        
+
                 elif opcodes[nextOp][OP_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
                         comment = "%s ()" % self.syscalls[parm]
                     elif parm in self.functions:
                         comment = "%s ()" % self.functions[parm]
-                        
+
             #print "%08x  %-8s" % (pos - self.codeSegOffset, name),
             print "%08x  %-13s" % (count - 1, name),
             if parm != None:
@@ -215,9 +215,9 @@ class QvmFile(LEBinFile):
             b1 = self.dataData[i + 1]
             b2 = self.dataData[i + 2]
             b3 = self.dataData[i + 3]
-                    
+
             print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0])
-            
+
             i = i + 4
 
     def print_lit_disassembly (self):
@@ -249,10 +249,10 @@ class QvmFile(LEBinFile):
                         chars = []
                     print " 0x%x " % ord(c),
                     pass
-                    
-                    
+
+
                 i = i + 1
-                    
+
             offset = offset + 1
 
     def get_code (self):
@@ -278,10 +278,9 @@ class QvmFile(LEBinFile):
                 code.append(parmStr)
 
         return string.join(code, "")
-    
+
 def main ():
     pass
 
 if __name__ == "__main__":
     main ()
-    
