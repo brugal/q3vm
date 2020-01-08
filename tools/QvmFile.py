@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+
+# allow importing from parent directory
+# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+#  answered Jun 22 '12 at 14:30  Remi
+import os, sys, inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
 from LEBinFile import LEBinFile
 import string
 
