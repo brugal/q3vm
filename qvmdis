@@ -155,6 +155,9 @@ class QvmFile(LEBinFile):
 
         self.syscalls = {}
         self.functions = {}
+        self.functionsArgLabels = {}  # user labels
+        self.functionsLocalLabels = {}  # user labels
+
         self.functionHashes = {}
         self.functionRevHashes = {}  # hash -> [func1, func2, ...]
         self.functionSizes = {}
@@ -223,10 +226,37 @@ class QvmFile(LEBinFile):
         if os.path.exists(FUNCTIONS_FILE):
             f = open(FUNCTIONS_FILE)
             lines = f.readlines()
-            for line in lines:
+            lineCount = 0
+            currentFuncAddr = None
+            while lineCount < len(lines):
+                line = lines[lineCount]
                 words = string.split(line)
                 if len(words) > 1:
-                    self.functions[string.atoi(words[0], 16)] = words[1]
+                    if words[0].startswith("arg"):
+                        if currentFuncAddr == None:
+                            print "ERROR: function not defined yet in line %d: %s" % (lineCount + 1, line)
+                            sys.exit(1)
+                        if not currentFuncAddr in self.functionsArgLabels:
+                            self.functionsArgLabels[currentFuncAddr] = {}
+                        self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
+                    elif words[0] == "local":
+                        if currentFuncAddr == None:
+                            print "ERROR: function not defined yet in line %d: %s" % (lineCount + 1, line)
+                            sys.exit(1)
+
+                        if len(words) < 3:
+                            print "ERROR: invalid local specification in line %d: %s" % (lineCount + 1, line)
+                            sys.exit(1)
+                        if not currentFuncAddr in self.functionsLocalLabels:
+                            self.functionsLocalLabels[currentFuncAddr] = {}
+                        self.functionsLocalLabels[currentFuncAddr][string.atoi(words[1], 16)] = words[2]
+                    else:
+                        # function definition
+                        funcAddr = string.atoi(words[0], 16)
+                        self.functions[funcAddr] = words[1]
+                        currentFuncAddr = funcAddr
+
+                lineCount = lineCount + 1
 
         if os.path.exists(CONSTANTS_FILE):
             f = open(CONSTANTS_FILE)
@@ -301,6 +331,7 @@ class QvmFile(LEBinFile):
         pos = 0
 
         count = -1
+        currentFuncAddr = None
         while count < self.instructionCount - 1:
             count += 1
 
@@ -343,6 +374,7 @@ class QvmFile(LEBinFile):
 
             if name == "enter":
                 addr = count
+                currentFuncAddr = addr
                 stackAdjust = parm
                 if count in self.callPoints:
                     print "\n; called from",
@@ -385,7 +417,15 @@ class QvmFile(LEBinFile):
                 argNum = parm - stackAdjust - 0x8
                 #print argNum
                 if argNum >= 0:
-                    comment = "arg%d" % (argNum / 4)
+                    argstr = "arg%d" % (argNum / 4)
+                    comment = argstr
+                    if currentFuncAddr in self.functionsArgLabels:
+                        if argstr in self.functionsArgLabels[currentFuncAddr]:
+                            comment = comment + " : " + self.functionsArgLabels[currentFuncAddr][argstr]
+                else:
+                    if currentFuncAddr in self.functionsLocalLabels:
+                        if parm in self.functionsLocalLabels[currentFuncAddr]:
+                            comment = self.functionsLocalLabels[currentFuncAddr][parm]
             elif name == "const":
                 nextOp = ord(self.codeData[pos])
 
