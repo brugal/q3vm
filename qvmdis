@@ -32,14 +32,13 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CGAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "cg_syscalls.asm")
 GAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "g_syscalls.asm")
+BASEQ3_CGAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-cgame-functions.dat")
+BASEQ3_GAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-game-functions.dat")
 
 SYMBOLS_FILE = "symbols.dat"
 FUNCTIONS_FILE = "functions.dat"
 CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
-
-BASEQ3_CGAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-cgame-functions.dat")
-BASEQ3_GAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-game-functions.dat")
 
 def usage ():
     print "%s <qvm file> [cgame|game]" % sys.argv[0]
