@@ -12,20 +12,36 @@ Features:
 * Computes function hashes and compares to stock QVM to identify possible matches
 * Function and symbol names can be added using separate functions.dat and symbols.dat files
 * Constants can be labeled in constants.dat
+* Comments can be added in comments.dat
 
 
 The .dat files are opened from the current working directory.
 
 Format of .dat files:
 
----- functions.dat ----
-0x1223 CG_DrawAttacker
+    ---- functions.dat ----
+    0x1223 CG_DrawAttacker
 
----- symbols.dat ----
-0xab2a3 serverTime
+    ---- symbols.dat ----
+    0xab2a3 serverTime
 
----- constants.dat ----
-0x3f31 DEFAULT_SPEED 0x0
+    ---- constants.dat ----
+    0x3f31 DEFAULT_SPEED 0x0
 
 The last value in the contants.dat entry is used to double check that the value is correct.
 
+    ---- comments.dat ----
+    0x5a11 inline This is an inline comment added to the end of the line
+    0x5ba1 before
+
+    This is a comment block
+    added before the address.
+
+    <<<
+    0x6aa2 after 2 2
+    This comment is
+    after the address.
+
+    <<<
+
+Before and after comments are terminated with a line that only has '<<<'.  They can also specify a number of blank lines before and after the comment.
