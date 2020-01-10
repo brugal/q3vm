@@ -213,6 +213,7 @@ class QvmFile(LEBinFile):
             f = open(GAME_SYSCALLS_ASM_FILE)
 
         lines = f.readlines()
+        f.close()
         for line in lines:
             words = string.split(line)
             if len(words) == 3:
@@ -224,6 +225,7 @@ class QvmFile(LEBinFile):
             f = open(BASEQ3_GAME_FUNCTIONS_FILE)
 
         lines = f.readlines()
+        f.close()
         for line in lines:
             words = string.split(line)
             if len(words) > 2:
@@ -238,6 +240,7 @@ class QvmFile(LEBinFile):
         if os.path.exists(SYMBOLS_FILE):
             f = open(SYMBOLS_FILE)
             lines = f.readlines()
+            f.close()
             for line in lines:
                 words = string.split(line)
                 if len(words) == 2:
@@ -252,6 +255,7 @@ class QvmFile(LEBinFile):
         if os.path.exists(FUNCTIONS_FILE):
             f = open(FUNCTIONS_FILE)
             lines = f.readlines()
+            f.close()
             lineCount = 0
             currentFuncAddr = None
             while lineCount < len(lines):
@@ -294,6 +298,7 @@ class QvmFile(LEBinFile):
         if os.path.exists(CONSTANTS_FILE):
             f = open(CONSTANTS_FILE)
             lines = f.readlines()
+            f.close()
             for line in lines:
                 words = string.split(line)
                 if len(words) > 2:
@@ -305,6 +310,7 @@ class QvmFile(LEBinFile):
         if os.path.exists(COMMENTS_FILE):
             f = open(COMMENTS_FILE)
             lines = f.readlines()
+            f.close()
             lineCount = 0
             while lineCount < len(lines):
                 line = lines[lineCount]
@@ -781,6 +787,7 @@ def main ():
     print ";; lit segment"
     q.print_lit_disassembly ()
 
+    q.close()
 
 if __name__ == "__main__":
     main ()

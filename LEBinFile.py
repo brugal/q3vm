@@ -43,3 +43,5 @@ class LEBinFile:
     def tell (self):
         return self._file.tell()
 
+    def close (self):
+        self._file.close()

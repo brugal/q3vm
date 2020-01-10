@@ -296,6 +296,9 @@ class QvmFile(LEBinFile):
 
         return string.join(code, "")
 
+    def close (self):
+        self._file.close()
+
 def main ():
     pass
 

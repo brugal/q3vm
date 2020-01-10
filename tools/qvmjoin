@@ -32,6 +32,7 @@ def main ():
 
     f = open("header-info.txt")
     lines = f.readlines()
+    f.close()
     line = lines[1]
     words = string.split(line)
     bssSegLength = string.atoi(words[-1])
@@ -39,6 +40,7 @@ def main ():
 
     f = open("x.code")
     codeData = f.read()
+    f.close()
 
     ins = 0
     pos = 0
@@ -61,10 +63,11 @@ def main ():
 
     f = open("x.data")
     dataData = f.read()
+    f.close()
 
     f = open("x.lit")
     litData = f.read()
-
+    f.close()
 
     codeSegLength = len(codeData) + len(codeData) % 4
     dataSegLength = len(dataData) + len(dataData) % 4
@@ -92,7 +95,7 @@ def main ():
 
     of.write(litData)
     of.write('\x00' * (len(litData) % 4))
-
+    of.close()
 
 if __name__ == "__main__":
     main ()
