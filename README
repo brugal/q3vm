@@ -17,8 +17,7 @@ Features:
 * Constants can be labeled in constants.dat
 * Comments can be added in comments.dat
 
-
-The .dat files are opened from the current working directory.
+The .dat files are opened from the current working directory.  Comments in .dat files are specified with ';'.
 
 Format of .dat files:
 
@@ -30,7 +29,7 @@ Format of .dat files:
     0x1223 CG_DrawAttacker
     0x28ae CG_Draw3DModel
       arg0 x
-      local 0x18 0x170 refdef
+      local 0x18 0x170 refdef  ; also specifies the size
 
 Local variables can optionally specify a size to identify references within a range.
 

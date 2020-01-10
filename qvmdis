@@ -242,6 +242,8 @@ class QvmFile(LEBinFile):
             lines = f.readlines()
             f.close()
             for line in lines:
+                # strip comments
+                line = line.split(";")[0]
                 words = string.split(line)
                 if len(words) == 2:
                     self.symbols[string.atoi(words[0], 16)] = words[1]
@@ -260,6 +262,8 @@ class QvmFile(LEBinFile):
             currentFuncAddr = None
             while lineCount < len(lines):
                 line = lines[lineCount]
+                # strip comments
+                line = line.strip(";")[0]
                 words = string.split(line)
                 if len(words) > 1:
                     if words[0].startswith("arg"):
@@ -300,6 +304,8 @@ class QvmFile(LEBinFile):
             lines = f.readlines()
             f.close()
             for line in lines:
+                # strip comments
+                line = line.split(";")[0]
                 words = string.split(line)
                 if len(words) > 2:
                     codeAddr = string.atoi(words[0], 16)
@@ -314,6 +320,8 @@ class QvmFile(LEBinFile):
             lineCount = 0
             while lineCount < len(lines):
                 line = lines[lineCount]
+                # strip comments
+                line = line.split(";")[0]
 
                 words = string.split(line)
                 if len(words) > 1:
@@ -322,7 +330,7 @@ class QvmFile(LEBinFile):
 
                     if commentType == "inline":
                         if len(words) > 2:
-                            comment = line[line.find(words[2]): -1]
+                            comment = line[line.find(words[2]):].rstrip()
                             self.commentsInline[codeAddr] = comment
                     elif commentType == "before"  or  commentType == "after":
                         spaceBefore = 0
