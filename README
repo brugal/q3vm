@@ -6,6 +6,7 @@ Usage:  qvmdis <qvm file> [cgame|game]
 Features:
 
 * Labels jump locations
+* Identifies which other functions call a particular function
 * Identifies syscalls
 * Identifies references to function arguments
 * Adds comments for possible string reference values
@@ -27,9 +28,17 @@ Format of .dat files:
       local 0x14 commandTmp
 
     0x1223 CG_DrawAttacker
+    0x28ae CG_Draw3DModel
+      arg0 x
+      local 0x18 0x170 refdef
+
+Local variables can optionally specify a size to identify references within a range.
 
     ---- symbols.dat ----
     0xab2a3 serverTime
+    0xb23fa 0x1000 clientData
+
+Size can optionally be specified to identify references within a range.
 
     ---- constants.dat ----
     0x3f31 DEFAULT_SPEED 0x0

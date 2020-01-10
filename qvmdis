@@ -157,6 +157,7 @@ class QvmFile(LEBinFile):
         self.functions = {}
         self.functionsArgLabels = {}  # user labels
         self.functionsLocalLabels = {}  # user labels
+        self.functionsLocalRangeLabels = {} # -> [size, sym]
 
         self.functionHashes = {}
         self.functionRevHashes = {}  # hash -> [func1, func2, ...]
@@ -167,6 +168,7 @@ class QvmFile(LEBinFile):
         self.baseQ3FunctionRevHashes = {}
 
         self.symbols = {}
+        self.symbolsRange = {} # -> [size, sym]
         self.constants = {}
         self.commentsInline = {}
         self.commentsBefore = {}
@@ -222,6 +224,12 @@ class QvmFile(LEBinFile):
                 words = string.split(line)
                 if len(words) == 2:
                     self.symbols[string.atoi(words[0], 16)] = words[1]
+                elif len(words) == 3:
+                    addr = string.atoi(words[0], 16)
+                    size = string.atoi(words[1], 16)
+                    sym = words[2]
+                    self.symbolsRange[addr] = [size, sym]
+
 
         if os.path.exists(FUNCTIONS_FILE):
             f = open(FUNCTIONS_FILE)
@@ -243,13 +251,20 @@ class QvmFile(LEBinFile):
                         if currentFuncAddr == None:
                             print "ERROR: function not defined yet in line %d: %s" % (lineCount + 1, line)
                             sys.exit(1)
-
                         if len(words) < 3:
                             print "ERROR: invalid local specification in line %d: %s" % (lineCount + 1, line)
                             sys.exit(1)
-                        if not currentFuncAddr in self.functionsLocalLabels:
-                            self.functionsLocalLabels[currentFuncAddr] = {}
-                        self.functionsLocalLabels[currentFuncAddr][string.atoi(words[1], 16)] = words[2]
+                        if len(words) > 3:  # range specified
+                            localAddr = string.atoi(words[1], 16)
+                            size = string.atoi(words[2], 16)
+                            sym = words[3]
+                            if not currentFuncAddr in self.functionsLocalRangeLabels:
+                                self.functionsLocalRangeLabels[currentFuncAddr] = {}
+                            self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = [size, sym]
+                        else:
+                            if not currentFuncAddr in self.functionsLocalLabels:
+                                self.functionsLocalLabels[currentFuncAddr] = {}
+                            self.functionsLocalLabels[currentFuncAddr][string.atoi(words[1], 16)] = words[2]
                     else:
                         # function definition
                         funcAddr = string.atoi(words[0], 16)
@@ -426,6 +441,22 @@ class QvmFile(LEBinFile):
                     if currentFuncAddr in self.functionsLocalLabels:
                         if parm in self.functionsLocalLabels[currentFuncAddr]:
                             comment = self.functionsLocalLabels[currentFuncAddr][parm]
+                    elif currentFuncAddr in self.functionsLocalRangeLabels:
+                        # find the closest match
+                        match = None
+                        matchDiff = 0
+                        for localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                            size = self.functionsLocalRangeLabels[currentFuncAddr][localAddr][0]
+                            #sym = self.functionsLocalRangeLabels[currentFuncAddr][localAddr][1]
+                            if parm >= localAddr  and  parm < (localAddr + size):
+                                if match == None:
+                                    match = localAddr
+                                    matchDiff = parm - localAddr
+                                elif (parm - localAddr) < matchDiff:
+                                    match = localAddr
+                                    matchDiff = parm - localAddr
+                        if match != None:
+                            comment = "%s + 0x%x" % (self.functionsLocalRangeLabels[currentFuncAddr][match][1], matchDiff)
             elif name == "const":
                 nextOp = ord(self.codeData[pos])
 
@@ -460,6 +491,20 @@ class QvmFile(LEBinFile):
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
+                    else:  # check symbol ranges
+                        match = None
+                        matchDiff = 0
+                        for rangeAddr in self.symbolsRange:
+                            size = self.symbolsRange[rangeAddr][0]
+                            if parm >= rangeAddr  and  parm < (rangeAddr + size):
+                                if match == None:
+                                    match = rangeAddr
+                                    matchDiff = parm - rangeAddr
+                                elif (parm - rangeAddr) < matchDiff:
+                                    match = rangeAddr
+                                    matchDiff = parm - rangeAddr
+                        if match != None:
+                            comment = "%s + 0x%x" % (self.symbolsRange[match][1], matchDiff)
 
                 elif opcodes[nextOp][OP_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
