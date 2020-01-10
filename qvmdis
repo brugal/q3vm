@@ -263,7 +263,7 @@ class QvmFile(LEBinFile):
             while lineCount < len(lines):
                 line = lines[lineCount]
                 # strip comments
-                line = line.strip(";")[0]
+                line = line.split(";")[0]
                 words = string.split(line)
                 if len(words) > 1:
                     if words[0].startswith("arg"):
