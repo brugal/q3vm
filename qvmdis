@@ -171,35 +171,37 @@ class QvmFile(LEBinFile):
         self.litData = self.read(self.litSegLength)
         self.litData = self.litData + "\x00\x00\x00\x00"  # for look ahead
 
-        self.syscalls = {}
-        self.functions = {}
-        self.functionsArgLabels = {}  # user labels
-        self.functionsLocalLabels = {}  # user labels
-        self.functionsLocalRangeLabels = {} # -> [size, sym]
+        self.syscalls = {}  # num:int -> name:str
+        self.functions = {}  # addr:int -> name:str
 
-        self.functionHashes = {}
-        self.functionRevHashes = {}  # hash -> [func1, func2, ...]
-        self.functionSizes = {}
-        self.functionMaxArgsCalled = {}
-        self.functionParmNum = {}
+        # user labels
+        self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
+        self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
+        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ size:int, sym:str ] }
 
-        self.baseQ3FunctionRevHashes = {}
+        self.functionHashes = {}  # addr:int -> hash:int
+        self.functionRevHashes = {}  # hash:int -> [funcAddr1:int, funcAddr2:int, ...]
+        self.functionSizes = {}  # addr:int -> instructionCount:int
+        self.functionMaxArgsCalled = {}  # addr:int -> maxArgs:int
+        self.functionParmNum = {}  # addr:int -> num:int
 
-        self.symbols = {}
-        self.symbolsRange = {} # -> [size, sym]
-        self.constants = {}
-        self.commentsInline = {}
-        self.commentsBefore = {}
-        self.commentsBeforeSpacing = {}
-        self.commentsAfter = {}
-        self.commentsAfterSpacing = {}
+        self.baseQ3FunctionRevHashes = {}  # hash:int -> [ funcName1, funcName2, ... ]
 
-        self.jumpPoints = {}  # -> []
-        self.callPoints = {}
+        self.symbols = {}  # addr:int -> sym:str
+        self.symbolsRange = {}  # addr:int -> [size, sym]
+        self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
+        self.commentsInline = {}  # addr:int -> comment:str
+        self.commentsBefore = {}  # addr:int -> [ line1:str, line2:str, ... ]
+        self.commentsBeforeSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter:int ]
+        self.commentsAfter = {}  # addr:int -> [ line1:str, line2:str, ... ]
+        self.commentsAfterSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter: int ]
 
-        self.set_qvm_type (qvmtype)
-        self.load_address_info ()
-        self.compute_function_info ()
+        self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
+        self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
+
+        self.set_qvm_type(qvmtype)
+        self.load_address_info()
+        self.compute_function_info()
 
     def set_qvm_type (self, qvmtype):
         self.qvmtype = qvmtype
@@ -411,7 +413,7 @@ class QvmFile(LEBinFile):
                 pos += 4
             else:
                 print "FIXME bad opcode size"
-                sys.exit (1)
+                sys.exit(1)
 
             if count in self.jumpPoints:
                 print "\n;----------------------------------- from ",
@@ -426,7 +428,6 @@ class QvmFile(LEBinFile):
                 if count in self.callPoints:
                     print "\n; called from",
                     for caller in self.callPoints[count]:
-                        #print "0x%x" % caller,
                         if caller in self.functions:
                             print "%s()" % self.functions[caller],
                         elif self.functionHashes[caller] in self.baseQ3FunctionRevHashes:
@@ -434,7 +435,6 @@ class QvmFile(LEBinFile):
                                 print "?%s()" % n,
                         else:
                             print "0x%x" % caller,
-                    #print " */"
                     print ""
 
                 print ""
@@ -445,7 +445,6 @@ class QvmFile(LEBinFile):
                     print ";",
                     for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
                         print "?%s()" % n,
-                    #print "*/"
                     print ""
                 if addr in self.functionParmNum:
                     print ";",
@@ -462,7 +461,6 @@ class QvmFile(LEBinFile):
                 print "; ========================"
             elif name == "local":
                 argNum = parm - stackAdjust - 0x8
-                #print argNum
                 if argNum >= 0:
                     argstr = "arg%d" % (argNum / 4)
                     comment = argstr
@@ -479,7 +477,6 @@ class QvmFile(LEBinFile):
                         matchDiff = 0
                         for localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                             size = self.functionsLocalRangeLabels[currentFuncAddr][localAddr][0]
-                            #sym = self.functionsLocalRangeLabels[currentFuncAddr][localAddr][1]
                             if parm >= localAddr  and  parm < (localAddr + size):
                                 if match == None:
                                     match = localAddr
@@ -540,9 +537,9 @@ class QvmFile(LEBinFile):
 
                 elif opcodes[nextOp][OP_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
-                        comment = "%s ()" % self.syscalls[parm]
+                        comment = "%s()" % self.syscalls[parm]
                     elif parm in self.functions:
-                        comment = "%s ()" % self.functions[parm]
+                        comment = "%s()" % self.functions[parm]
                     elif parm in self.functionHashes:
                         if self.functionHashes[parm] in self.baseQ3FunctionRevHashes:
                             comment = ""
@@ -626,7 +623,7 @@ class QvmFile(LEBinFile):
                 else:
                     #FIXME
                     #print "invalid char: 0x%x" % ord(c)
-                    #sys.exit (1)
+                    #sys.exit(1)
                     if len(chars) > 0:
                         print "\"%s\"" % string.join (chars, ""),
                         chars = []
@@ -748,7 +745,7 @@ class QvmFile(LEBinFile):
 
     def print_function_hashes (self):
         ks = self.functionHashes.keys()
-        ks.sort ()
+        ks.sort()
         for addr in ks:
             print "0x%08x  0x%x  %x" % (addr, self.functionSizes[addr], self.functionHashes[addr]),
             if self.functionHashes[addr] in self.baseQ3FunctionRevHashes:
@@ -760,7 +757,7 @@ class QvmFile(LEBinFile):
 
 def main ():
     if len(sys.argv) < 2:
-        usage ()
+        usage()
 
     if len(sys.argv) > 2:
         arg = string.lower(sys.argv[2])
@@ -770,33 +767,33 @@ def main ():
             pass
         else:
             print "invalid qvm type '%s'" % arg
-            usage ()
+            usage()
     else:
         arg = ""
 
     q = QvmFile(sys.argv[1], arg)
 
     print ";; header"
-    q.print_header ()
+    q.print_header()
     print ""
 
     print ";; function hashes"
-    q.print_function_hashes ()
+    q.print_function_hashes()
     print ""
 
     print ";; code segment"
-    q.print_code_disassembly ()
+    q.print_code_disassembly()
     print ""
 
     print ";; data segment"
-    q.print_data_disassembly ()
+    q.print_data_disassembly()
     print ""
 
     print ";; lit segment"
-    q.print_lit_disassembly ()
+    q.print_lit_disassembly()
 
     q.close()
 
 if __name__ == "__main__":
-    main ()
+    main()
 
