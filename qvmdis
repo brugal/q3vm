@@ -440,7 +440,7 @@ class QvmFile(LEBinFile):
                 print ""
 
                 if addr in self.functions:
-                    print "; %s ()" % self.functions[count]
+                    print "; func %s()" % self.functions[count]
                 elif self.functionHashes[addr] in self.baseQ3FunctionRevHashes:
                     print ";",
                     for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
@@ -553,6 +553,20 @@ class QvmFile(LEBinFile):
                     #FIXME check that it doesn't go past??
                     if parm in self.symbols:
                         comment = self.symbols[parm]
+                    else:  # check symbol ranges
+                        match = None
+                        matchDiff = 0
+                        for rangeAddr in self.symbolsRange:
+                            size = self.symbolsRange[rangeAddr][0]
+                            if parm >= rangeAddr  and  parm < (rangeAddr + size):
+                                if match == None:
+                                    match = rangeAddr
+                                    matchDiff = parm - rangeAddr
+                                elif (parm - rangeAddr) < matchDiff:
+                                    match = rangeAddr
+                                    matchDiff = parm - rangeAddr
+                        if match != None:
+                            comment = "%s + 0x%x" % (self.symbolsRange[match][1], matchDiff)
 
             print "%08x  %-13s" % (count, name),
             sc = opcodes[opc][OP_STACK_CHANGE]
