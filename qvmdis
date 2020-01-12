@@ -190,11 +190,20 @@ class QvmFile(LEBinFile):
         self.symbols = {}  # addr:int -> sym:str
         self.symbolsRange = {}  # addr:int -> [size, sym]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
+
+        # code segment comments
         self.commentsInline = {}  # addr:int -> comment:str
         self.commentsBefore = {}  # addr:int -> [ line1:str, line2:str, ... ]
         self.commentsBeforeSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter:int ]
         self.commentsAfter = {}  # addr:int -> [ line1:str, line2:str, ... ]
         self.commentsAfterSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter: int ]
+
+        # data segment comments
+        self.dataCommentsInline = {}  # addr:int -> comment:str
+        self.dataCommentsBefore = {}  # addr:int -> [ line1:str, line2:str, ... ]
+        self.dataCommentsBeforeSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter:int ]
+        self.dataCommentsAfter = {}  # addr:int -> [ line1:str, line2:str, ... ]
+        self.dataCommentsAfterSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter: int ]
 
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
@@ -326,6 +335,12 @@ class QvmFile(LEBinFile):
                 line = line.split(";")[0]
 
                 words = string.split(line)
+                dataComment = False
+                if len(words) > 1:
+                    if words[0] == "d":
+                        dataComment = True
+                        del words[0]
+
                 if len(words) > 1:
                     codeAddr = string.atoi(words[0], 16)
                     commentType = words[1]
@@ -333,7 +348,10 @@ class QvmFile(LEBinFile):
                     if commentType == "inline":
                         if len(words) > 2:
                             comment = line[line.find(words[2]):].rstrip()
-                            self.commentsInline[codeAddr] = comment
+                            if dataComment:
+                                self.dataCommentsInline[codeAddr] = comment
+                            else:
+                                self.commentsInline[codeAddr] = comment
                     elif commentType == "before"  or  commentType == "after":
                         spaceBefore = 0
                         spaceAfter = 0
@@ -344,13 +362,25 @@ class QvmFile(LEBinFile):
 
                         if spaceBefore > 0  or spaceAfter > 0:
                             if commentType == "before":
-                                self.commentsBeforeSpacing[codeAddr] = [spaceBefore, spaceAfter]
+                                if dataComment:
+                                    self.dataCommentsBeforeSpacing[codeAddr] = [spaceBefore, spaceAfter]
+                                else:
+                                    self.commentsBeforeSpacing[codeAddr] = [spaceBefore, spaceAfter]
                             else:
-                                self.commentsAfterSpacing[codeAddr] = [spaceBefore, spaceAfter]
+                                if dataComment:
+                                    self.dataCommentsAfterSpacing[codeAddr] = [spaceBefore, spaceAfter]
+                                else:
+                                    self.commentsAfterSpacing[codeAddr] = [spaceBefore, spaceAfter]
                         if commentType == "before":
-                            self.commentsBefore[codeAddr] = []
+                            if dataComment:
+                                self.dataCommentsBefore[codeAddr] = []
+                            else:
+                                self.commentsBefore[codeAddr] = []
                         else:
-                            self.commentsAfter[codeAddr] = []
+                            if dataComment:
+                                self.dataCommentsAfter[codeAddr] = []
+                            else:
+                                self.commentsAfter[codeAddr] = []
 
                         lineCount = lineCount + 1
                         while lineCount < len(lines):
@@ -359,9 +389,15 @@ class QvmFile(LEBinFile):
                                 break
                             else:
                                 if commentType == "before":
-                                    self.commentsBefore[codeAddr].append(line[:-1])
+                                    if dataComment:
+                                        self.dataCommentsBefore[codeAddr].append(line[:-1])
+                                    else:
+                                        self.commentsBefore[codeAddr].append(line[:-1])
                                 else:
-                                    self.commentsAfter[codeAddr].append(line[:-1])
+                                    if dataComment:
+                                        self.dataCommentsAfter[codeAddr].append(line[:-1])
+                                    else:
+                                        self.commentsAfter[codeAddr].append(line[:-1])
                             lineCount = lineCount + 1
                     else:
                         print "ERROR: invalid comment type: %s" % line
@@ -396,7 +432,7 @@ class QvmFile(LEBinFile):
                     for i in range(self.commentsBeforeSpacing[count][0]):
                         print ""
                 for line in self.commentsBefore[count]:
-                        print "; %s" % line
+                    print "; %s" % line
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][1]):
                         print ""
@@ -603,22 +639,58 @@ class QvmFile(LEBinFile):
                         print ""
 
     def print_data_disassembly (self):
-        i = 0
-        while i < self.dataSegLength:
-            print "0x%08x  " % i,
-            b0 = self.dataData[i]
-            b1 = self.dataData[i + 1]
-            b2 = self.dataData[i + 2]
-            b3 = self.dataData[i + 3]
+        count = 0
+        while count < self.dataSegLength:
+            if count in self.dataCommentsBefore:
+                if count in self.dataCommentsBeforeSpacing:
+                    for i in range(self.dataCommentsBeforeSpacing[count][0]):
+                        print ""
+                for line in self.dataCommentsBefore[count]:
+                    print "; %s" % line
+                if count in self.dataCommentsBeforeSpacing:
+                    for i in range(self.dataCommentsBeforeSpacing[count][1]):
+                        print ""
 
-            print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0])
+            print "0x%08x  " % count,
+            b0 = self.dataData[count]
+            b1 = self.dataData[count + 1]
+            b2 = self.dataData[count + 2]
+            b3 = self.dataData[count + 3]
 
-            i += 4
+            print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[count:count+4])[0]),
+            if count in self.dataCommentsInline:
+                print "  ; %s" % self.dataCommentsInline[count],
+
+            # finish printing line
+            print ""
+
+            if count in self.dataCommentsAfter:
+                if count in self.dataCommentsAfterSpacing:
+                    for i in range(self.dataCommentsAfterSpacing[count][0]):
+                        print ""
+                for line in self.dataCommentsAfter[count]:
+                    print "; %s" % line
+                if count in self.dataCommentsAfterSpacing:
+                    for i in range(self.dataCommentsAfterSpacing[count][1]):
+                        print ""
+
+            count += 4
 
     def print_lit_disassembly (self):
         pos = self.dataSegLength
         offset = 0
         while offset < self.litSegLength:
+            count = offset + pos
+            if count in self.dataCommentsBefore:
+                if count in self.dataCommentsBeforeSpacing:
+                    for i in range(self.dataCommentsBeforeSpacing[count][0]):
+                        print ""
+                for line in self.dataCommentsBefore[count]:
+                    print "; %s" % line
+                if count in self.dataCommentsBeforeSpacing:
+                    for i in range(self.dataCommentsBeforeSpacing[count][1]):
+                        print ""
+
             print "0x%08x " % (offset + pos),
             chars = []
             i = 0
@@ -631,7 +703,24 @@ class QvmFile(LEBinFile):
                 elif ord(c) > 31  and  ord(c) < 127:
                     chars.append (c)
                 elif c == '\0'  or  offset + i >= self.litSegLength:
-                    print "\"%s\"" %  string.join(chars, "")
+                    print "\"%s\"" %  string.join(chars, ""),
+
+                    if count in self.dataCommentsInline:
+                        print "  ; %s" % self.dataCommentsInline[count],
+
+                    # finish printing line
+                    print ""
+
+                    if count in self.dataCommentsAfter:
+                        if count in self.dataCommentsAfterSpacing:
+                            for j in range(self.dataCommentsAfterSpacing[count][0]):
+                                print ""
+                        for line in self.dataCommentsAfter[count]:
+                            print "; %s" % line
+                        if count in self.dataCommentsAfterSpacing:
+                            for j in range(self.dataCommentsAfterSpacing[count][1]):
+                                print ""
+
                     offset = offset + i
                     break
                 else:
@@ -642,8 +731,6 @@ class QvmFile(LEBinFile):
                         print "\"%s\"" % string.join (chars, ""),
                         chars = []
                     print " 0x%x " % ord(c),
-                    pass
-
 
                 i += 1
 

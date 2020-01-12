@@ -58,4 +58,6 @@ The last value in the contants.dat entry is used to double check that the value 
 
     <<<
 
-Before and after comments are terminated with a line that only has '<<<'.  They can also specify a number of blank lines before and after the comment.
+    d 0x30bc inline fullName
+
+Before and after comments are terminated with a line that only has '<<<'.  They can also specify a number of blank lines before and after the comment.  A 'd' before the address specifies it's a data segment comment.
