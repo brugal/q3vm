@@ -177,7 +177,7 @@ class QvmFile(LEBinFile):
         # user labels
         self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
-        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ size:int, sym:str ] }
+        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ] }
 
         self.functionHashes = {}  # addr:int -> hash:int
         self.functionRevHashes = {}  # hash:int -> [funcAddr1:int, funcAddr2:int, ...]
@@ -188,7 +188,7 @@ class QvmFile(LEBinFile):
         self.baseQ3FunctionRevHashes = {}  # hash:int -> [ funcName1, funcName2, ... ]
 
         self.symbols = {}  # addr:int -> sym:str
-        self.symbolsRange = {}  # addr:int -> [size, sym]
+        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
         # code segment comments
@@ -262,7 +262,9 @@ class QvmFile(LEBinFile):
                     addr = string.atoi(words[0], 16)
                     size = string.atoi(words[1], 16)
                     sym = words[2]
-                    self.symbolsRange[addr] = [size, sym]
+                    if not addr in self.symbolsRange:
+                        self.symbolsRange[addr] = []
+                    self.symbolsRange[addr].append([size, sym])
 
 
         if os.path.exists(FUNCTIONS_FILE):
@@ -297,7 +299,9 @@ class QvmFile(LEBinFile):
                             sym = words[3]
                             if not currentFuncAddr in self.functionsLocalRangeLabels:
                                 self.functionsLocalRangeLabels[currentFuncAddr] = {}
-                            self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = [size, sym]
+                            if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
+                            self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
                         else:
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
@@ -509,19 +513,40 @@ class QvmFile(LEBinFile):
                             comment = self.functionsLocalLabels[currentFuncAddr][parm]
                     elif currentFuncAddr in self.functionsLocalRangeLabels:
                         # find the closest match
+                        exactMatches = []  #FIXME sorted
                         match = None
                         matchDiff = 0
+                        matchSym = ""
+                        matchRangeSize = 0
                         for localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
-                            size = self.functionsLocalRangeLabels[currentFuncAddr][localAddr][0]
-                            if parm >= localAddr  and  parm < (localAddr + size):
-                                if match == None:
-                                    match = localAddr
-                                    matchDiff = parm - localAddr
-                                elif (parm - localAddr) < matchDiff:
-                                    match = localAddr
-                                    matchDiff = parm - localAddr
-                        if match != None:
-                            comment = "%s + 0x%x" % (self.functionsLocalRangeLabels[currentFuncAddr][match][1], matchDiff)
+                            for r in self.functionsLocalRangeLabels[currentFuncAddr][localAddr]:
+                                size = r[0]
+                                sym = r[1]
+                                if parm == localAddr:
+                                    exactMatches.append(sym)
+                                elif parm >= localAddr  and  parm < (localAddr + size):
+                                    if match == None:
+                                        match = localAddr
+                                        matchDiff = parm - localAddr
+                                        matchSym = sym
+                                        matchRangeSize = size
+                                    elif (parm - localAddr) < matchDiff:
+                                        match = localAddr
+                                        matchDiff = parm - localAddr
+                                        matchSym = sym
+                                        matchRangeSize = size
+                                    elif (parm - localAddr) == matchDiff:  # multiple ranges beginning at same address
+                                        # pick smallest
+                                        if size < matchRangeSize:
+                                            match = localAddr
+                                            matchDiff = parm - localAddr
+                                            matchSym = sym
+                                            matchRangeSize = size
+                        if len(exactMatches) > 0:
+                            comment =  ", ".join(exactMatches)
+                        else:
+                            if match != None:
+                                comment = "%s + 0x%x" % (matchSym, matchDiff)
             elif name == "const":
                 nextOp = ord(self.codeData[pos])
 
@@ -557,19 +582,40 @@ class QvmFile(LEBinFile):
                     if parm in self.symbols:
                         comment = self.symbols[parm]
                     else:  # check symbol ranges
+                        exactMatches = []  #FIXME sorted
                         match = None
                         matchDiff = 0
+                        matchSym = ""
+                        matchRangeSize = 0
                         for rangeAddr in self.symbolsRange:
-                            size = self.symbolsRange[rangeAddr][0]
-                            if parm >= rangeAddr  and  parm < (rangeAddr + size):
-                                if match == None:
-                                    match = rangeAddr
-                                    matchDiff = parm - rangeAddr
-                                elif (parm - rangeAddr) < matchDiff:
-                                    match = rangeAddr
-                                    matchDiff = parm - rangeAddr
-                        if match != None:
-                            comment = "%s + 0x%x" % (self.symbolsRange[match][1], matchDiff)
+                            for r in self.symbolsRange[rangeAddr]:
+                                size = r[0]
+                                sym = r[1]
+                                if parm == rangeAddr:
+                                    exactMatches.append(sym)
+                                elif parm >= rangeAddr  and  parm < (rangeAddr + size):
+                                    if match == None:
+                                        match = rangeAddr
+                                        matchSym = sym
+                                        matchDiff = parm - rangeAddr
+                                        matchRangeSize = size
+                                    elif (parm - rangeAddr) < matchDiff:
+                                        match = rangeAddr
+                                        matchSym = sym
+                                        matchDiff = parm - rangeAddr
+                                        matchRangeSize = size
+                                    elif (parm - rangeAddr) == matchDiff:  # multiple ranges beginning at same address
+                                        # pick smallest
+                                        if size < matchRangeSize:
+                                            match = rangeAddr
+                                            matchSym = sym
+                                            matchDiff = parm - rangeAddr
+                                            matchRangeSize = size
+                        if len(exactMatches) > 0:
+                            comment =  ", ".join(exactMatches)
+                        else:
+                            if match != None:
+                                comment = "%s + 0x%x" % (matchSym, matchDiff)
 
                 elif opcodes[nextOp][OP_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
@@ -590,19 +636,40 @@ class QvmFile(LEBinFile):
                     if parm in self.symbols:
                         comment = self.symbols[parm]
                     else:  # check symbol ranges
+                        exactMatches = []  #FIXME sorted
                         match = None
                         matchDiff = 0
+                        matchSym = ""
+                        matchRangeSize = 0
                         for rangeAddr in self.symbolsRange:
-                            size = self.symbolsRange[rangeAddr][0]
-                            if parm >= rangeAddr  and  parm < (rangeAddr + size):
-                                if match == None:
-                                    match = rangeAddr
-                                    matchDiff = parm - rangeAddr
-                                elif (parm - rangeAddr) < matchDiff:
-                                    match = rangeAddr
-                                    matchDiff = parm - rangeAddr
-                        if match != None:
-                            comment = "%s + 0x%x" % (self.symbolsRange[match][1], matchDiff)
+                            for r in self.symbolsRange[rangeAddr]:
+                                size = r[0]
+                                sym = r[1]
+                                if parm == rangeAddr:
+                                    exactMatches.append(sym)
+                                elif parm >= rangeAddr  and  parm < (rangeAddr + size):
+                                    if match == None:
+                                        match = rangeAddr
+                                        matchSym = sym
+                                        matchDiff = parm - rangeAddr
+                                        matchRangeSize = size
+                                    elif (parm - rangeAddr) < matchDiff:
+                                        match = rangeAddr
+                                        matchSym = sym
+                                        matchDiff = parm - rangeAddr
+                                        matchRangeSize = size
+                                    elif (parm - rangeAddr) == matchDiff:  # multiple ranges beginning at same address
+                                        # pick smallest
+                                        if size < matchRangeSize:
+                                            match = rangeAddr
+                                            matchSym = sym
+                                            matchDiff = parm - rangeAddr
+                                            matchRangeSize = size
+                        if len(exactMatches) > 0:
+                            comment =  ", ".join(exactMatches)
+                        else:
+                            if match != None:
+                                comment = "%s + 0x%x" % (matchSym, matchDiff)
 
             print "%08x  %-13s" % (count, name),
             sc = opcodes[opc][OP_STACK_CHANGE]
