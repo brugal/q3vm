@@ -59,7 +59,7 @@ CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
 
 def usage ():
-    print "%s <qvm file> [cgame|game]" % sys.argv[0]
+    print "%s [--func-hash] <qvm file> [cgame|game]" % sys.argv[0]
     print "  optionally specify cgame or game qvm to match syscalls and function hashes"
     sys.exit (1)
 
@@ -924,22 +924,32 @@ class QvmFile(LEBinFile):
 
 
 def main ():
-    if len(sys.argv) < 2:
+    onlyPrintFunctionHashes = False
+    qvmFile = None
+    qvmType = ""
+
+    for arg in sys.argv[1:]:
+        if arg == "--func-hash":
+            onlyPrintFunctionHashes = True
+        elif qvmFile == None:
+            qvmFile = arg
+        elif qvmType == "":
+            qvmType = arg
+
+    if qvmFile == None:
         usage()
 
-    if len(sys.argv) > 2:
-        arg = string.lower(sys.argv[2])
-        if arg == "cgame":
-            pass
-        elif arg == "game":
-            pass
-        else:
-            print "invalid qvm type '%s'" % arg
+    if qvmType != "":
+        if not qvmType in ("cgame", "game"):
+            print "invalid qvm type '%s'" % qvmType
             usage()
-    else:
-        arg = ""
 
-    q = QvmFile(sys.argv[1], arg)
+    q = QvmFile(qvmFile, qvmType)
+
+    if onlyPrintFunctionHashes:
+        q.print_function_hashes()
+        q.close()
+        return
 
     print ";; header"
     q.print_header()
