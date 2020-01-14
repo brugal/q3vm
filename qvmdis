@@ -927,10 +927,13 @@ def main ():
     onlyPrintFunctionHashes = False
     qvmFile = None
     qvmType = None
+    parsingOptions = True
 
     for arg in sys.argv[1:]:
-        if arg == "--func-hash":
+        if arg == "--func-hash"  and  parsingOptions:
             onlyPrintFunctionHashes = True
+        elif arg == "--"  and  parsingOptions:
+            parsingOptions = False
         elif qvmFile == None:
             qvmFile = arg
         elif qvmType == None:
