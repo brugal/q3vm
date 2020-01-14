@@ -926,20 +926,20 @@ class QvmFile(LEBinFile):
 def main ():
     onlyPrintFunctionHashes = False
     qvmFile = None
-    qvmType = ""
+    qvmType = None
 
     for arg in sys.argv[1:]:
         if arg == "--func-hash":
             onlyPrintFunctionHashes = True
         elif qvmFile == None:
             qvmFile = arg
-        elif qvmType == "":
+        elif qvmType == None:
             qvmType = arg
 
     if qvmFile == None:
         usage()
 
-    if qvmType != "":
+    if qvmType != None:
         if not qvmType in ("cgame", "game"):
             print "invalid qvm type '%s'" % qvmType
             usage()
