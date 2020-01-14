@@ -50,8 +50,11 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CGAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "cg_syscalls.asm")
 GAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "g_syscalls.asm")
+UI_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "ui_syscalls.asm")
+
 BASEQ3_CGAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-cgame-functions.hmap")
 BASEQ3_GAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-game-functions.hmap")
+BASEQ3_UI_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-ui-functions.hmap")
 
 SYMBOLS_FILE = "symbols.dat"
 FUNCTIONS_FILE = "functions.dat"
@@ -59,8 +62,8 @@ CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
 
 def usage ():
-    print "%s [--func-hash] <qvm file> [cgame|game]" % sys.argv[0]
-    print "  optionally specify cgame or game qvm to match syscalls and function hashes"
+    print "%s [--func-hash] <qvm file> [cgame|game|ui]" % sys.argv[0]
+    print "  optionally specify cgame, game, or ui qvm to match syscalls and function hashes"
     sys.exit (1)
 
 class Opcode:
@@ -143,7 +146,7 @@ class InvalidQvmFile(Exception):
 class QvmFile(LEBinFile):
     magic = 0x12721444
 
-    # qvmtype:("cgame", "game", ...)
+    # qvmtype:("cgame", "game", "ui", None)
     def __init__ (self, fname, qvmtype=None):
         self._file = open(fname)
         m = self.read_int()
@@ -215,13 +218,15 @@ class QvmFile(LEBinFile):
     def set_qvm_type (self, qvmtype):
         self.qvmtype = qvmtype
 
-        if qvmtype not in ("cgame", "game"):
+        if qvmtype not in ("cgame", "game", "ui"):
             return
 
         if qvmtype == "cgame":
             f = open(CGAME_SYSCALLS_ASM_FILE)
         elif qvmtype == "game":
             f = open(GAME_SYSCALLS_ASM_FILE)
+        elif qvmtype == "ui":
+            f = open(UI_SYSCALLS_ASM_FILE)
 
         lines = f.readlines()
         f.close()
@@ -234,6 +239,8 @@ class QvmFile(LEBinFile):
             f = open(BASEQ3_CGAME_FUNCTIONS_FILE)
         elif qvmtype == "game":
             f = open(BASEQ3_GAME_FUNCTIONS_FILE)
+        elif qvmtype == "ui":
+            f = open(BASEQ3_UI_FUNCTIONS_FILE)
 
         lines = f.readlines()
         f.close()
@@ -943,7 +950,7 @@ def main ():
         usage()
 
     if qvmType != None:
-        if not qvmType in ("cgame", "game"):
+        if not qvmType in ("cgame", "game", "ui"):
             print "invalid qvm type '%s'" % qvmType
             usage()
 
