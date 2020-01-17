@@ -7,7 +7,7 @@
 
 Features:
 
-* Opcodes indicate stack size change
+* Indicates stack size change for opcodes
 * Labels jump locations
 * Identifies which other functions call a particular function
 * Identifies syscalls
