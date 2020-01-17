@@ -1000,9 +1000,12 @@ if __name__ == "__main__":
     try:
         main()
     except SystemExit as se:
+        # don't print traceback for exit()
         raise se
-    except:
+    except Exception as ex:
         # send to both stdout and stderr since output is usually redirected to file
         traceback.print_exc(file=sys.stdout)
         sys.stderr.write("\n")
         traceback.print_exc(file=sys.stderr)
+        # feed back up to exit() with correct exit value
+        raise ex
