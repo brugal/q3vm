@@ -1,7 +1,9 @@
-Qvmdis : Quake3 QVM disassembler
+# Qvmdis : Quake3 QVM disassembler
 
+```
 Usage:  qvmdis <qvm file> [cgame|game]
   optionally specify cgame or game qvm to match syscalls and function hashes
+```
 
 Features:
 
@@ -19,9 +21,10 @@ Features:
 
 The .dat files are opened from the current working directory.  Comments in .dat files are specified with ';'.
 
-Format of .dat files:
+## Format of .dat files:
 
-    ---- functions.dat ----
+    #### ---- functions.dat ---- ####
+
     0x0000 vmMain
       arg0 command
       local 0x14 commandTmp
@@ -33,18 +36,21 @@ Format of .dat files:
 
 Local variables can optionally specify a size to identify references within a range.
 
-    ---- symbols.dat ----
+    #### ---- symbols.dat ---- ####
+
     0xab2a3 serverTime
     0xb23fa 0x1000 clientData
 
 Size can optionally be specified to identify references within a range.
 
-    ---- constants.dat ----
+    #### ---- constants.dat ---- ####
+
     0x3f31 DEFAULT_SPEED 0x0
 
 The last value in the contants.dat entry is used to double check that the value is correct.
 
-    ---- comments.dat ----
+    #### ---- comments.dat ---- ####
+
     0x5a11 inline This is an inline comment added to the end of the line
     0x5ba1 before
 
