@@ -62,9 +62,12 @@ CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
 
 def usage ():
-    print "%s [--func-hash] <qvm file> [cgame|game|ui]" % sys.argv[0]
+    scriptName = os.path.basename(sys.argv[0])
+    print "%s [--func-hash] <qvm file> [cgame|game|ui]" % scriptName
     print "  optionally specify cgame, game, or ui qvm to match syscalls and function hashes"
-    sys.exit (1)
+    print ""
+    print "  ex: %s cgame.qvm cgame > cgame.dis" % scriptName
+    sys.exit(1)
 
 class Opcode:
     def __init__ (self, val, name, parmSize):

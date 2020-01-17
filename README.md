@@ -3,6 +3,8 @@
 ```
   Usage:  qvmdis <qvm file> [cgame|game|ui]
     optionally specify cgame, game, or ui qvm to match syscalls and function hashes
+
+    ex: qvmdis cgame.qvm cgame > cgame.dis
 ```
 
 Features:
