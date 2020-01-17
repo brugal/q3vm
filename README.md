@@ -23,7 +23,7 @@ The .dat files are opened from the current working directory.  Comments in .dat 
 
 ## Format of .dat files:
 
-    #### ---- functions.dat ---- ####
+### *functions.dat* ###
 
     0x0000 vmMain
       arg0 command
@@ -36,20 +36,20 @@ The .dat files are opened from the current working directory.  Comments in .dat 
 
 Local variables can optionally specify a size to identify references within a range.
 
-    #### ---- symbols.dat ---- ####
+### *symbols.dat* ###
 
     0xab2a3 serverTime
     0xb23fa 0x1000 clientData
 
 Size can optionally be specified to identify references within a range.
 
-    #### ---- constants.dat ---- ####
+### *constants.dat* ###
 
     0x3f31 DEFAULT_SPEED 0x0
 
 The last value in the contants.dat entry is used to double check that the value is correct.
 
-    #### ---- comments.dat ---- ####
+### *comments.dat* ###
 
     0x5a11 inline This is an inline comment added to the end of the line
     0x5ba1 before
