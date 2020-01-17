@@ -2,7 +2,8 @@
 
 ```
   Usage:  qvmdis <qvm file> [cgame|game|ui]
-    optionally specify cgame, game, or ui qvm to match syscalls and function hashes
+    optionally specify cgame, game, or ui qvm to match syscalls and function
+hashes
 ```
 
 Features:
@@ -14,13 +15,16 @@ Features:
 * Identifies references to function arguments
 * Adds comments for possible string reference values
 * Adds comments for possible data reference values
-* Computes function hashes and compares to stock QVM to identify possible matches
-* Function names, arguments, and local variables can be labeled in separate functions.dat file
+* Computes function hashes and compares to stock QVM to identify possible
+matches
+* Function names, arguments, and local variables can be labeled in separate
+functions.dat file
 * Symbol names can be labeled using separate symbols.dat file
 * Constants can be labeled in constants.dat
 * Comments can be added in comments.dat
 
-The .dat files are opened from the current working directory.  Comments in .dat files are specified with ';'.
+The .dat files are opened from the current working directory.  Comments in
+.dat files are specified with ';'.
 
 ## Format of .dat files:
 
@@ -35,7 +39,8 @@ The .dat files are opened from the current working directory.  Comments in .dat 
       arg0 x
       local 0x18 0x170 refdef  ; also specifies the size
 
-Local variables can optionally specify a size to identify references within a range.  See *symbols.dat* description for notes regarding ranges.
+Local variables can optionally specify a size to identify references within a
+range.  See *symbols.dat* description for notes regarding ranges.
 
 ### *symbols.dat* ###
 
@@ -58,7 +63,8 @@ structure itself, you can make sure they are both output by specifing a size
 for the element.  Ex:
 
     0xcba90 0x1cd38 cg
-      ; usually don't specify size for ints, but for first element allows printing parent
+      ; usually don't specify size for ints, but for first element allows
+      ; printing parent reference
       0xcba90 0x4 cg.clientFrame
       0xcba94 cg.clientNum
 
@@ -70,7 +76,8 @@ output:
 
     0x3f31 DEFAULT_SPEED 0x0
 
-The last value in the contants.dat entry is used to double check that the value is correct.
+The last value in the contants.dat entry is used to double check that the value
+is correct.
 
 ### *comments.dat* ###
 
@@ -89,4 +96,6 @@ The last value in the contants.dat entry is used to double check that the value 
 
     d 0x30bc inline fullName
 
-Before and after comments are terminated with a line that only has '<<<'.  They can also specify a number of blank lines before and after the comment.  A 'd' before the address specifies it's a data segment comment.
+Before and after comments are terminated with a line that only has '<<<'.
+They can also specify a number of blank lines before and after the comment.
+A 'd' before the address specifies it's a data segment comment.
