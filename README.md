@@ -43,13 +43,17 @@ functions.dat file
 * Comments can be added in comments.dat
 
 The .dat files are opened from the current working directory.  Comments in
-.dat files are specified with ';'.
+.dat files are specified with ';'.  Values need to be specified as hex.
 
 ## Format of .dat files:
 
 ### *functions.dat* ###
 
+    ; addr name
     0x0000 vmMain
+      ; argX name
+      ;  or
+      ; local addr [size] name
       arg0 command
       local 0x14 commandTmp
 
@@ -63,6 +67,7 @@ range.  See *symbols.dat* description for notes regarding ranges.
 
 ### *symbols.dat* ###
 
+    ; addr [size] name
     0xab2a3 serverTime
     0xb23fa 0x1000 clientData
 
@@ -93,6 +98,7 @@ output:
 
 ### *constants.dat* ###
 
+    ; addr name value
     0x3f31 DEFAULT_SPEED 0x0
 
 The last value in the contants.dat entry is used to double check that the value
@@ -100,6 +106,9 @@ is correct.
 
 ### *comments.dat* ###
 
+    ; addr inline comment...
+    ;   or
+    ; addr before|after [spaceBefore spaceAfter]
     0x5a11 inline This is an inline comment added to the end of the line
     0x5ba1 before
 
