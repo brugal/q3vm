@@ -7,6 +7,24 @@
     ex: qvmdis cgame.qvm cgame > cgame.dis
 ```
 
+Sample:
+
+```c
+000009b2  const           1   0x0
+000009b3  eq             -2   0x9d2
+
+;----------------------------------- from  0x9af
+
+  ; "sprites/foe"
+000009b4  const           1   0x2ae2
+000009b5  arg            -1   0x8
+000009b6  local           1   0x198
+000009b7  const           1  -0x28   ; trap_R_RegisterShader()
+000009b8  call           -1
+000009b9  store4         -2
+000009ba  const           1   0x1098f8
+```
+
 Features:
 
 * Indicates stack size change for opcodes
