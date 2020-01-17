@@ -438,7 +438,7 @@ class QvmFile(LEBinFile):
             name = opcodes[opc][OP_NAME]
             psize = opcodes[opc][OP_PARM_SIZE]
 
-            if count in self.commentsBefore:
+            if name != "enter"  and  count in self.commentsBefore:
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][0]):
                         print ""
@@ -506,6 +506,17 @@ class QvmFile(LEBinFile):
 
                 print "; max local arg 0x%x" % self.functionMaxArgsCalled[addr]
                 print "; ========================"
+
+                if count in self.commentsBefore:
+                    if count in self.commentsBeforeSpacing:
+                        for i in range(self.commentsBeforeSpacing[count][0]):
+                            print ""
+                    for line in self.commentsBefore[count]:
+                        print "; %s" % line
+                    if count in self.commentsBeforeSpacing:
+                        for i in range(self.commentsBeforeSpacing[count][1]):
+                            print ""
+
             elif name == "local":
                 argNum = parm - stackAdjust - 0x8
                 if argNum >= 0:
