@@ -1,12 +1,13 @@
 # Qvmdis : Quake3 QVM disassembler
 
 ```
-Usage:  qvmdis <qvm file> [cgame|game]
-  optionally specify cgame or game qvm to match syscalls and function hashes
+  Usage:  qvmdis <qvm file> [cgame|game]
+    optionally specify cgame or game qvm to match syscalls and function hashes
 ```
 
 Features:
 
+* Opcodes indicate stack size change
 * Labels jump locations
 * Identifies which other functions call a particular function
 * Identifies syscalls
@@ -34,7 +35,7 @@ The .dat files are opened from the current working directory.  Comments in .dat 
       arg0 x
       local 0x18 0x170 refdef  ; also specifies the size
 
-Local variables can optionally specify a size to identify references within a range.
+Local variables can optionally specify a size to identify references within a range.  See *symbols.dat* description for notes regarding ranges.
 
 ### *symbols.dat* ###
 
@@ -42,6 +43,28 @@ Local variables can optionally specify a size to identify references within a ra
     0xb23fa 0x1000 clientData
 
 Size can optionally be specified to identify references within a range.
+Symbol lookups without a size specified take precedence.  Multiple ranges
+beginning at the same address are printed as a comma separated list.  Ex:
+
+    0xe87c8 0x26754 cgs
+      0x87c8 0x4e84 cgs.gameState
+
+output:
+
+```0000104e  const           1   0xe87c8   ; cgs, cgs.gameState```
+
+Since the first element in a structure shares the same starting address as the
+structure itself, you can make sure they are both output by specifing a size
+for the element.  Ex:
+
+    0xcba90 0x1cd38 cg
+      ; usually don't specify size for ints, but for first element allows printing parent
+      0xcba90 0x4 cg.clientFrame
+      0xcba94 cg.clientNum
+
+output:
+
+```00001094  const           1   0xcba90   ; cg, cg.clientFrame```
 
 ### *constants.dat* ###
 
