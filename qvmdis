@@ -70,9 +70,12 @@ def usage ():
     sys.stderr.write("  ex: %s cgame.qvm cgame > cgame.dis\n" % scriptName)
     sys.exit(1)
 
+def output (msg):
+    sys.stdout.write(msg)
+
 def error_msg (msg):
     # send to both stdout and stderr since output is usually redirected to file
-    print "---- error occurred : %s" % msg
+    sys.stdout.write("---- error occurred : %s\n" % msg)
     sys.stderr.write("ERROR: %s\n" % msg)
 
 def error_exit (msg, exitValue = 1):
@@ -477,11 +480,11 @@ class QvmFile(LEBinFile):
                 lineCount += 1
 
     def print_header (self):
-        print "; instruction count: 0x%x" % self.instructionCount
-        print "; CODE seg offset: 0x%08x  length: 0x%x" % (self.codeSegOffset, self.codeSegLength)
-        print "; DATA seg offset: 0x%08x  length: 0x%x" % (self.dataSegOffset, self.dataSegLength)
-        print "; LIT  seg offset: 0x%08x  length: 0x%x" % (self.litSegOffset, self.litSegLength)
-        print "; BSS  seg offset: 0x%08x  length: 0x%x" % (self.bssSegOffset, self.bssSegLength)
+        output("; instruction count: 0x%x\n" % self.instructionCount)
+        output("; CODE seg offset: 0x%08x  length: 0x%x\n" % (self.codeSegOffset, self.codeSegLength))
+        output("; DATA seg offset: 0x%08x  length: 0x%x\n" % (self.dataSegOffset, self.dataSegLength))
+        output("; LIT  seg offset: 0x%08x  length: 0x%x\n" % (self.litSegOffset, self.litSegLength))
+        output("; BSS  seg offset: 0x%08x  length: 0x%x\n" % (self.bssSegOffset, self.bssSegLength))
 
     def print_code_disassembly (self):
         pos = 0
@@ -501,12 +504,12 @@ class QvmFile(LEBinFile):
             if name != "enter"  and  count in self.commentsBefore:
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][0]):
-                        print ""
+                        output("\n")
                 for line in self.commentsBefore[count]:
-                    print "; %s" % line
+                    output("; %s\n" % line)
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][1]):
-                        print ""
+                        output("\n")
 
             if psize == 0:
                 parm = None
@@ -522,59 +525,59 @@ class QvmFile(LEBinFile):
                 error_exit("FIXME bad opcode size")
 
             if count in self.jumpPoints:
-                print "\n;----------------------------------- from ",
+                output("\n;----------------------------------- from ")
                 for jp in self.jumpPoints[count]:
-                    print "0x%x" % jp,
-                print ""
+                    output(" 0x%x" % jp)
+                output("\n")
 
             if name == "enter":
                 addr = count
                 currentFuncAddr = addr
                 stackAdjust = parm
                 if count in self.callPoints:
-                    print "\n; called from",
+                    output("\n; called from")
                     for caller in self.callPoints[count]:
                         if caller in self.functions:
-                            print "%s()" % self.functions[caller],
+                            output(" %s()" % self.functions[caller])
                         elif self.functionHashes[caller] in self.baseQ3FunctionRevHashes:
                             for n in self.baseQ3FunctionRevHashes[self.functionHashes[caller]]:
-                                print "?%s()" % n,
+                                output(" ?%s()" % n)
                         else:
-                            print "0x%x" % caller,
-                    print ""
+                            output(" 0x%x" % caller)
+                    output("\n")
 
-                print ""
+                output("\n")
 
                 if addr in self.functions:
-                    print "; func %s()" % self.functions[count]
+                    output("; func %s()\n" % self.functions[count])
                 elif self.functionHashes[addr] in self.baseQ3FunctionRevHashes:
-                    print ";",
+                    output(";")
                     for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
-                        print "?%s()" % n,
-                    print ""
+                        output(" ?%s()" % n)
+                    output("\n")
                 if addr in self.functionParmNum:
-                    print ";",
+                    output(";")
                     p = self.functionParmNum[addr]
                     if p == 0:
-                        print "no",
+                        output(" no")
                     elif p == -1:
-                        print "var",
+                        output(" var")
                     else:
-                        print "0x%x" % p,
-                    print "args"
+                        output(" 0x%x" % p)
+                    output(" args\n")
 
-                print "; max local arg 0x%x" % self.functionMaxArgsCalled[addr]
-                print "; ========================"
+                output("; max local arg 0x%x\n" % self.functionMaxArgsCalled[addr])
+                output("; ========================\n")
 
                 if count in self.commentsBefore:
                     if count in self.commentsBeforeSpacing:
                         for i in range(self.commentsBeforeSpacing[count][0]):
-                            print ""
+                            output("\n")
                     for line in self.commentsBefore[count]:
-                        print "; %s" % line
+                        output("; %s\n" % line)
                     if count in self.commentsBeforeSpacing:
                         for i in range(self.commentsBeforeSpacing[count][1]):
-                            print ""
+                            output("\n")
 
             elif name == "local":
                 argNum = parm - stackAdjust - 0x8
@@ -647,14 +650,14 @@ class QvmFile(LEBinFile):
                         else:
                             chars.append (c)
                         i += 1
-                    print "\n  ; \"%s\"" % string.join(chars, "")
+                    output("\n  ; \"%s\"\n" % string.join(chars, ""))
                 elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     b0 = self.dataData[parm]
                     b1 = self.dataData[parm + 1]
                     b2 = self.dataData[parm + 2]
                     b3 = self.dataData[parm + 3]
 
-                    print "\n  ; %02x %02x %02x %02x  (0x%x)" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0])
+                    output("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
@@ -748,39 +751,40 @@ class QvmFile(LEBinFile):
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
 
-            print "%08x  %-13s" % (count, name),
+            output("%08x  %-13s" % (count, name))
             sc = opcodes[opc][OP_STACK_CHANGE]
             if sc < 0:
-                print " %d" % sc,
+                output("  %d" % sc)
             elif sc > 0:
-                print "  %d" % sc,
+                output("   %d" % sc)
             else:
-                print "   ",
+                #FIXME this..
+                output("    ")
 
             if parm != None:
                 if parm < 0:
-                    print " -0x%x" % -parm,
+                    output("  -0x%x" % -parm)
                 else:
-                    print "  0x%x" % parm,
+                    output("   0x%x" % parm)
 
             if comment:
-                print "  ; %s" % comment,
+                output("  ; %s" % comment)
 
             if count in self.commentsInline:
-                print "  ; %s" % self.commentsInline[count],
+                output("  ; %s" % self.commentsInline[count])
 
             # finish printing line
-            print ""
+            output("\n")
 
             if count in self.commentsAfter:
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][0]):
-                        print ""
+                        output("\n")
                 for line in self.commentsAfter[count]:
-                    print "; %s" % line
+                    output("; %s\n" % line)
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][1]):
-                        print ""
+                        output("\n")
 
     def print_data_disassembly (self):
         count = 0
@@ -788,35 +792,35 @@ class QvmFile(LEBinFile):
             if count in self.dataCommentsBefore:
                 if count in self.dataCommentsBeforeSpacing:
                     for i in range(self.dataCommentsBeforeSpacing[count][0]):
-                        print ""
+                        output("\n")
                 for line in self.dataCommentsBefore[count]:
-                    print "; %s" % line
+                    output("; %s\n" % line)
                 if count in self.dataCommentsBeforeSpacing:
                     for i in range(self.dataCommentsBeforeSpacing[count][1]):
-                        print ""
+                        output("\n")
 
-            print "0x%08x  " % count,
+            output("0x%08x  " % count)
             b0 = self.dataData[count]
             b1 = self.dataData[count + 1]
             b2 = self.dataData[count + 2]
             b3 = self.dataData[count + 3]
 
-            print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[count:count+4])[0]),
+            output(" %02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[count:count+4])[0]))
             if count in self.dataCommentsInline:
-                print "  ; %s" % self.dataCommentsInline[count],
+                output("  ; %s" % self.dataCommentsInline[count])
 
             # finish printing line
-            print ""
+            output("\n")
 
             if count in self.dataCommentsAfter:
                 if count in self.dataCommentsAfterSpacing:
                     for i in range(self.dataCommentsAfterSpacing[count][0]):
-                        print ""
+                        output("\n")
                 for line in self.dataCommentsAfter[count]:
-                    print "; %s" % line
+                    outout("; %s\n" % line)
                 if count in self.dataCommentsAfterSpacing:
                     for i in range(self.dataCommentsAfterSpacing[count][1]):
-                        print ""
+                        output("\n")
 
             count += 4
 
@@ -828,14 +832,14 @@ class QvmFile(LEBinFile):
             if count in self.dataCommentsBefore:
                 if count in self.dataCommentsBeforeSpacing:
                     for i in range(self.dataCommentsBeforeSpacing[count][0]):
-                        print ""
+                        output("\n")
                 for line in self.dataCommentsBefore[count]:
-                    print "; %s" % line
+                    output("; %s\n" % line)
                 if count in self.dataCommentsBeforeSpacing:
                     for i in range(self.dataCommentsBeforeSpacing[count][1]):
-                        print ""
+                        output("\n")
 
-            print "0x%08x " % (offset + pos),
+            output("0x%08x  " % (offset + pos))
             chars = []
             i = 0
             while 1:
@@ -847,23 +851,23 @@ class QvmFile(LEBinFile):
                 elif ord(c) > 31  and  ord(c) < 127:
                     chars.append (c)
                 elif c == '\0'  or  offset + i >= self.litSegLength:
-                    print "\"%s\"" %  string.join(chars, ""),
+                    output("\"%s\"" %  string.join(chars, ""))
 
                     if count in self.dataCommentsInline:
-                        print "  ; %s" % self.dataCommentsInline[count],
+                        output("  ; %s" % self.dataCommentsInline[count])
 
                     # finish printing line
-                    print ""
+                    output("\n")
 
                     if count in self.dataCommentsAfter:
                         if count in self.dataCommentsAfterSpacing:
                             for j in range(self.dataCommentsAfterSpacing[count][0]):
-                                print ""
+                                output("\n")
                         for line in self.dataCommentsAfter[count]:
-                            print "; %s" % line
+                            output("; %s\n" % line)
                         if count in self.dataCommentsAfterSpacing:
                             for j in range(self.dataCommentsAfterSpacing[count][1]):
-                                print ""
+                                output("\n")
 
                     offset = offset + i
                     break
@@ -871,9 +875,9 @@ class QvmFile(LEBinFile):
                     #FIXME
                     #error_exit("invalid char: 0x%x" % ord(c))
                     if len(chars) > 0:
-                        print "\"%s\"" % string.join (chars, ""),
+                        output("\"%s\" " % string.join (chars, ""))
                         chars = []
-                    print " 0x%x " % ord(c),
+                    output(" 0x%x  " % ord(c))
 
                 i += 1
 
@@ -991,12 +995,12 @@ class QvmFile(LEBinFile):
         ks = self.functionHashes.keys()
         ks.sort()
         for addr in ks:
-            print "0x%08x  0x%x  %x" % (addr, self.functionSizes[addr], self.functionHashes[addr]),
+            output("0x%08x  0x%x  %x" % (addr, self.functionSizes[addr], self.functionHashes[addr]))
             if self.functionHashes[addr] in self.baseQ3FunctionRevHashes:
-                print "\tpossible match to",
+                output("\tpossible match to")
                 for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
-                    print n,
-            print ""
+                    output(" %s" % n)
+            output("\n")
 
 
 def main ():
@@ -1020,7 +1024,7 @@ def main ():
 
     if qvmType != None:
         if not qvmType in ("cgame", "game", "ui"):
-            print "invalid qvm type '%s'" % qvmType
+            output("invalid qvm type '%s'\n" % qvmType)
             usage()
 
     q = QvmFile(qvmFile, qvmType)
@@ -1030,23 +1034,23 @@ def main ():
         q.close()
         return
 
-    print ";; header"
+    output(";; header\n")
     q.print_header()
-    print ""
+    output("\n")
 
-    print ";; function hashes"
+    output(";; function hashes\n")
     q.print_function_hashes()
-    print ""
+    output("\n")
 
-    print ";; code segment"
+    output(";; code segment\n")
     q.print_code_disassembly()
-    print ""
+    output("\n")
 
-    print ";; data segment"
+    output(";; data segment\n")
     q.print_data_disassembly()
-    print ""
+    output("\n")
 
-    print ";; lit segment"
+    output(";; lit segment\n")
     q.print_lit_disassembly()
 
     q.close()
