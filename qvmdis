@@ -706,7 +706,7 @@ class QvmFile(LEBinFile):
                         if self.functionHashes[parm] in self.baseQ3FunctionRevHashes:
                             comment = ""
                             for n in self.baseQ3FunctionRevHashes[self.functionHashes[parm]]:
-                                comment += "?%s() " % n
+                                comment += " ?%s()" % n
                         else:
                             comment = ":unknown function:"
 
@@ -751,15 +751,19 @@ class QvmFile(LEBinFile):
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
 
-            output("%08x  %-13s" % (count, name))
             sc = opcodes[opc][OP_STACK_CHANGE]
+            if sc != 0  or parm != None:
+                output("%08x  %-13s" % (count, name))
+            else:
+                output("%08x  %s" % (count, name))
+
             if sc < 0:
                 output("  %d" % sc)
             elif sc > 0:
                 output("   %d" % sc)
             else:
-                #FIXME this..
-                output("    ")
+                if parm != None  or  comment  or count in self.commentsInline:
+                    output("    ")
 
             if parm != None:
                 if parm < 0:
