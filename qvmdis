@@ -159,8 +159,8 @@ class InvalidQvmFile(Exception):
 class QvmFile(LEBinFile):
     magic = 0x12721444
 
-    # qvmtype:("cgame", "game", "ui", None)
-    def __init__ (self, qvmFileName, qvmtype=None):
+    # qvmType:("cgame", "game", "ui", None)
+    def __init__ (self, qvmFileName, qvmType=None):
         self._file = open(qvmFileName)
         m = self.read_int()
         if m != self.magic:
@@ -224,23 +224,23 @@ class QvmFile(LEBinFile):
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
-        self.set_qvm_type(qvmtype)
+        self.set_qvm_type(qvmType)
         self.load_address_info()
         self.compute_function_info()
 
-    def set_qvm_type (self, qvmtype):
-        self.qvmtype = qvmtype
+    def set_qvm_type (self, qvmType):
+        self.qvmType = qvmType
 
-        if qvmtype not in ("cgame", "game", "ui"):
+        if qvmType not in ("cgame", "game", "ui"):
             return
 
-        if qvmtype == "cgame":
+        if qvmType == "cgame":
             fname = CGAME_SYSCALLS_ASM_FILE
             f = open(fname)
-        elif qvmtype == "game":
+        elif qvmType == "game":
             fname = GAME_SYSCALLS_ASM_FILE
             f = open(fname)
-        elif qvmtype == "ui":
+        elif qvmType == "ui":
             fname = UI_SYSCALLS_ASM_FILE
             f = open(fname)
 
@@ -257,13 +257,13 @@ class QvmFile(LEBinFile):
                     error_exit("couldn't parse system call number in line %d of %s: %s" % (lineCount + 1, fname, line))
             lineCount += 1
 
-        if qvmtype == "cgame":
+        if qvmType == "cgame":
             fname = BASEQ3_CGAME_FUNCTIONS_FILE
             f = open(fname)
-        elif qvmtype == "game":
+        elif qvmType == "game":
             fname = BASEQ3_GAME_FUNCTIONS_FILE
             f = open(fname)
-        elif qvmtype == "ui":
+        elif qvmType == "ui":
             fname = BASEQ3_UI_FUNCTIONS_FILE
             f = open(fname)
 
