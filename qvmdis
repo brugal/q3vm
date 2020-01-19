@@ -65,6 +65,7 @@ def usage ():
     scriptName = os.path.basename(sys.argv[0])
     sys.stderr.write("Usage: %s [--func-hash] <qvm file> [cgame|game|ui]\n" % scriptName)
     sys.stderr.write("  optionally specify cgame, game, or ui qvm to match syscalls and function hashes\n")
+    sys.stderr.write("  --func-hash  :  only print function hash values\n")
     sys.stderr.write("\n")
     sys.stderr.write("  ex: %s cgame.qvm cgame > cgame.dis\n" % scriptName)
     sys.exit(1)
