@@ -70,11 +70,14 @@ def usage ():
     sys.stderr.write("  ex: %s cgame.qvm cgame > cgame.dis\n" % scriptName)
     sys.exit(1)
 
-def error (msg):
+def error_msg (msg):
     # send to both stdout and stderr since output is usually redirected to file
     print "---- error occurred : %s" % msg
     sys.stderr.write("ERROR: %s\n" % msg)
-    sys.exit(1)
+
+def error_exit (msg, exitValue = 1):
+    error_msg(msg)
+    sys.exit(exitValue)
 
 class Opcode:
     def __init__ (self, val, name, parmSize):
@@ -157,8 +160,8 @@ class QvmFile(LEBinFile):
     magic = 0x12721444
 
     # qvmtype:("cgame", "game", "ui", None)
-    def __init__ (self, fname, qvmtype=None):
-        self._file = open(fname)
+    def __init__ (self, qvmFileName, qvmtype=None):
+        self._file = open(qvmFileName)
         m = self.read_int()
         if m != self.magic:
             raise InvalidQvmFile, "not a valid qvm file  0x%x != 0x%x" % (m, self.magic)
@@ -232,60 +235,87 @@ class QvmFile(LEBinFile):
             return
 
         if qvmtype == "cgame":
-            f = open(CGAME_SYSCALLS_ASM_FILE)
+            fname = CGAME_SYSCALLS_ASM_FILE
+            f = open(fname)
         elif qvmtype == "game":
-            f = open(GAME_SYSCALLS_ASM_FILE)
+            fname = GAME_SYSCALLS_ASM_FILE
+            f = open(fname)
         elif qvmtype == "ui":
-            f = open(UI_SYSCALLS_ASM_FILE)
+            fname = UI_SYSCALLS_ASM_FILE
+            f = open(fname)
 
         lines = f.readlines()
         f.close()
+
+        lineCount = 0
         for line in lines:
             words = string.split(line)
             if len(words) == 3:
-                self.syscalls[string.atoi(words[2])] = words[1]
+                try:
+                    self.syscalls[string.atoi(words[2])] = words[1]
+                except ValueError:
+                    error_exit("couldn't parse system call number in line %d of %s: %s" % (lineCount + 1, fname, line))
+            lineCount += 1
 
         if qvmtype == "cgame":
-            f = open(BASEQ3_CGAME_FUNCTIONS_FILE)
+            fname = BASEQ3_CGAME_FUNCTIONS_FILE
+            f = open(fname)
         elif qvmtype == "game":
-            f = open(BASEQ3_GAME_FUNCTIONS_FILE)
+            fname = BASEQ3_GAME_FUNCTIONS_FILE
+            f = open(fname)
         elif qvmtype == "ui":
-            f = open(BASEQ3_UI_FUNCTIONS_FILE)
+            fname = BASEQ3_UI_FUNCTIONS_FILE
+            f = open(fname)
 
         lines = f.readlines()
         f.close()
+        lineCount = 0
         for line in lines:
             words = string.split(line)
             if len(words) > 2:
                 n = words[1]
-                h = string.atoi(words[2], 16)
+                try:
+                    h = string.atoi(words[2], 16)
+                except ValueError:
+                    error_exit("couldn't parse hash value in line %d of %s: %s" % (lineCount + 1, fname, line))
                 if h in self.baseQ3FunctionRevHashes:
-                    self.baseQ3FunctionRevHashes[h].append (n)
+                    self.baseQ3FunctionRevHashes[h].append(n)
                 else:
                     self.baseQ3FunctionRevHashes[h] = [n]
+            lineCount += 1
 
     def load_address_info (self):
-        if os.path.exists(SYMBOLS_FILE):
-            f = open(SYMBOLS_FILE)
+        fname = SYMBOLS_FILE
+        if os.path.exists(fname):
+            f = open(fname)
             lines = f.readlines()
             f.close()
+            lineCount = 0
             for line in lines:
                 # strip comments
                 line = line.split(";")[0]
                 words = string.split(line)
                 if len(words) == 2:
-                    self.symbols[string.atoi(words[0], 16)] = words[1]
+                    try:
+                        self.symbols[string.atoi(words[0], 16)] = words[1]
+                    except ValueError:
+                        error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                 elif len(words) == 3:
-                    addr = string.atoi(words[0], 16)
-                    size = string.atoi(words[1], 16)
+                    try:
+                        addr = string.atoi(words[0], 16)
+                        size = string.atoi(words[1], 16)
+                    except ValueError:
+                        error_exit("couldn't parse address or size in line %d of %s: %s" % (lineCount + 1, fname, line))
                     sym = words[2]
                     if not addr in self.symbolsRange:
                         self.symbolsRange[addr] = []
                     self.symbolsRange[addr].append([size, sym])
 
+                lineCount += 1
 
-        if os.path.exists(FUNCTIONS_FILE):
-            f = open(FUNCTIONS_FILE)
+        fname = FUNCTIONS_FILE
+        if os.path.exists(fname):
+            f = open(fname)
             lines = f.readlines()
             f.close()
             lineCount = 0
@@ -298,18 +328,22 @@ class QvmFile(LEBinFile):
                 if len(words) > 1:
                     if words[0].startswith("arg"):
                         if currentFuncAddr == None:
-                            error("function not defined yet in line %d: %s" % (lineCount + 1, line))
+                            error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
                         if not currentFuncAddr in self.functionsArgLabels:
                             self.functionsArgLabels[currentFuncAddr] = {}
                         self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
                     elif words[0] == "local":
                         if currentFuncAddr == None:
-                            error("function not defined yet in line %d: %s" % (lineCount + 1, line))
+                            error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
                         if len(words) < 3:
-                            error("invalid local specification in line %d: %s" % (lineCount + 1, line))
+                            error_exit("invalid local specification in line %d of %s: %s" % (lineCount + 1, fname, line))
                         if len(words) > 3:  # range specified
-                            localAddr = string.atoi(words[1], 16)
-                            size = string.atoi(words[2], 16)
+                            try:
+                                localAddr = string.atoi(words[1], 16)
+                                size = string.atoi(words[2], 16)
+                            except ValueError:
+                                error_exit("couldn't parse address or size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                             sym = words[3]
                             if not currentFuncAddr in self.functionsLocalRangeLabels:
                                 self.functionsLocalRangeLabels[currentFuncAddr] = {}
@@ -319,31 +353,45 @@ class QvmFile(LEBinFile):
                         else:
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
-                            self.functionsLocalLabels[currentFuncAddr][string.atoi(words[1], 16)] = words[2]
+                            try:
+                                self.functionsLocalLabels[currentFuncAddr][string.atoi(words[1], 16)] = words[2]
+                            except ValueError:
+                                error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     else:
                         # function definition
-                        funcAddr = string.atoi(words[0], 16)
+                        try:
+                            funcAddr = string.atoi(words[0], 16)
+                        except ValueError:
+                            error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                         self.functions[funcAddr] = words[1]
                         currentFuncAddr = funcAddr
 
-                lineCount = lineCount + 1
+                lineCount += 1
 
-        if os.path.exists(CONSTANTS_FILE):
-            f = open(CONSTANTS_FILE)
+        fname = CONSTANTS_FILE
+        if os.path.exists(fname):
+            f = open(fname)
             lines = f.readlines()
             f.close()
+            lineCount = 0
             for line in lines:
                 # strip comments
                 line = line.split(";")[0]
                 words = string.split(line)
                 if len(words) > 2:
-                    codeAddr = string.atoi(words[0], 16)
-                    n = words[1]
-                    val = string.atoi(words[2], 16)
+                    try:
+                        codeAddr = string.atoi(words[0], 16)
+                        n = words[1]
+                        val = string.atoi(words[2], 16)
+                    except ValueError:
+                        error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
                     self.constants[codeAddr] = [n, val]
 
-        if os.path.exists(COMMENTS_FILE):
-            f = open(COMMENTS_FILE)
+                lineCount += 1
+
+        fname = COMMENTS_FILE
+        if os.path.exists(fname):
+            f = open(fname)
             lines = f.readlines()
             f.close()
             lineCount = 0
@@ -360,7 +408,10 @@ class QvmFile(LEBinFile):
                         del words[0]
 
                 if len(words) > 1:
-                    codeAddr = string.atoi(words[0], 16)
+                    try:
+                        codeAddr = string.atoi(words[0], 16)
+                    except ValueError:
+                        error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     commentType = words[1]
 
                     if commentType == "inline":
@@ -374,9 +425,12 @@ class QvmFile(LEBinFile):
                         spaceBefore = 0
                         spaceAfter = 0
                         if len(words) > 2:
-                            spaceBefore = string.atoi(words[2])
-                            if len(words) > 3:
-                                spaceAfter = string.atoi(words[3])
+                            try:
+                                spaceBefore = string.atoi(words[2])
+                                if len(words) > 3:
+                                    spaceAfter = string.atoi(words[3])
+                            except ValueError:
+                                error_exit("couldn't get space before or after value in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                         if spaceBefore > 0  or spaceAfter > 0:
                             if commentType == "before":
@@ -400,7 +454,7 @@ class QvmFile(LEBinFile):
                             else:
                                 self.commentsAfter[codeAddr] = []
 
-                        lineCount = lineCount + 1
+                        lineCount += 1
                         while lineCount < len(lines):
                             line = lines[lineCount]
                             if line[:-1] == "<<<":
@@ -416,11 +470,11 @@ class QvmFile(LEBinFile):
                                         self.dataCommentsAfter[codeAddr].append(line[:-1])
                                     else:
                                         self.commentsAfter[codeAddr].append(line[:-1])
-                            lineCount = lineCount + 1
+                            lineCount += 1
                     else:
-                        error("invalid comment type: %s" % line)
+                        error_exit("invalid comment type in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                lineCount = lineCount + 1
+                lineCount += 1
 
     def print_header (self):
         print "; instruction count: 0x%x" % self.instructionCount
@@ -465,7 +519,7 @@ class QvmFile(LEBinFile):
                 parm = struct.unpack("<l", parmStr)[0]
                 pos += 4
             else:
-                error("FIXME bad opcode size")
+                error_exit("FIXME bad opcode size")
 
             if count in self.jumpPoints:
                 print "\n;----------------------------------- from ",
@@ -815,7 +869,7 @@ class QvmFile(LEBinFile):
                     break
                 else:
                     #FIXME
-                    #error("invalid char: 0x%x" % ord(c))
+                    #error_exit("invalid char: 0x%x" % ord(c))
                     if len(chars) > 0:
                         print "\"%s\"" % string.join (chars, ""),
                         chars = []

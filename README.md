@@ -44,7 +44,8 @@ functions.dat file
 * Comments can be added in comments.dat
 
 The .dat files are opened from the current working directory.  Comments in
-.dat files are specified with ';'.  Values need to be specified as hex.
+.dat files are specified with ';'.  Address and size values need to be
+specified as hex.
 
 ## Format of .dat files:
 
