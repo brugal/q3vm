@@ -4,9 +4,12 @@ import os, string, subprocess, sys
 # converts q3asm .map file to hash map file (.hmap)
 
 def usage ():
-    print "usage: %s <qvm .map file> <qvm file>" % sys.argv[0]
-    print "    example:  %s cgame.map cgame.qvm > cgame-func.hmap" % sys.argv[0]
+    sys.stderr.write("usage: %s <qvm .map file> <qvm file>\n" % sys.argv[0])
+    sys.stderr.write("    example:  %s cgame.map cgame.qvm > cgame-func.hmap\n" % sys.argv[0])
     sys.exit(1)
+
+def output (msg):
+    sys.stdout.write(msg)
 
 def main ():
     if len(sys.argv) < 2:
@@ -48,7 +51,7 @@ def main ():
     k.sort ()
 
     for addr in k:
-        print "0x%x %s %s" % (addr, names[addr], hashes[addr])
+        output("0x%x %s %s\n" % (addr, names[addr], hashes[addr]))
 
 if __name__ == "__main__":
     main ()

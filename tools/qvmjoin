@@ -23,7 +23,7 @@ import sys, string, struct
 QVM_MAGIC = 0x12721444
 
 def usage ():
-    print "%s <output qvm name>" % sys.argv[0]
+    sys.stderr.write("%s <output qvm name>\n" % sys.argv[0])
     sys.exit (1)
 
 def main ():
@@ -36,7 +36,6 @@ def main ():
     line = lines[1]
     words = string.split(line)
     bssSegLength = string.atoi(words[-1])
-    #print "0x%x" % bssSegLength
 
     f = open("x.code")
     codeData = f.read()
@@ -59,7 +58,7 @@ def main ():
             parmStr = None
         pos = pos + psize
 
-    #print "0x%x  %d instructions" % (ins, ins)
+    #output"0x%x  %d instructions\n" % (ins, ins))
 
     f = open("x.data")
     dataData = f.read()

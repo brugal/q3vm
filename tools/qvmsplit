@@ -20,11 +20,12 @@
 import sys
 #from LEBinFile import LEBinFile
 from QvmFile import QvmFile
+import sys
 
 QVM_MAGIC = 0x12721444
 
 def usage ():
-    print "%s <qvm file>" % sys.argv[0]
+    sys.stderr.write("%s <qvm file>\n" % sys.argv[0])
     sys.exit (1)
 
 def main ():

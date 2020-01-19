@@ -26,7 +26,10 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
 from LEBinFile import LEBinFile
-import string
+import string, sys
+
+def output (msg):
+    sys.stdout.write(msg)
 
 # q3vm_specs.html wrong about header
 
@@ -134,14 +137,14 @@ class QvmFile(LEBinFile):
         self.litData = self.read(self.litSegLength)
 
     def print_header (self):
-        print "instruction count: 0x%x" % self.instructionCount
-        print "CODE seg offset: 0x%08x  length: 0x%x  %d" % (self.codeSegOffset, self.codeSegLength, self.codeSegLength)
-        print "DATA seg offset: 0x%08x  length: 0x%x  %d" % (self.dataSegOffset, self.dataSegLength, self.dataSegLength)
-        print "LIT  seg offset: 0x%08x  length: 0x%x  %d" % (self.litSegOffset, self.litSegLength, self.litSegLength)
-        print "BSS  seg offset: 0x%08x  length: 0x%x  %d" % (self.bssSegOffset, self.bssSegLength, self.bssSegLength)
+        output("instruction count: 0x%x\n" % self.instructionCount)
+        output("CODE seg offset: 0x%08x  length: 0x%x  %d\n" % (self.codeSegOffset, self.codeSegLength, self.codeSegLength))
+        output("DATA seg offset: 0x%08x  length: 0x%x  %d\n" % (self.dataSegOffset, self.dataSegLength, self.dataSegLength))
+        output("LIT  seg offset: 0x%08x  length: 0x%x  %d\n" % (self.litSegOffset, self.litSegLength, self.litSegLength))
+        output("BSS  seg offset: 0x%08x  length: 0x%x  %d\n" % (self.bssSegOffset, self.bssSegLength, self.bssSegLength))
 
     def print_code_disassembly (self):
-        print "/* Code Segment */"
+        output("/* Code Segment */\n")
         self.seek (self.codeSegOffset)
         count = 0
         while count <= self.instructionCount:
@@ -162,21 +165,21 @@ class QvmFile(LEBinFile):
             elif psize == 4:
                 parm = self.read_int()
             else:
-                print "FIXME bad opcode size"
+                output("FIXME bad opcode size\n")
                 sys.exit (1)
 
             if name == "enter":
-                print ""
+                output("\n")
                 if (count - 1) in self.functions:
-                    print "%s ()" % self.functions[count - 1]
-                print "========================"
+                    output("%s ()\n" % self.functions[count - 1])
+                output("========================\n")
             elif name == "const":
                 origPos = self.tell()
                 nextOp = self.read_byte()
                 self.seek (origPos)
 
                 if parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
-                    #print "\"%s\"" % litData[parm - self.dataSegLength]
+                    #output("\"%s\"\n" % litData[parm - self.dataSegLength])
                     chars = []
                     i = 0
                     while 1:
@@ -190,15 +193,14 @@ class QvmFile(LEBinFile):
                         else:
                             chars.append (c)
                         i = i + 1
-                    print "\n  \"%s\"" % string.join(chars, "")
+                    output("\n  \"%s\"\n" % string.join(chars, ""))
                 elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     b0 = self.dataData[parm]
                     b1 = self.dataData[parm + 1]
                     b2 = self.dataData[parm + 2]
                     b3 = self.dataData[parm + 3]
 
-                    #print "\n  %02x %02x %02x %02x  (0x%x)" % (ord
-                    print "\n  %02x %02x %02x %02x  (0x%x)" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0])
+                    output("\n  %02x %02x %02x %02x  (0x%x)\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
@@ -209,40 +211,37 @@ class QvmFile(LEBinFile):
                     elif parm in self.functions:
                         comment = "%s ()" % self.functions[parm]
 
-            #print "%08x  %-8s" % (pos - self.codeSegOffset, name),
-            print "%08x  %-13s" % (count - 1, name),
+            output("%08x  %-13s " % (count - 1, name))
             if parm != None:
                 if parm < 0:
-                    print " -0x%x" % -parm,
+                    output(" -0x%x " % -parm)
                 else:
-                    print "  0x%x" % parm,
+                    output("  0x%x " % parm)
             if comment:
-                print "  // %s" % comment
+                output("  // %s\n" % comment)
             else:
-                print ""
-            #print "%d/%d" % (count, self.instrCount)
-        #print "%d  %d (%d %d)" % (self.tell(), self.codeSegOffset + self.codeSegLength, self.codeSegOffset, self.codeSegLength)
+                output("\n")
 
     def print_data_disassembly (self):
-        print "/* Data Segment */"
+        output("/* Data Segment */\n")
         i = 0
         while i < self.dataSegLength:
-            print "0x%08x  " % i,
+            output("0x%08x   " % i)
             b0 = self.dataData[i]
             b1 = self.dataData[i + 1]
             b2 = self.dataData[i + 2]
             b3 = self.dataData[i + 3]
 
-            print "%02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0])
+            output("%02x %02x %02x %02x    0x%x\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0]))
 
             i = i + 4
 
     def print_lit_disassembly (self):
-        print "/* Lit Segment */"
+        output("/* Lit Segment */\n")
         pos = self.dataSegLength
         offset = 0
         while offset < self.litSegLength:
-            print "0x%08x " % (offset + pos),
+            output("0x%08x  " % (offset + pos))
             chars = []
             i = 0
             while 1:
@@ -254,19 +253,18 @@ class QvmFile(LEBinFile):
                 elif ord(c) > 31  and  ord(c) < 127:
                     chars.append (c)
                 elif c == '\0'  or  offset + i >= self.litSegLength:
-                    print "\"%s\"" %  string.join(chars, "")
+                    output("\"%s\"\n" %  string.join(chars, ""))
                     offset = offset + i
                     break
                 else:
                     #FIXME
-                    #print "invalid char: 0x%x" % ord(c)
+                    #output("invalid char: 0x%x\n" % ord(c))
                     #sys.exit (1)
                     if len(chars) > 0:
-                        print "\"%s\"" % string.join (chars, ""),
+                        output("\"%s\" " % string.join (chars, ""))
                         chars = []
-                    print " 0x%x " % ord(c),
+                    output(" 0x%x  " % ord(c))
                     pass
-
 
                 i = i + 1
 
@@ -288,10 +286,8 @@ class QvmFile(LEBinFile):
             else:
                 parmStr = None
             pos = pos + psize
-            #print opcStr,
             code.append(opcStr)
             if parmStr:
-                #print parmStr,
                 code.append(parmStr)
 
         return string.join(code, "")
