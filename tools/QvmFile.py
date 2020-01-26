@@ -112,10 +112,10 @@ class QvmFile(LEBinFile):
     magic = 0x12721444
 
     def __init__ (self, fname):
-        self._file = open(fname)
+        self._file = open(fname, "rb")
         m = self.read_int()
         if m != self.magic:
-            raise InvalidQvmFile, "not a valid qvm file  0x%x != 0x%x" % (m, self.magic)
+            raise InvalidQvmFile("not a valid qvm file  0x%x != 0x%x" % (m, self.magic))
 
         self.instructionCount = self.read_int()
         self.codeSegOffset = self.read_int()
@@ -261,7 +261,7 @@ class QvmFile(LEBinFile):
                     #output("invalid char: 0x%x\n" % ord(c))
                     #sys.exit (1)
                     if len(chars) > 0:
-                        output("\"%s\" " % string.join (chars, ""))
+                        output("\"%s\" " % string.join(chars, ""))
                         chars = []
                     output(" 0x%x  " % ord(c))
                     pass
@@ -290,7 +290,7 @@ class QvmFile(LEBinFile):
             if parmStr:
                 code.append(parmStr)
 
-        return string.join(code, "")
+        return "".join(code)
 
     def close (self):
         self._file.close()

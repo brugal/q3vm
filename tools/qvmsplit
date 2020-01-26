@@ -40,20 +40,20 @@ def main ():
     f.write ("bss segment length: %d\n" % qvm.bssSegLength)
     f.close()
 
-    fcodew = open("x.code", "w")
+    fcodew = open("x.code", "wb")
     # unpadded code
     fcodew.write(qvm.get_code())
     fcodew.close()
 
-    fcode = open("xpadded.code", "w")
+    fcode = open("xpadded.code", "wb")
     fcode.write(qvm.codeData[:qvm.codeSegLength])
     fcode.close()
 
-    fdata = open("x.data", "w")
+    fdata = open("x.data", "wb")
     fdata.write (qvm.dataData[:qvm.dataSegLength])
     fdata.close()
 
-    flit = open("x.lit", "w")
+    flit = open("x.lit", "wb")
     flit.write (qvm.litData[:qvm.litSegLength])
     flit.close()
 

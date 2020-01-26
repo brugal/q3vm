@@ -18,9 +18,12 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 
 from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE
-import sys, string, struct
+import sys, struct
 
 QVM_MAGIC = 0x12721444
+
+def atoi (s, base=10):
+    return int(s, base)
 
 def usage ():
     sys.stderr.write("%s <output qvm name>\n" % sys.argv[0])
@@ -34,10 +37,10 @@ def main ():
     lines = f.readlines()
     f.close()
     line = lines[1]
-    words = string.split(line)
-    bssSegLength = string.atoi(words[-1])
+    words = line.split()
+    bssSegLength = atoi(words[-1])
 
-    f = open("x.code")
+    f = open("x.code", "rb")
     codeData = f.read()
     f.close()
 
@@ -60,11 +63,11 @@ def main ():
 
     #output"0x%x  %d instructions\n" % (ins, ins))
 
-    f = open("x.data")
+    f = open("x.data", "rb")
     dataData = f.read()
     f.close()
 
-    f = open("x.lit")
+    f = open("x.lit", "rb")
     litData = f.read()
     f.close()
 
@@ -75,7 +78,7 @@ def main ():
     codeSegOffset = 0x20
     dataSegOffset = codeSegOffset + codeSegLength
 
-    of = open(sys.argv[1], "w")
+    of = open(sys.argv[1], "wb")
     #of.write ('\x44\x14\x72\x12')  # qvm magic 0x12721444
     of.write(struct.pack("<l", QVM_MAGIC))
     of.write(struct.pack("<l", ins))   # instruction count
