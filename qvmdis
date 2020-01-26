@@ -824,7 +824,7 @@ class QvmFile(LEBinFile):
                     for i in range(self.dataCommentsAfterSpacing[count][0]):
                         output("\n")
                 for line in self.dataCommentsAfter[count]:
-                    outout("; %s\n" % line)
+                    output("; %s\n" % line)
                 if count in self.dataCommentsAfterSpacing:
                     for i in range(self.dataCommentsAfterSpacing[count][1]):
                         output("\n")
