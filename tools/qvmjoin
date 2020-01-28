@@ -27,11 +27,11 @@ def atoi (s, base=10):
 
 def usage ():
     sys.stderr.write("%s <output qvm name>\n" % sys.argv[0])
-    sys.exit (1)
+    sys.exit(1)
 
 def main ():
     if len(sys.argv) < 2:
-        usage ()
+        usage()
 
     f = open("header-info.txt")
     lines = f.readlines()
@@ -72,9 +72,20 @@ def main ():
     litData = f.read()
     f.close()
 
-    codeSegLength = len(codeData) + len(codeData) % 4
-    dataSegLength = len(dataData) + len(dataData) % 4
-    litSegLength = len(litData) + len(litData) % 4
+    codePadding = 0
+    if (len(codeData) % 4) != 0:
+        codePadding = 4 - (len(codeData) % 4)
+    codeSegLength = len(codeData) + codePadding
+
+    dataPadding = 0
+    if (len(dataData) % 4) != 0:
+        dataPadding = 4 - (len(dataData) % 4)
+    dataSegLength = len(dataData) + dataPadding
+
+    litPadding = 0
+    if (len(litData) % 4) != 0:
+        litPadding = 4 - (len(litData) % 4)
+    litSegLength = len(litData) + litPadding
 
     codeSegOffset = 0x20
     dataSegOffset = codeSegOffset + codeSegLength
@@ -91,13 +102,13 @@ def main ():
     of.write(struct.pack("<l", bssSegLength))
 
     of.write(codeData)
-    of.write(b'\x00' * (len(codeData) % 4))
+    of.write(b'\x00' * codePadding)
 
     of.write(dataData)
-    of.write(b'\x00' * (len(dataData) % 4))
+    of.write(b'\x00' * dataPadding)
 
     of.write(litData)
-    of.write(b'\x00' * (len(litData) % 4))
+    of.write(b'\x00' * litPadding)
     of.close()
 
 if __name__ == "__main__":
