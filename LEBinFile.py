@@ -19,6 +19,29 @@
 # little endian binary file
 import struct
 
+# python 3 byte string ord() and chr() compatibility
+#
+#  s = b'\x00\x01\x02\x03'
+#    python 2:  b[0] is '\x00'
+#    python 3:  b[0] is 0
+#
+# slices are ok:  s[0:2] is b'\x00\x01' in both versions
+#
+# probably would have been easier to always access as slice to get a byte
+# string instead of xord() and xchr().  Ex:  s[0:1] instead of s[0]
+
+def xord (s):
+    if isinstance(s, int):
+        return s
+    else:
+        return ord(s)
+
+def xchr (i):
+    if isinstance(i, str):
+        return i
+    else:
+        return chr(i)
+
 class LEBinFile:
     def __init__ (self, fname):
         self._file = open(fname, "rb")
@@ -32,7 +55,7 @@ class LEBinFile:
         return w
 
     def read_byte (self):
-        return ord(self.read())
+        return xord(self.read())
 
     def read_char (self):
         return self.read()

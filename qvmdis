@@ -47,6 +47,29 @@ def hash32BitSigned (str):
 def atoi (s, base=10):
     return int(s, base)
 
+# python 3 byte string ord() and chr() compatibility
+#
+#  s = b'\x00\x01\x02\x03'
+#    python 2:  b[0] is '\x00'
+#    python 3:  b[0] is 0
+#
+# slices are ok:  s[0:2] is b'\x00\x01' in both versions
+#
+# probably would have been easier to always access as slice to get a byte
+# string instead of xord() and xchr().  Ex:  s[0:1] instead of s[0]
+
+def xord (s):
+    if isinstance(s, int):
+        return s
+    else:
+        return ord(s)
+
+def xchr (i):
+    if isinstance(i, str):
+        return i
+    else:
+        return chr(i)
+
 # q3vm_specs.html wrong about header
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -184,14 +207,14 @@ class QvmFile(LEBinFile):
 
         self.seek (self.codeSegOffset)
         self.codeData = self.read(self.codeSegLength)
-        self.codeData = self.codeData + "\x00\x00\x00\x00\x00"  # for look ahead
+        self.codeData = self.codeData + b"\x00\x00\x00\x00\x00"  # for look ahead
         self.seek (self.dataSegOffset)
         self.dataData = self.read(self.dataSegLength)
-        self.dataData = self.dataData + "\x00\x00\x00\x00"  # for look ahead
+        self.dataData = self.dataData + b"\x00\x00\x00\x00"  # for look ahead
 
         self.seek (self.litSegOffset)
         self.litData = self.read(self.litSegLength)
-        self.litData = self.litData + "\x00\x00\x00\x00"  # for look ahead
+        self.litData = self.litData + b"\x00\x00\x00\x00"  # for look ahead
 
         self.syscalls = {}  # num:int -> name:str
         self.functions = {}  # addr:int -> name:str
@@ -499,7 +522,7 @@ class QvmFile(LEBinFile):
 
             comment = None
             opcStr = self.codeData[pos]
-            opc = ord(opcStr)
+            opc = xord(opcStr)
             pos += 1
             name = opcodes[opc][OP_NAME]
             psize = opcodes[opc][OP_PARM_SIZE]
@@ -518,7 +541,7 @@ class QvmFile(LEBinFile):
                 parm = None
             elif psize == 1:
                 parmStr = self.codeData[pos]
-                parm = ord(parmStr)
+                parm = xord(parmStr)
                 pos += 1
             elif psize == 4:
                 parmStr = self.codeData[pos : pos + psize]
@@ -631,7 +654,7 @@ class QvmFile(LEBinFile):
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
             elif name == "const":
-                nextOp = ord(self.codeData[pos])
+                nextOp = xord(self.codeData[pos])
 
                 if count in self.constants:
                     if parm != self.constants[count][1]:
@@ -643,24 +666,26 @@ class QvmFile(LEBinFile):
                     chars = []
                     i = 0
                     while 1:
-                        c = self.litData[parm - self.dataSegLength + i]
-                        if c == '\0':
+                        c = xord(self.litData[parm - self.dataSegLength + i])
+                        if c == xord(b'\0'):
                             break
-                        elif c == '\n':
-                            chars.extend (('\\', 'n'))
-                        elif c == '\t':
-                            chars.extend (('\\', 't'))
+                        elif c == xord(b'\n'):
+                            chars.extend(('\\', 'n'))
+                        elif c == xord(b'\t'):
+                            chars.extend(('\\', 't'))
+                        elif c > 31  and  c < 127:
+                            chars.append(xchr(c))
                         else:
-                            chars.append (c)
+                            chars.extend(('\\', 'x', "%x" % c))
                         i += 1
-                    output("\n  ; \"%s\"\n" % string.join(chars, ""))
+                    output("\n  ; \"%s\"\n" % "".join(chars))
                 elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
-                    b0 = self.dataData[parm]
-                    b1 = self.dataData[parm + 1]
-                    b2 = self.dataData[parm + 2]
-                    b3 = self.dataData[parm + 3]
+                    b0 = xchr(self.dataData[parm])
+                    b1 = xchr(self.dataData[parm + 1])
+                    b2 = xchr(self.dataData[parm + 2])
+                    b3 = xchr(self.dataData[parm + 3])
 
-                    output("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
+                    output("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
@@ -812,7 +837,7 @@ class QvmFile(LEBinFile):
             b2 = self.dataData[count + 2]
             b3 = self.dataData[count + 3]
 
-            output(" %02x %02x %02x %02x    0x%x" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[count:count+4])[0]))
+            output(" %02x %02x %02x %02x    0x%x" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[count:count+4])[0]))
             if count in self.dataCommentsInline:
                 output("  ; %s" % self.dataCommentsInline[count])
 
@@ -850,15 +875,15 @@ class QvmFile(LEBinFile):
             chars = []
             i = 0
             while 1:
-                c = self.litData[offset + i]
-                if c == '\n':
-                    chars.extend (('\\', 'n'))
-                elif c == '\t':
-                    chars.extend (('\\', 't'))
-                elif ord(c) > 31  and  ord(c) < 127:
-                    chars.append (c)
-                elif c == '\0'  or  offset + i >= self.litSegLength:
-                    output("\"%s\"" %  string.join(chars, ""))
+                c = xord(self.litData[offset + i])
+                if c == xord(b'\n'):
+                    chars.extend(('\\', 'n'))
+                elif c == xord(b'\t'):
+                    chars.extend(('\\', 't'))
+                elif xord(c) > 31  and  xord(c) < 127:
+                    chars.append(xchr(c))
+                elif c == xord(b'\0')  or  offset + i >= self.litSegLength:
+                    output("\"%s\"" %  "".join(chars))
 
                     if count in self.dataCommentsInline:
                         output("  ; %s" % self.dataCommentsInline[count])
@@ -880,11 +905,11 @@ class QvmFile(LEBinFile):
                     break
                 else:
                     #FIXME
-                    #error_exit("invalid char: 0x%x" % ord(c))
+                    #error_exit("invalid char: 0x%x" % xord(c))
                     if len(chars) > 0:
-                        output("\"%s\" " % string.join (chars, ""))
+                        output("\"%s\" " % "".join(chars))
                         chars = []
-                    output(" 0x%x  " % ord(c))
+                    output(" 0x%x  " % xord(c))
 
                 i += 1
 
@@ -918,8 +943,8 @@ class QvmFile(LEBinFile):
             prevParmStr = parmStr
             prevParm = parm
 
-            opcStr = self.codeData[pos]
-            opc = ord(opcStr)
+            opcStr = xchr(self.codeData[pos])
+            opc = xord(opcStr)
             funcInsCount += 1
             funcHashSum += "%d" % opc
             pos += 1
@@ -928,7 +953,7 @@ class QvmFile(LEBinFile):
             if psize:
                 parmStr = self.codeData[pos : pos + psize]
                 if psize == 1:
-                    parm = ord(parmStr)
+                    parm = xord(parmStr)
                 elif psize == 4:
                     parm = struct.unpack("<l", parmStr)[0]
                 else:

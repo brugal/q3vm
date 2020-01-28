@@ -49,7 +49,8 @@ def main ():
     while 1:
         if pos >= len(codeData):
             break
-        opcStr = codeData[pos]
+        # use slice to get byte string in python 3
+        opcStr = codeData[pos : pos + 1]
         opc = ord(opcStr)
         ins = ins + 1
         pos = pos + 1
@@ -79,7 +80,7 @@ def main ():
     dataSegOffset = codeSegOffset + codeSegLength
 
     of = open(sys.argv[1], "wb")
-    #of.write ('\x44\x14\x72\x12')  # qvm magic 0x12721444
+    #of.write (b'\x44\x14\x72\x12')  # qvm magic 0x12721444
     of.write(struct.pack("<l", QVM_MAGIC))
     of.write(struct.pack("<l", ins))   # instruction count
     of.write(struct.pack("<l", codeSegOffset))
@@ -90,13 +91,13 @@ def main ():
     of.write(struct.pack("<l", bssSegLength))
 
     of.write(codeData)
-    of.write('\x00' * (len(codeData) % 4))
+    of.write(b'\x00' * (len(codeData) % 4))
 
     of.write(dataData)
-    of.write('\x00' * (len(dataData) % 4))
+    of.write(b'\x00' * (len(dataData) % 4))
 
     of.write(litData)
-    of.write('\x00' * (len(litData) % 4))
+    of.write(b'\x00' * (len(litData) % 4))
     of.close()
 
 if __name__ == "__main__":

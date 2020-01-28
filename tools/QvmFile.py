@@ -20,16 +20,39 @@
 # allow importing from parent directory
 # https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
 #  answered Jun 22 '12 at 14:30  Remi
-import os, sys, inspect
+import inspect, os, sys
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
 from LEBinFile import LEBinFile
-import string, sys
+import sys
 
 def output (msg):
     sys.stdout.write(msg)
+
+# python 3 byte string ord() and chr() compatibility
+#
+#  s = b'\x00\x01\x02\x03'
+#    python 2:  b[0] is '\x00'
+#    python 3:  b[0] is 0
+#
+# slices are ok:  s[0:2] is b'\x00\x01' in both versions
+#
+# probably would have been easier to always access as slice to get a byte
+# string instead of xord() and xchr().  Ex:  s[0:1] instead of s[0]
+
+def xord (s):
+    if isinstance(s, int):
+        return s
+    else:
+        return ord(s)
+
+def xchr (i):
+    if isinstance(i, str):
+        return i
+    else:
+        return chr(i)
 
 # q3vm_specs.html wrong about header
 
@@ -183,24 +206,24 @@ class QvmFile(LEBinFile):
                     chars = []
                     i = 0
                     while 1:
-                        c = self.litData[parm - self.dataSegLength + i]
-                        if c == '\0':
+                        c = xord(self.litData[parm - self.dataSegLength + i])
+                        if c == xord(b'\0'):
                             break
-                        elif c == '\n':
-                            chars.extend (('\\', 'n'))
-                        elif c == '\t':
-                            chars.extend (('\\', 't'))
+                        elif c == xord(b'\n'):
+                            chars.extend(('\\', 'n'))
+                        elif c == xord(b'\t'):
+                            chars.extend(('\\', 't'))
                         else:
-                            chars.append (c)
+                            chars.append(xchr(c))
                         i = i + 1
-                    output("\n  \"%s\"\n" % string.join(chars, ""))
+                    output("\n  \"%s\"\n" % "".join(chars))
                 elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     b0 = self.dataData[parm]
                     b1 = self.dataData[parm + 1]
                     b2 = self.dataData[parm + 2]
                     b3 = self.dataData[parm + 3]
 
-                    output("\n  %02x %02x %02x %02x  (0x%x)\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
+                    output("\n  %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
 
                     if parm in self.symbols:
                         comment = self.symbols[parm]
@@ -232,7 +255,7 @@ class QvmFile(LEBinFile):
             b2 = self.dataData[i + 2]
             b3 = self.dataData[i + 3]
 
-            output("%02x %02x %02x %02x    0x%x\n" % (ord(b0), ord(b1), ord(b2), ord(b3), struct.unpack("<L", self.dataData[i:i+4])[0]))
+            output("%02x %02x %02x %02x    0x%x\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[i:i+4])[0]))
 
             i = i + 4
 
@@ -245,25 +268,25 @@ class QvmFile(LEBinFile):
             chars = []
             i = 0
             while 1:
-                c = self.litData[offset + i]
-                if c == '\n':
-                    chars.extend (('\\', 'n'))
-                elif c == '\t':
-                    chars.extend (('\\', 't'))
-                elif ord(c) > 31  and  ord(c) < 127:
-                    chars.append (c)
-                elif c == '\0'  or  offset + i >= self.litSegLength:
-                    output("\"%s\"\n" %  string.join(chars, ""))
+                c = xord(self.litData[offset + i])
+                if c == xord(b'\n'):
+                    chars.extend(('\\', 'n'))
+                elif c == xord(b'\t'):
+                    chars.extend(('\\', 't'))
+                elif xord(c) > 31  and  xord(c) < 127:
+                    chars.append(xchr(c))
+                elif c == xord(b'\0')  or  offset + i >= self.litSegLength:
+                    output("\"%s\"\n" %  "".join(chars))
                     offset = offset + i
                     break
                 else:
                     #FIXME
-                    #output("invalid char: 0x%x\n" % ord(c))
+                    #output("invalid char: 0x%x\n" % xord(c))
                     #sys.exit (1)
                     if len(chars) > 0:
-                        output("\"%s\" " % string.join(chars, ""))
+                        output("\"%s\" " % "".join(chars))
                         chars = []
-                    output(" 0x%x  " % ord(c))
+                    output(" 0x%x  " % xord(c))
                     pass
 
                 i = i + 1
@@ -275,8 +298,9 @@ class QvmFile(LEBinFile):
         ins = 0
         pos = 0
         while ins < self.instructionCount:
-            opcStr = self.codeData[pos]
-            opc = ord(opcStr)
+            # use a slice so you get a byte string in python 3
+            opcStr = self.codeData[pos:pos + 1]
+            opc = xord(opcStr)
             ins = ins + 1
             pos = pos + 1
             name = opcodes[opc][OP_NAME]
@@ -290,7 +314,7 @@ class QvmFile(LEBinFile):
             if parmStr:
                 code.append(parmStr)
 
-        return "".join(code)
+        return b"".join(code)
 
     def close (self):
         self._file.close()
