@@ -280,9 +280,7 @@ class QvmFile(LEBinFile):
                     offset = offset + i
                     break
                 else:
-                    #FIXME
-                    #output("invalid char: 0x%x\n" % xord(c))
-                    #sys.exit (1)
+                    # not printable (< 31 or > 127) and not tab or newline
                     if len(chars) > 0:
                         output("\"%s\" " % "".join(chars))
                         chars = []
