@@ -55,5 +55,4 @@ def main ():
         output("0x%x %s %s\n" % (addr, names[addr], hashes[addr]))
 
 if __name__ == "__main__":
-    main ()
-
+    main()

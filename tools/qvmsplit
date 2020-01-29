@@ -38,11 +38,11 @@ def main ():
         usage ()
 
     qvm = QvmFile(sys.argv[1])
-    qvm.print_header ()
+    qvm.print_header()
 
     f = open("header-info.txt", "w")
-    f.write ("instruction count: %d\n" % qvm.instructionCount)
-    f.write ("bss segment length: %d\n" % qvm.bssSegLength)
+    f.write("instruction count: %d\n" % qvm.instructionCount)
+    f.write("bss segment length: %d\n" % qvm.bssSegLength)
     f.close()
 
     fcodew = open("x.code", "wb")
@@ -55,14 +55,14 @@ def main ():
     fcode.close()
 
     fdata = open("x.data", "wb")
-    fdata.write (qvm.dataData[:qvm.dataSegLength])
+    fdata.write(qvm.dataData[:qvm.dataSegLength])
     fdata.close()
 
     flit = open("x.lit", "wb")
-    flit.write (qvm.litData[:qvm.litSegLength])
+    flit.write(qvm.litData[:qvm.litSegLength])
     flit.close()
 
     qvm.close()
 
 if __name__ == "__main__":
-    main ()
+    main()

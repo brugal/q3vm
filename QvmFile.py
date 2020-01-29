@@ -196,14 +196,14 @@ class QvmFile(LEBinFile):
         self.bssSegOffset = self.dataSegOffset + self.dataSegLength + self.litSegLength
         self.bssSegLength = self.read_int()
 
-        self.seek (self.codeSegOffset)
+        self.seek(self.codeSegOffset)
         self.codeData = self.read(self.codeSegLength)
         self.codeData = self.codeData + b"\x00\x00\x00\x00\x00"  # for look ahead
-        self.seek (self.dataSegOffset)
+        self.seek(self.dataSegOffset)
         self.dataData = self.read(self.dataSegLength)
         self.dataData = self.dataData + b"\x00\x00\x00\x00"  # for look ahead
 
-        self.seek (self.litSegOffset)
+        self.seek(self.litSegOffset)
         self.litData = self.read(self.litSegLength)
         self.litData = self.litData + b"\x00\x00\x00\x00"  # for look ahead
 
@@ -970,7 +970,7 @@ class QvmFile(LEBinFile):
                     h = hash32BitSigned(funcHashSum)
                     self.functionHashes[funcStartInsNum] = h
                     if h in self.functionRevHashes:
-                        self.functionRevHashes[h].append (funcStartInsNum)
+                        self.functionRevHashes[h].append(funcStartInsNum)
                     else:
                         self.functionRevHashes[h] = [funcStartInsNum]
                     self.functionMaxArgsCalled[funcStartInsNum] = maxArgs
@@ -983,18 +983,18 @@ class QvmFile(LEBinFile):
             elif opcodes[opc][OP_NAME] == "jump":
                 if opcodes[prevOpc][OP_NAME] == "const":
                     if prevParm in self.jumpPoints:
-                        self.jumpPoints[prevParm].append (ins)
+                        self.jumpPoints[prevParm].append(ins)
                     else:
                         self.jumpPoints[prevParm] = [ins]
             elif opcodes[opc][OP_JUMP_PARM]:
                 if parm in self.jumpPoints:
-                    self.jumpPoints[parm].append (ins)
+                    self.jumpPoints[parm].append(ins)
                 else:
                     self.jumpPoints[parm] = [ins]
             elif name == "call":
                 if opcodes[prevOpc][OP_NAME] == "const":
                     if prevParm in self.callPoints:
-                        self.callPoints[prevParm].append (funcStartInsNum)
+                        self.callPoints[prevParm].append(funcStartInsNum)
                     else:
                         self.callPoints[prevParm] = [funcStartInsNum]
                     if prevParm in self.functionParmNum:
@@ -1008,7 +1008,7 @@ class QvmFile(LEBinFile):
         h = hash32BitSigned(funcHashSum)
         self.functionHashes[funcStartInsNum] = h
         if h in self.functionRevHashes:
-            self.functionRevHashes[h].append (funcStartInsNum)
+            self.functionRevHashes[h].append(funcStartInsNum)
         else:
             self.functionRevHashes[h] = [funcStartInsNum]
         self.functionMaxArgsCalled[funcStartInsNum] = maxArgs
