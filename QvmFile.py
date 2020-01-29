@@ -654,22 +654,9 @@ class QvmFile(LEBinFile):
                         comment = self.constants[count][0]
 
                 elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
-                    chars = []
-                    i = 0
-                    while 1:
-                        c = xord(self.litData[parm - self.dataSegLength + i])
-                        if c == xord(b'\0'):
-                            break
-                        elif c == xord(b'\n'):
-                            chars.extend(('\\', 'n'))
-                        elif c == xord(b'\t'):
-                            chars.extend(('\\', 't'))
-                        elif c > 31  and  c < 127:
-                            chars.append(xchr(c))
-                        else:
-                            chars.extend(('\\', 'x', "%x" % c))
-                        i += 1
-                    output("\n  ; \"%s\"\n" % "".join(chars))
+                    output("\n  ; ")
+                    self.print_lit_string(parm)
+                    output("\n");
                 elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
                     b0 = xchr(self.dataData[parm])
                     b1 = xchr(self.dataData[parm + 1])
@@ -863,45 +850,32 @@ class QvmFile(LEBinFile):
                         output("\n")
 
             output("0x%08x  " % (offset + pos))
-            chars = []
+            self.print_lit_string(offset + self.dataSegLength)
+
+            if count in self.dataCommentsInline:
+                output("  ; %s" % self.dataCommentsInline[count])
+
+            # finish printing line
+            output("\n")
+
+            # skip string data
             i = 0
             while 1:
                 c = xord(self.litData[offset + i])
-                if c == xord(b'\n'):
-                    chars.extend(('\\', 'n'))
-                elif c == xord(b'\t'):
-                    chars.extend(('\\', 't'))
-                elif xord(c) > 31  and  xord(c) < 127:
-                    chars.append(xchr(c))
-                elif c == xord(b'\0')  or  offset + i >= self.litSegLength:
-                    output("\"%s\"" %  "".join(chars))
-
-                    if count in self.dataCommentsInline:
-                        output("  ; %s" % self.dataCommentsInline[count])
-
-                    # finish printing line
-                    output("\n")
-
-                    if count in self.dataCommentsAfter:
-                        if count in self.dataCommentsAfterSpacing:
-                            for j in range(self.dataCommentsAfterSpacing[count][0]):
-                                output("\n")
-                        for line in self.dataCommentsAfter[count]:
-                            output("; %s\n" % line)
-                        if count in self.dataCommentsAfterSpacing:
-                            for j in range(self.dataCommentsAfterSpacing[count][1]):
-                                output("\n")
-
-                    offset = offset + i
+                if c == xord(b'\0')  or  offset + i >= self.litSegLength:
                     break
-                else:
-                    # not printable (< 31 or > 127) and not tab or newline
-                    if len(chars) > 0:
-                        output("\"%s\" " % "".join(chars))
-                        chars = []
-                    output(" 0x%x  " % xord(c))
-
                 i += 1
+            offset += i
+
+            if count in self.dataCommentsAfter:
+                if count in self.dataCommentsAfterSpacing:
+                    for j in range(self.dataCommentsAfterSpacing[count][0]):
+                        output("\n")
+                for line in self.dataCommentsAfter[count]:
+                    output("; %s\n" % line)
+                if count in self.dataCommentsAfterSpacing:
+                    for j in range(self.dataCommentsAfterSpacing[count][1]):
+                        output("\n")
 
             offset += 1
 
@@ -1046,3 +1020,50 @@ class QvmFile(LEBinFile):
                 code.append(parmStr)
 
         return b"".join(code)
+
+    def print_lit_string (self, addr):
+        offset = addr - self.dataSegLength
+        i = 0
+        lastCharPrintable = False
+        while 1:
+            c = xord(self.litData[offset + i])
+            if c == xord(b'\0')  or  offset + i >= self.litSegLength:
+                break
+
+            # close previous quote if non-printable, or add quote if starting new printable sequence
+            if c > 31  and  c < 127:
+                if not lastCharPrintable:
+                    if i != 0:  # no space if this starts everything
+                        output(" ")
+                    output("\"")
+                lastCharPrintable = True
+            else:  # not printable
+                if lastCharPrintable:
+                    output("\" ")
+                lastCharPrintable = False
+
+            if c > 31  and  c < 127:
+                output(xchr(c))
+            elif c == xord(b'\a'):
+                output("\\a")
+            elif c == xord(b'\b'):
+                output("\\b")
+            elif c == xord(b'\t'):
+                output("\\t")
+            elif c == xord(b'\n'):
+                output("\\n")
+            elif c == xord(b'\v'):
+                output("\\v")
+            elif c == xord(b'\f'):
+                output("\\f")
+            elif c == xord(b'\r'):
+                output("\\r")
+            else:
+                output("\\x%02x" % c)
+
+            i += 1
+
+        if i == 0:
+            output("\"\"")  # empty string
+        elif lastCharPrintable:
+            output("\"")  # close quote
