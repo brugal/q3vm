@@ -32,15 +32,6 @@ def usage ():
 def output (msg):
     sys.stdout.write(msg)
 
-def error_msg (msg):
-    # send to both stdout and stderr since output is usually redirected to file
-    sys.stdout.write("---- error occurred : %s\n" % msg)
-    sys.stderr.write("ERROR: %s\n" % msg)
-
-def error_exit (msg, exitValue = 1):
-    error_msg(msg)
-    sys.exit(exitValue)
-
 def main ():
     onlyPrintFunctionHashes = False
     qvmFile = None
