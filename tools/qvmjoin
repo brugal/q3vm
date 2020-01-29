@@ -17,8 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 
+# allow importing from parent directory
+# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+#  answered Jun 22 '12 at 14:30  Remi
+import inspect, os, sys
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
 from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE
-import sys, struct
+import struct
 
 QVM_MAGIC = 0x12721444
 

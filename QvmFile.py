@@ -1023,3 +1023,26 @@ class QvmFile(LEBinFile):
                 for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
                     output(" %s" % n)
             output("\n")
+
+    def get_code (self):
+        code = []
+        ins = 0
+        pos = 0
+        while ins < self.instructionCount:
+            # use a slice so you get a byte string in python 3
+            opcStr = self.codeData[pos:pos + 1]
+            opc = xord(opcStr)
+            ins = ins + 1
+            pos = pos + 1
+            name = opcodes[opc][OP_NAME]
+            psize = opcodes[opc][OP_PARM_SIZE]
+            if psize:
+                parmStr = self.codeData[pos : pos + psize]
+            else:
+                parmStr = None
+            pos = pos + psize
+            code.append(opcStr)
+            if parmStr:
+                code.append(parmStr)
+
+        return b"".join(code)
