@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+
+# allow importing from parent directory
+# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+#  answered Jun 22 '12 at 14:30  Remi
+import inspect, os, sys
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
+from QvmFile import opcodes, OP_NAME, OP_DESC
+
+def usage ():
+    sys.stderr.write("%s <opcode>\n" % sys.argv[0])
+    sys.stderr.write("\nSpecific opcodes (Q3VM bytecode): (TOS = Top Of Stack; NIS = Next In Stack (next value after TOS)) (Hack syntax: $PARM = code parameter)\n")
+    sys.exit(1)
+
+def main ():
+    if len(sys.argv) < 2:
+        usage()
+
+    name = sys.argv[1]
+
+    for op in opcodes:
+        if op[OP_NAME] == name:
+            print("%s:" % name)
+            print("")
+            print(op[OP_DESC])
+            sys.exit(0)
+
+    sys.stderr.write("unknown opcode: %s\n" % name)
+    sys.exit(1)
+
+if __name__ == "__main__":
+    main()
