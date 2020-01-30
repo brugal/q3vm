@@ -70,8 +70,6 @@ def xchr (i):
     else:
         return chr(i)
 
-# q3vm_specs.html wrong about header
-
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CGAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "cg_syscalls.asm")
@@ -114,9 +112,9 @@ opcodes = [ \
     ["undef", 0, False, 0],
     ["ignore", 0, False, 0],
     ["break", 0, False, 0],
-    ["enter", 4, False, 0],  #FIXME OP_STACK_CHANGE
+    ["enter", 4, False, 0],  # establishes current stack so 0 relative change
     ["leave", 4, False, 0],
-    ["call", 0, False, -1],  #FIXME OP_STACK_CHANGE
+    ["call", 0, False, -1],  # call address is removed, but by convention the called function leaves a value on the stack
     ["push", 0, False, 1],
     ["pop", 0, False, -1],
     ["const", 4, False, 1],
@@ -145,7 +143,7 @@ opcodes = [ \
     ["store2", 0, False, -2],
     ["store4", 0, False, -2],
     ["arg", 1, False, -1],
-    ["block_copy", 4, False, -2],  # docs wrong?
+    ["block_copy", 4, False, -2],  # q3vm_specs.html wrong about parameter size
     ["sex8", 0, False, 0],
     ["sex16", 0, False, 0],
     ["negi", 0, False, 0],
@@ -185,6 +183,8 @@ class QvmFile(LEBinFile):
         m = self.read_int()
         if m != self.magic:
             raise InvalidQvmFile("not a valid qvm file  0x%x != 0x%x" % (m, self.magic))
+
+        # q3vm_specs.html wrong about header, it's offset and then length
 
         self.instructionCount = self.read_int()
         self.codeSegOffset = self.read_int()
