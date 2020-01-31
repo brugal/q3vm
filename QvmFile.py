@@ -112,7 +112,7 @@ OP_DESC = 4  # from q3vm_specs.html and ioquake3 source code (2020-01-30)
 opcodes = [ \
     ["undef", 0, False, 0, "undefined opcode."],
     ["ignore", 0, False, 0, "no-operation (nop) instruction."],
-    ["break", 0, False, 0, "??"],
+    ["break", 0, False, 0, "set debugging break point."],
     ["enter", 4, False, 0, "Begin procedure body, adjust stack $PARM octets for frame (always at least 8 (i.e. 2 words)).  Frame contains all local storage/variables and arguments space for any calls within this procedure."],  # establishes current stack so 0 relative change
     ["leave", 4, False, 0, "End procedure body, $PARM is same as that of the matching ENTER."],
     ["call", 0, False, -1, "make call to procedure (code address <- TOS)."],  # call address is removed, but by convention the called function leaves a value on the stack
@@ -144,7 +144,7 @@ opcodes = [ \
     ["store2", 0, False, -2, "lowest two octets of TOS is 2-octet value to store, destination address in next-in-stack ([NIS] <- TOS)."],
     ["store4", 0, False, -2, "TOS is 4-octet value to store, destination address in next-in-stack ([NIS] <- TOS)."],
     ["arg", 1, False, -1, "TOS is 4-octet value to store into arguments-marshalling space of the indicated octet offset (ARGS[offset] <- TOS)."],
-    ["block_copy", 4, False, -2, "???"],  # q3vm_specs.html wrong about parameter size
+    ["block_copy", 4, False, -2, "copy $PARM bytes from TOS into NIS."],  # q3vm_specs.html wrong about parameter size
     ["sex8", 0, False, 0, "Sign-extend 8-bit (TOS <- TOS)."],
     ["sex16", 0, False, 0, "Sign-extend 16-bit (TOS <- TOS)."],
     ["negi", 0, False, 0, "Negate signed integer (TOS <- -TOS)."],
