@@ -185,7 +185,7 @@ class QvmFile(LEBinFile):
         self._file = open(qvmFileName, "rb")
         self.magic = self.read_int()
         if self.magic != QVM_MAGIC_VER1  and  self.magic != QVM_MAGIC_VER2:
-            raise InvalidQvmFile("not a valid qvm file  0x%x != 0x%x" % (m, self.magic))
+            raise InvalidQvmFile("not a valid qvm file, magic 0x%x != (0x%x | 0x%x)" % (self.magic, QVM_MAGIC_VER1, QVM_MAGIC_VER2))
 
         # q3vm_specs.html wrong about header, it's offset and then length
 
