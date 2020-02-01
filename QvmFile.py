@@ -206,7 +206,23 @@ class QvmFile(LEBinFile):
             self.jumpTableLength = 0
 
 
-        #FIXME check sizes
+        # validate header values
+        if self.instructionCount < 0:
+            raise InvalidQvmFile("bad header: instructionCount %d" % self.instructionCount)
+        if self.codeSegOffset < 0:
+            raise InvalidQvmFile("bad header: codeSegOffset %d" % self.codeSegOffset)
+        if self.codeSegLength < 0:
+            raise InvalidQvmFile("bad header: codeSegLength %d" % self.codeSegLength)
+        if self.dataSegOffset < 0:
+            raise InvalidQvmFile("bad header: dataSegOffset %d" % self.dataSegOffset)
+        if self.dataSegLength < 0:
+            raise InvalidQvmFile("bad header: dataSegLength %d" % self.dataSegLength)
+        if self.litSegLength < 0:
+            raise InvalidQvmFile("bad header: litSegLength %d" % self.litSegLength)
+        if self.bssSegLength < 0:
+            raise InvalidQvmFile("bad header: bssSegLength %d" % self.bssSegLength)
+        if self.jumpTableLength < 0:
+            raise InvalidQvmFile("bad header: jumpTableLength %d" % self.jumpTableLength)
 
         self.seek(self.codeSegOffset)
         self.codeData = self.read(self.codeSegLength)
