@@ -277,8 +277,11 @@ class QvmFile(LEBinFile):
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
+        self.jumpTableTargets = []  # [ targetAddr1:int, targetAddr2:int, targetAddr3:int, ... ]
+
         self.set_qvm_type(qvmType)
         self.load_address_info()
+        self.parse_jump_table()
         self.compute_function_info()
 
     def set_qvm_type (self, qvmType):
@@ -529,6 +532,15 @@ class QvmFile(LEBinFile):
 
                 lineCount += 1
 
+    def parse_jump_table (self):
+        if self.magic == QVM_MAGIC_VER1:
+            return  # no jump table data
+        count = 0
+        while count < self.jumpTableLength:
+            addr = struct.unpack("<L", self.jumpTableData[count:count+4])[0]
+            self.jumpTableTargets.append(addr)
+            count += 4
+
     def print_header (self):
         output("; magic 0x%x\n" % self.magic)
         output("; instruction count: 0x%x\n" % self.instructionCount)
@@ -578,10 +590,16 @@ class QvmFile(LEBinFile):
                 error_exit("FIXME bad opcode size")
 
             if count in self.jumpPoints:
-                output("\n;----------------------------------- from ")
+                if count in self.jumpTableTargets:
+                    output("\n;----------------------------------- *from ")
+                else:
+                    output("\n;----------------------------------- from ")
+
                 for jp in self.jumpPoints[count]:
                     output(" 0x%x" % jp)
                 output("\n")
+            elif count in self.jumpTableTargets:
+                output("\n;----------------------------------- table jump\n")
 
             if name == "enter":
                 addr = count
