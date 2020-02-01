@@ -25,9 +25,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from QvmFile import QvmFile
-
-QVM_MAGIC = 0x12721444
+from QvmFile import QvmFile, QVM_MAGIC_VER1
 
 def usage ():
     sys.stderr.write("%s <qvm file>\n" % sys.argv[0])
@@ -41,8 +39,11 @@ def main ():
     qvm.print_header()
 
     f = open("header-info.txt", "w")
+    f.write("magic: %d\n" % qvm.magic)
     f.write("instruction count: %d\n" % qvm.instructionCount)
     f.write("bss segment length: %d\n" % qvm.bssSegLength)
+    if qvm.magic != QVM_MAGIC_VER1:
+        f.write("jump table length: %d\n" % qvm.jumpTableLength)
     f.close()
 
     fcodew = open("x.code", "wb")
@@ -61,6 +62,11 @@ def main ():
     flit = open("x.lit", "wb")
     flit.write(qvm.litData[:qvm.litSegLength])
     flit.close()
+
+    if qvm.magic != QVM_MAGIC_VER1:
+        fjump = open("x.jump", "wb")
+        fjump.write(qvm.jumpTableData[:qvm.jumpTableLength])
+        fjump.close()
 
     qvm.close()
 

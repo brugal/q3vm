@@ -18,7 +18,7 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 
 import os.path, sys, traceback
-from QvmFile import QvmFile
+from QvmFile import QvmFile, QVM_MAGIC_VER1
 
 def usage ():
     scriptName = os.path.basename(sys.argv[0])
@@ -81,6 +81,10 @@ def main ():
 
     output(";; lit segment\n")
     q.print_lit_disassembly()
+
+    if q.magic != QVM_MAGIC_VER1:
+        output("\n;; jump table\n")
+        q.print_jump_table()
 
     q.close()
 

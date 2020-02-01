@@ -25,10 +25,8 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE
+from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE, QVM_MAGIC_VER1
 import struct
-
-QVM_MAGIC = 0x12721444
 
 def atoi (s, base=10):
     return int(s, base)
@@ -44,14 +42,30 @@ def main ():
     f = open("header-info.txt")
     lines = f.readlines()
     f.close()
-    line = lines[1]
+
+    # 'magic: 12345678'
+    line = lines[0]
+    words = line.split()
+    magic = atoi(words[-1])
+
+    # 'bss segment length: 12345678'
+    line = lines[2]
     words = line.split()
     bssSegLength = atoi(words[-1])
+
+    # 'jump table length: 12345678'
+    if magic != QVM_MAGIC_VER1:
+        line = lines[3]
+        words = line.split()
+        jumpTableLength = atoi(words[-1])
+    else:
+        jumpTableLength = 0
 
     f = open("x.code", "rb")
     codeData = f.read()
     f.close()
 
+    # this is just testing opcode parsing
     ins = 0
     pos = 0
     while 1:
@@ -80,6 +94,11 @@ def main ():
     litData = f.read()
     f.close()
 
+    if magic != QVM_MAGIC_VER1:
+        f = open("x.jump", "rb")
+        jumpTableData = f.read()
+        f.close()
+
     codePadding = 0
     if (len(codeData) % 4) != 0:
         codePadding = 4 - (len(codeData) % 4)
@@ -95,12 +114,15 @@ def main ():
         litPadding = 4 - (len(litData) % 4)
     litSegLength = len(litData) + litPadding
 
-    codeSegOffset = 0x20
+    if magic == QVM_MAGIC_VER1:
+        codeSegOffset = 0x20
+    else:
+        codeSegOffset = 0x24
+
     dataSegOffset = codeSegOffset + codeSegLength
 
     of = open(sys.argv[1], "wb")
-    #of.write (b'\x44\x14\x72\x12')  # qvm magic 0x12721444
-    of.write(struct.pack("<l", QVM_MAGIC))
+    of.write(struct.pack("<l", magic))
     of.write(struct.pack("<l", ins))   # instruction count
     of.write(struct.pack("<l", codeSegOffset))
     of.write(struct.pack("<l", codeSegLength))
@@ -108,6 +130,8 @@ def main ():
     of.write(struct.pack("<l", dataSegLength))
     of.write(struct.pack("<l", litSegLength))
     of.write(struct.pack("<l", bssSegLength))
+    if magic != QVM_MAGIC_VER1:
+        of.write(struct.pack("<l", jumpTableLength))
 
     of.write(codeData)
     of.write(b'\x00' * codePadding)
@@ -117,6 +141,10 @@ def main ():
 
     of.write(litData)
     of.write(b'\x00' * litPadding)
+
+    if magic != QVM_MAGIC_VER1:
+        of.write(jumpTableData)
+
     of.close()
 
 if __name__ == "__main__":

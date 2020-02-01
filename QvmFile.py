@@ -85,6 +85,9 @@ FUNCTIONS_FILE = "functions.dat"
 CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
 
+QVM_MAGIC_VER1 = 0x12721444
+QVM_MAGIC_VER2 = 0x12721445
+
 def output (msg):
     sys.stdout.write(msg)
 
@@ -176,13 +179,12 @@ class InvalidQvmFile(Exception):
     pass
 
 class QvmFile(LEBinFile):
-    magic = 0x12721444
 
     # qvmType:("cgame", "game", "ui", None)
     def __init__ (self, qvmFileName, qvmType=None):
         self._file = open(qvmFileName, "rb")
-        m = self.read_int()
-        if m != self.magic:
+        self.magic = self.read_int()
+        if self.magic != QVM_MAGIC_VER1  and  self.magic != QVM_MAGIC_VER2:
             raise InvalidQvmFile("not a valid qvm file  0x%x != 0x%x" % (m, self.magic))
 
         # q3vm_specs.html wrong about header, it's offset and then length
@@ -197,6 +199,15 @@ class QvmFile(LEBinFile):
         self.bssSegOffset = self.dataSegOffset + self.dataSegLength + self.litSegLength
         self.bssSegLength = self.read_int()
 
+        if self.magic != QVM_MAGIC_VER1:
+            self.jumpTableOffset = self.litSegOffset + self.litSegLength
+            self.jumpTableLength = self.read_int()
+        else:
+            self.jumpTableLength = 0
+
+
+        #FIXME check sizes
+
         self.seek(self.codeSegOffset)
         self.codeData = self.read(self.codeSegLength)
         self.codeData = self.codeData + b"\x00\x00\x00\x00\x00"  # for look ahead
@@ -207,6 +218,11 @@ class QvmFile(LEBinFile):
         self.seek(self.litSegOffset)
         self.litData = self.read(self.litSegLength)
         self.litData = self.litData + b"\x00\x00\x00\x00"  # for look ahead
+
+        if self.magic != QVM_MAGIC_VER1:
+            self.jumpTableData = self.read(self.jumpTableLength)
+        else:
+            self.jumpTableData = b""
 
         self.syscalls = {}  # num:int -> name:str
         self.functions = {}  # addr:int -> name:str
@@ -498,11 +514,14 @@ class QvmFile(LEBinFile):
                 lineCount += 1
 
     def print_header (self):
+        output("; magic 0x%x\n" % self.magic)
         output("; instruction count: 0x%x\n" % self.instructionCount)
         output("; CODE seg offset: 0x%08x  length: 0x%x\n" % (self.codeSegOffset, self.codeSegLength))
         output("; DATA seg offset: 0x%08x  length: 0x%x\n" % (self.dataSegOffset, self.dataSegLength))
         output("; LIT  seg offset: 0x%08x  length: 0x%x\n" % (self.litSegOffset, self.litSegLength))
         output("; BSS  seg offset: 0x%08x  length: 0x%x\n" % (self.bssSegOffset, self.bssSegLength))
+        if self.magic != QVM_MAGIC_VER1:
+            output("; jump table length: 0x%x\n" % (self.jumpTableLength))
 
     def print_code_disassembly (self):
         pos = 0
@@ -879,6 +898,21 @@ class QvmFile(LEBinFile):
                         output("\n")
 
             offset += 1
+
+    def print_jump_table (self):
+        count = 0
+        while count < self.jumpTableLength:
+            output("0x%08x  " % count)
+            b0 = self.jumpTableData[count]
+            b1 = self.jumpTableData[count + 1]
+            b2 = self.jumpTableData[count + 2]
+            b3 = self.jumpTableData[count + 3]
+
+            output(" %02x %02x %02x %02x    0x%x" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.jumpTableData[count:count+4])[0]))
+
+            # finish printing line
+            output("\n")
+            count += 4
 
     def compute_function_info (self):
         pos = 0
