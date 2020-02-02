@@ -1067,6 +1067,8 @@ class QvmFile(LEBinFile):
                     output(" %s" % n)
             output("\n")
 
+    # Test opcode parsing code.  The byte string returned by this should equal
+    # self.codeData[:].
     def get_code (self):
         code = []
         ins = 0

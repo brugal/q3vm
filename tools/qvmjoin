@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 
+# qvmsplit and qvmjoin are just used to test qvm parsing code.
+#
+#  qvmsplit cgame.qvm
+#  qvmjoin test.qvm
+#
+#  cmp cgame.qvm test.qvm
+#  echo $?
+#  0
+
 # allow importing from parent directory
 # https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
 #  answered Jun 22 '12 at 14:30  Remi
