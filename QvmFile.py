@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+####
 # Copyright (C) 2012, 2020 Angelo Cano
 #
 # This file is part of Qvmdis.
@@ -16,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+####
 
 import os.path, struct, sys
 from LEBinFile import LEBinFile
