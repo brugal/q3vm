@@ -128,4 +128,14 @@ is correct.
 
 Before and after comments are terminated with a line that only has '<<<'.
 They can also specify a number of blank lines before and after the comment.
+
 A 'd' before the address specifies it's a data segment comment.
+
+A '@' character before the comment type (ex: @before) allows symbol and
+function name replacement within the comment.  The format is
+'@[d|f]{addr ...}'.  Text after the address and before the closing brace is
+treated as a comment and discarded. Ex:
+
+    @f{0x89}
+    @d{0xcba94 could be clientNum}
+

@@ -19,7 +19,7 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 ####
 
-import os.path, struct, sys
+import os.path, re, struct, sys
 from LEBinFile import LEBinFile
 
 # python hash() builtin gives different values for 32-bit and 64-bit implementations
@@ -342,6 +342,75 @@ class QvmFile(LEBinFile):
                     self.baseQ3FunctionRevHashes[h] = [n]
             lineCount += 1
 
+    # addr:int, symbolsRange:{} addr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ]
+    def find_in_symbol_range (self, addr, symbolsRange):
+        exactMatches = []  #FIXME sorted
+        match = None
+        matchDiff = 0
+        matchSym = ""
+        matchRangeSize = 0
+        for rangeAddr in symbolsRange:
+            for r in symbolsRange[rangeAddr]:
+                size = r[0]
+                sym = r[1]
+                if addr == rangeAddr:
+                    exactMatches.append(sym)
+                elif addr >= rangeAddr  and  addr < (rangeAddr + size):
+                    if match == None:
+                        match = rangeAddr
+                        matchSym = sym
+                        matchDiff = addr - rangeAddr
+                        matchRangeSize = size
+                    elif (addr - rangeAddr) < matchDiff:
+                        match = rangeAddr
+                        matchSym = sym
+                        matchDiff = addr - rangeAddr
+                        matchRangeSize = size
+                    elif (addr - rangeAddr) == matchDiff:  # multiple ranges beginning at same address
+                        # pick smallest
+                        if size < matchRangeSize:
+                            match = rangeAddr
+                            matchSym = sym
+                            matchDiff = addr - rangeAddr
+                            matchRangeSize = size
+
+        return (match, matchSym, matchDiff, exactMatches)
+
+    def substitute_variables (self, line):
+        # ex: x = @f{0x89}("testing", 0x68, @d{0xcba94 could be clientNum});
+
+        def matchFunc (match):
+            t = match.group("type")
+            v = match.group("value")
+
+            try:
+                addr = atoi(v, 16)
+            except ValueError as ex:
+                error_msg("couldn't parse address: %s" % v)
+                # raise again to let caller print file and line number
+                raise ex
+
+            if t == 'd':
+                if addr in self.symbols:
+                    return self.symbols[addr]
+                else:  # check symbol ranges
+                    (matchAddr, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(addr, self.symbolsRange)
+                    if len(exactMatches) > 0:
+                        return ":".join(exactMatches)
+                    else:
+                        if matchAddr != None:
+                            return "%s+0x%x" % (matchSym, matchDiff)
+            else:  # 'f'
+                if addr in self.functions:
+                    return self.functions[addr]
+
+            # not found
+            return "@%s{%s}" % (t, v)
+
+        c = re.compile("@(?P<type>f|d){\s*(?P<value>\w+)\s?.*?}")
+        r = c.sub(matchFunc, line)
+        return r
+
     def load_address_info (self):
         fname = SYMBOLS_FILE
         if os.path.exists(fname):
@@ -447,6 +516,7 @@ class QvmFile(LEBinFile):
 
                 lineCount += 1
 
+        # load after functions and symbols files to allow variable substitutions
         fname = COMMENTS_FILE
         if os.path.exists(fname):
             f = open(fname)
@@ -457,6 +527,12 @@ class QvmFile(LEBinFile):
                 line = lines[lineCount]
                 # strip comments
                 line = line.split(";")[0]
+
+                # ex:
+                #     d 0x30bc inline fullName
+                #     0x89 before 2 2
+                #       this is a before comment
+                #     <<<
 
                 words = line.split()
                 dataComment = False
@@ -471,10 +547,20 @@ class QvmFile(LEBinFile):
                     except ValueError:
                         error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     commentType = words[1]
+                    useVariableSubstitution = False
+                    if commentType[0] == "@":
+                        useVariableSubstitution = True
+                        commentType = commentType[1:]
 
                     if commentType == "inline":
                         if len(words) > 2:
                             comment = line[line.find(words[2]):].rstrip()
+                            if useVariableSubstitution:
+                                try:
+                                    comment = self.substitute_variables(comment)
+                                except ValueError:
+                                    error_exit("couldn't substitute variable in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                             if dataComment:
                                 self.dataCommentsInline[codeAddr] = comment
                             else:
@@ -518,16 +604,22 @@ class QvmFile(LEBinFile):
                             if line[:-1] == "<<<":
                                 break
                             else:
+                                commentLine = line[:-1]
+                                if useVariableSubstitution:
+                                    try:
+                                        commentLine = self.substitute_variables(commentLine)
+                                    except ValueError:
+                                        error_exit("couldn't substitute variable in line %d of %s: %s" % (lineCount + 1, fname, line))
                                 if commentType == "before":
                                     if dataComment:
-                                        self.dataCommentsBefore[codeAddr].append(line[:-1])
+                                        self.dataCommentsBefore[codeAddr].append(commentLine)
                                     else:
-                                        self.commentsBefore[codeAddr].append(line[:-1])
+                                        self.commentsBefore[codeAddr].append(commentLine)
                                 else:
                                     if dataComment:
-                                        self.dataCommentsAfter[codeAddr].append(line[:-1])
+                                        self.dataCommentsAfter[codeAddr].append(commentLine)
                                     else:
-                                        self.commentsAfter[codeAddr].append(line[:-1])
+                                        self.commentsAfter[codeAddr].append(commentLine)
                             lineCount += 1
                     else:
                         error_exit("invalid comment type in line %d of %s: %s" % (lineCount + 1, fname, line))
@@ -665,36 +757,8 @@ class QvmFile(LEBinFile):
                         if parm in self.functionsLocalLabels[currentFuncAddr]:
                             comment = self.functionsLocalLabels[currentFuncAddr][parm]
                     elif currentFuncAddr in self.functionsLocalRangeLabels:
-                        # find the closest match
-                        exactMatches = []  #FIXME sorted
-                        match = None
-                        matchDiff = 0
-                        matchSym = ""
-                        matchRangeSize = 0
-                        for localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
-                            for r in self.functionsLocalRangeLabels[currentFuncAddr][localAddr]:
-                                size = r[0]
-                                sym = r[1]
-                                if parm == localAddr:
-                                    exactMatches.append(sym)
-                                elif parm >= localAddr  and  parm < (localAddr + size):
-                                    if match == None:
-                                        match = localAddr
-                                        matchDiff = parm - localAddr
-                                        matchSym = sym
-                                        matchRangeSize = size
-                                    elif (parm - localAddr) < matchDiff:
-                                        match = localAddr
-                                        matchDiff = parm - localAddr
-                                        matchSym = sym
-                                        matchRangeSize = size
-                                    elif (parm - localAddr) == matchDiff:  # multiple ranges beginning at same address
-                                        # pick smallest
-                                        if size < matchRangeSize:
-                                            match = localAddr
-                                            matchDiff = parm - localAddr
-                                            matchSym = sym
-                                            matchRangeSize = size
+                        (match, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(parm, self.functionsLocalRangeLabels[currentFuncAddr])
+
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
                         else:
@@ -724,35 +788,8 @@ class QvmFile(LEBinFile):
                     if parm in self.symbols:
                         comment = self.symbols[parm]
                     else:  # check symbol ranges
-                        exactMatches = []  #FIXME sorted
-                        match = None
-                        matchDiff = 0
-                        matchSym = ""
-                        matchRangeSize = 0
-                        for rangeAddr in self.symbolsRange:
-                            for r in self.symbolsRange[rangeAddr]:
-                                size = r[0]
-                                sym = r[1]
-                                if parm == rangeAddr:
-                                    exactMatches.append(sym)
-                                elif parm >= rangeAddr  and  parm < (rangeAddr + size):
-                                    if match == None:
-                                        match = rangeAddr
-                                        matchSym = sym
-                                        matchDiff = parm - rangeAddr
-                                        matchRangeSize = size
-                                    elif (parm - rangeAddr) < matchDiff:
-                                        match = rangeAddr
-                                        matchSym = sym
-                                        matchDiff = parm - rangeAddr
-                                        matchRangeSize = size
-                                    elif (parm - rangeAddr) == matchDiff:  # multiple ranges beginning at same address
-                                        # pick smallest
-                                        if size < matchRangeSize:
-                                            match = rangeAddr
-                                            matchSym = sym
-                                            matchDiff = parm - rangeAddr
-                                            matchRangeSize = size
+                        (match, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(parm, self.symbolsRange)
+
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
                         else:
