@@ -52,6 +52,11 @@ def main ():
     f = open("header-info.txt", "w")
     f.write("magic: %d\n" % qvm.magic)
     f.write("instruction count: %d\n" % qvm.instructionCount)
+    f.write("code segment offset: %d\n" % qvm.codeSegOffset)
+    f.write("code segment length: %d\n" % qvm.codeSegLength)
+    f.write("data segment offset: %d\n" % qvm.dataSegOffset)
+    f.write("data segment length: %d\n" % qvm.dataSegLength)
+    f.write("lit segment length: %d\n" % qvm.litSegLength)
     f.write("bss segment length: %d\n" % qvm.bssSegLength)
     if qvm.magic != QVM_MAGIC_VER1:
         f.write("jump table length: %d\n" % qvm.jumpTableLength)

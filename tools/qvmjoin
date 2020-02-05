@@ -46,6 +46,10 @@ def usage ():
     sys.stderr.write("%s <output qvm name>\n" % sys.argv[0])
     sys.exit(1)
 
+def error_exit (msg):
+    sys.stderr.write("ERROR: %s" % msg)
+    sys.exit(1)
+
 def main ():
     if len(sys.argv) < 2:
         usage()
@@ -55,20 +59,21 @@ def main ():
     f.close()
 
     # 'magic: 12345678'
-    line = lines[0]
-    words = line.split()
-    magic = atoi(words[-1])
+    magic = atoi(lines[0].split()[-1])
 
-    # 'bss segment length: 12345678'
-    line = lines[2]
-    words = line.split()
-    bssSegLength = atoi(words[-1])
+    # do the count manually later to test parsing
+    # instructionCount = atoi(lines[1].split()[-1])
+
+    codeSegOffset = atoi(lines[2].split()[-1])
+    codeSegLength = atoi(lines[3].split()[-1])
+    dataSegOffset = atoi(lines[4].split()[-1])
+    dataSegLength = atoi(lines[5].split()[-1])
+    litSegLength = atoi(lines[6].split()[-1])
+    bssSegLength = atoi(lines[7].split()[-1])
 
     # 'jump table length: 12345678'
     if magic != QVM_MAGIC_VER1:
-        line = lines[3]
-        words = line.split()
-        jumpTableLength = atoi(words[-1])
+        jumpTableLength = atoi(lines[8].split()[-1])
     else:
         jumpTableLength = 0
 
@@ -76,7 +81,7 @@ def main ():
     codeData = f.read()
     f.close()
 
-    # this is just testing opcode parsing
+    # this is a test of opcode parsing
     ins = 0
     pos = 0
     while 1:
@@ -110,28 +115,6 @@ def main ():
         jumpTableData = f.read()
         f.close()
 
-    codePadding = 0
-    if (len(codeData) % 4) != 0:
-        codePadding = 4 - (len(codeData) % 4)
-    codeSegLength = len(codeData) + codePadding
-
-    dataPadding = 0
-    if (len(dataData) % 4) != 0:
-        dataPadding = 4 - (len(dataData) % 4)
-    dataSegLength = len(dataData) + dataPadding
-
-    litPadding = 0
-    if (len(litData) % 4) != 0:
-        litPadding = 4 - (len(litData) % 4)
-    litSegLength = len(litData) + litPadding
-
-    if magic == QVM_MAGIC_VER1:
-        codeSegOffset = 0x20
-    else:
-        codeSegOffset = 0x24
-
-    dataSegOffset = codeSegOffset + codeSegLength
-
     of = open(sys.argv[1], "wb")
     of.write(struct.pack("<l", magic))
     of.write(struct.pack("<l", ins))   # instruction count
@@ -144,14 +127,20 @@ def main ():
     if magic != QVM_MAGIC_VER1:
         of.write(struct.pack("<l", jumpTableLength))
 
+    padding = codeSegOffset - of.tell()
+    if padding < 0:
+        error_exit("invalid codeSegOffset %d (pos %d)\n" % (codeSegOffset, of.tell()))
+    of.write(b'\x00' * padding)
     of.write(codeData)
-    of.write(b'\x00' * codePadding)
 
+    padding = dataSegOffset - of.tell()
+    if padding < 0:
+        error_exit("invalid dataSegOffset %d (pos %d)\n" % (dataSegOffset, of.tell()))
+    of.write(b'\x00' * padding)
     of.write(dataData)
-    of.write(b'\x00' * dataPadding)
 
+    # data should already be padded to allow 4 byte boundary for lit segment
     of.write(litData)
-    of.write(b'\x00' * litPadding)
 
     if magic != QVM_MAGIC_VER1:
         of.write(jumpTableData)
