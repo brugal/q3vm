@@ -102,12 +102,6 @@ def error_exit (msg, exitValue = 1):
     error_msg(msg)
     sys.exit(exitValue)
 
-class Opcode:
-    def __init__ (self, val, name, parmSize):
-        self.val = val
-        self.name = name
-        self.parmSize = parmSize
-
 OP_NAME = 0
 OP_PARM_SIZE = 1
 OP_JUMP_PARM = 2
@@ -176,6 +170,88 @@ opcodes = [ \
     ["cvif", 0, False, 0, "Convert signed integer to float (TOS <- TOS)."],
     ["cvfi", 0, False, 0, "Convert float to signed integer (TOS <- TOS)."]
 ]
+
+
+(
+OPC_UNDEF,
+
+OPC_IGNORE,
+
+OPC_BREAK,
+
+OPC_ENTER,
+OPC_LEAVE,
+OPC_CALL,
+OPC_PUSH,
+OPC_POP,
+
+OPC_CONST,
+OPC_LOCAL,
+
+OPC_JUMP,
+
+OPC_EQ,
+OPC_NE,
+
+OPC_LTI,
+OPC_LEI,
+OPC_GTI,
+OPC_GEI,
+
+OPC_LTU,
+OPC_LEU,
+OPC_GTU,
+OPC_GEU,
+
+OPC_EQF,
+OPC_NEF,
+
+OPC_LTF,
+OPC_LEF,
+OPC_GTF,
+OPC_GEF,
+
+OPC_LOAD1,
+OPC_LOAD2,
+OPC_LOAD4,
+OPC_STORE1,
+OPC_STORE2,
+OPC_STORE4,
+OPC_ARG,
+
+OPC_BLOCK_COPY,
+
+OPC_SEX8,
+OPC_SEX16,
+
+OPC_NEGI,
+OPC_ADD,
+OPC_SUB,
+OPC_DIVI,
+OPC_DIVU,
+OPC_MODI,
+OPC_MODU,
+OPC_MULI,
+OPC_MULU,
+
+OPC_BAND,
+OPC_BOR,
+OPC_BXOR,
+OPC_BCOM,
+
+OPC_LSH,
+OPC_RSHI,
+OPC_RSHU,
+
+OPC_NEGF,
+OPC_ADDF,
+OPC_SUBF,
+OPC_DIVF,
+OPC_MULF,
+
+OPC_CVIF,
+OPC_CVFI ) = range(60)
+
 
 class InvalidQvmFile(Exception):
     pass
@@ -277,6 +353,7 @@ class QvmFile(LEBinFile):
         self.dataCommentsAfterSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter: int ]
 
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
+        self.switchJumpStatements = {}  # addr:int -> [ minValue:int, maxValue:int, switchJumpTableAddress:int ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
         self.jumpTableTargets = []  # [ targetAddr1:int, targetAddr2:int, targetAddr3:int, ... ]
@@ -849,6 +926,12 @@ class QvmFile(LEBinFile):
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
+            elif name == "jump":
+                if count in self.switchJumpStatements:
+                    tmin = self.switchJumpStatements[count][0]
+                    tmax = self.switchJumpStatements[count][1]
+                    taddr = self.switchJumpStatements[count][2]
+                    output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
 
             sc = opcodes[opc][OP_STACK_CHANGE]
             if sc != 0  or parm != None:
@@ -1006,6 +1089,9 @@ class QvmFile(LEBinFile):
         prevOpcParmStr = "\x00"
         prevOpcParm = 0
 
+        # list of [opcodes, parameters] in this function
+        funcOps = []
+
         ins = -1
         while ins < self.instructionCount - 1:
             ins += 1
@@ -1035,6 +1121,8 @@ class QvmFile(LEBinFile):
                 parm = None
             pos += psize
 
+            funcOps.append([opc, parm])
+
             if name == "const":
                 if parm < 0:
                     funcHashSum += "%d" % parm
@@ -1062,12 +1150,69 @@ class QvmFile(LEBinFile):
                 funcHashSum = ""
                 maxArgs = 0x8
                 lastArg = 0
+                funcOps = []
             elif opcodes[opc][OP_NAME] == "jump":
                 if opcodes[prevOpc][OP_NAME] == "const":
                     if prevParm in self.jumpPoints:
                         self.jumpPoints[prevParm].append(ins)
                     else:
                         self.jumpPoints[prevParm] = [ins]
+                else:
+                    # check for C switch jump table (16 ops)
+                    #
+                    #   switch { case 1: ...; break; case 2: ...; break; }
+                    #
+                    # implemented by q3asm as a list of jump addresses in
+                    # the data segment
+
+                    #
+                    # local ...  ; switch value pointer, ex: 0x10
+                    # load4
+                    # const ...  ; min switch value, ex: 0x0
+                    # lti        ; goto switch out of range, ex 0x1585
+                    # local ...  ; switch value pointer, ex: 0x10
+                    # load4
+                    # const ...  ; max switch value, ex: 0x7
+                    # gti ...    ; goto switch out of range, ex: 0x1585
+                    # local ...  ; switch value pointer, ex: 0x10
+                    # load4
+                    # const 0x2
+                    # lsh
+                    # const ...  ; switch jump table address, ex: 0xa94
+                    # add
+                    # load4
+                    # jump
+                    if len(funcOps) >= 16:
+                        if (
+                            funcOps[-16][0] == OPC_LOCAL and
+                            funcOps[-15][0] == OPC_LOAD4 and
+                            funcOps[-14][0] == OPC_CONST and
+                            funcOps[-13][0] == OPC_LTI and
+                            funcOps[-12][0] == OPC_LOCAL and
+                            funcOps[-11][0] == OPC_LOAD4 and
+                            funcOps[-10][0] == OPC_CONST and
+                            funcOps[-9][0] == OPC_GTI and
+                            funcOps[-8][0] == OPC_LOCAL and
+                            funcOps[-7][0] == OPC_LOAD4 and
+                            funcOps[-6][0] == OPC_CONST and
+                            funcOps[-5][0] == OPC_LSH and
+                            funcOps[-4][0] == OPC_CONST and
+                            funcOps[-3][0] == OPC_ADD and
+                            funcOps[-2][0] == OPC_LOAD4
+                        ):
+                           tmin = funcOps[-14][1]
+                           tmax = funcOps[-10][1]
+                           taddr = funcOps[-4][1]
+                           self.switchJumpStatements[ins] = [tmin, tmax, taddr]
+                           #print("switch statement at 0x%x: 0x%x (0x%x -> 0x%x)" % (ins, taddr, tmin, tmax))
+                           for offset in range(tmin, tmax + 1):
+                               #addr = 10
+                               addr = struct.unpack("<L", self.dataData[taddr + (offset * 4): taddr + (offset * 4) + 4])[0]
+                               if addr in self.jumpPoints:
+                                   self.jumpPoints[addr].append(ins)
+                               else:
+                                   self.jumpPoints[addr] = [ins]
+
             elif opcodes[opc][OP_JUMP_PARM]:
                 if parm in self.jumpPoints:
                     self.jumpPoints[parm].append(ins)
@@ -1086,6 +1231,7 @@ class QvmFile(LEBinFile):
                                 self.functionParmNum[prevParm] = -1
                     else:
                         self.functionParmNum[prevParm] = lastArg
+
         self.functionSizes[funcStartInsNum] = funcInsCount
         h = hash32BitSigned(funcHashSum)
         self.functionHashes[funcStartInsNum] = h

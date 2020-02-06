@@ -30,6 +30,7 @@ Features:
 
 * Indicates stack size change for opcodes
 * Labels jump locations
+* Identities q3asm switch jump tables
 * Identifies which other functions call a particular function
 * Identifies syscalls
 * Identifies references to function arguments
