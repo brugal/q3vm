@@ -93,6 +93,11 @@ QVM_MAGIC_VER2 = 0x12721445
 def output (msg):
     sys.stdout.write(msg)
 
+def warning_msg (msg):
+    # send to both stdout and stderr since output is usually redirected to file
+    sys.stdout.write("; warning : %s\n" % msg)
+    sys.stderr.write("warning: %s\n" % msg)
+
 def error_msg (msg):
     # send to both stdout and stderr since output is usually redirected to file
     sys.stdout.write("---- error occurred : %s\n" % msg)
@@ -1200,18 +1205,46 @@ class QvmFile(LEBinFile):
                             funcOps[-3][0] == OPC_ADD and
                             funcOps[-2][0] == OPC_LOAD4
                         ):
-                           tmin = funcOps[-14][1]
-                           tmax = funcOps[-10][1]
-                           taddr = funcOps[-4][1]
-                           self.switchJumpStatements[ins] = [tmin, tmax, taddr]
-                           #print("switch statement at 0x%x: 0x%x (0x%x -> 0x%x)" % (ins, taddr, tmin, tmax))
-                           for offset in range(tmin, tmax + 1):
-                               #addr = 10
-                               addr = struct.unpack("<L", self.dataData[taddr + (offset * 4): taddr + (offset * 4) + 4])[0]
-                               if addr in self.jumpPoints:
-                                   self.jumpPoints[addr].append(ins)
-                               else:
-                                   self.jumpPoints[addr] = [ins]
+                            tmin = funcOps[-14][1]
+                            tmax = funcOps[-10][1]
+                            taddr = funcOps[-4][1]
+
+                            validValues = True
+                            # validate values
+                            if tmin < 0:
+                                warning_msg("invalid min value for switch at 0x%x: %d" % (ins, tmin))
+                                validValues = False
+                            if tmax < 0:
+                                warning_msg("invalid max value for switch at 0x%x: %d" % (ins, tmax))
+                                validValues = False
+                            if tmin > tmax:
+                                warning_msg("min greater than max for switch at 0x%x: %d -> %d" % (ins, tmin, tmax))
+                                validValues = False
+
+                            minAddr = taddr + (tmin * 4)
+                            if minAddr >= len(self.dataData):
+                                warning_msg("invalid min switch address at 0x%x: 0x%x" % (ins, minAddr))
+                                validValues = False
+
+                            maxAddr = taddr + (tmax * 4)
+                            if maxAddr >= len(self.dataData):
+                                warning_msg("invalid max switch address at 0x%x: 0x%x" % (ins, maxAddr))
+                                validValues = False
+
+                            if validValues:
+                                self.switchJumpStatements[ins] = [tmin, tmax, taddr]
+                                #print("switch statement at 0x%x: 0x%x (0x%x -> 0x%x)" % (ins, taddr, tmin, tmax))
+                                for offset in range(tmin, tmax + 1):
+                                    #addr = 10
+                                    addr = struct.unpack("<L", self.dataData[taddr + (offset * 4): taddr + (offset * 4) + 4])[0]
+
+                                    if addr < 0  or  addr >= len(self.codeData):
+                                        warning_msg("invalid switch target address at 0x%x: 0x%x" % (ins, addr))
+                                    else:
+                                        if addr in self.jumpPoints:
+                                            self.jumpPoints[addr].append(ins)
+                                        else:
+                                            self.jumpPoints[addr] = [ins]
 
             elif opcodes[opc][OP_JUMP_PARM]:
                 if parm in self.jumpPoints:
