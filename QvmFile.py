@@ -358,6 +358,7 @@ class QvmFile(LEBinFile):
         self.dataCommentsAfterSpacing = {}  # addr:int -> [ spaceBefore:int, spaceAfter: int ]
 
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
+        self.switchStartStatements = []  # [ addr1:int, addr2:int, ... ]
         self.switchJumpStatements = {}  # addr:int -> [ minValue:int, maxValue:int, switchJumpTableAddress:int ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
@@ -827,6 +828,9 @@ class QvmFile(LEBinFile):
                             output("\n")
 
             elif name == "local":
+                if count in self.switchStartStatements:
+                    output("; possible switch start\n")
+
                 argNum = parm - stackAdjust - 0x8
                 if argNum >= 0:
                     argstr = "arg%d" % (argNum / 4)
@@ -1234,6 +1238,7 @@ class QvmFile(LEBinFile):
                             #FIXME could also validate that minAddr and maxAddr fall within current function
 
                             if validValues:
+                                self.switchStartStatements.append(ins - 15)
                                 self.switchJumpStatements[ins] = [tmin, tmax, taddr]
                                 for offset in range(tmin, tmax + 1):
                                     addr = struct.unpack("<L", self.dataData[taddr + (offset * 4): taddr + (offset * 4) + 4])[0]
