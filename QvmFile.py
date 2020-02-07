@@ -360,6 +360,7 @@ class QvmFile(LEBinFile):
         self.jumpPoints = {}  # targetAddr:int -> [ jumpPointAddr1:int, jumpPointAddr2:int, ... ]
         self.switchStartStatements = []  # [ addr1:int, addr2:int, ... ]
         self.switchJumpStatements = {}  # addr:int -> [ minValue:int, maxValue:int, switchJumpTableAddress:int ]
+        self.switchJumpPoints = {}  # targetAddr:int -> [ [ jumpPointAddr1:int, caseValue:int ], [ jumpPointAddr2:int, caseValue:int ],  ... ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
         self.jumpTableTargets = []  # [ targetAddr1:int, targetAddr2:int, targetAddr3:int, ... ]
@@ -775,8 +776,17 @@ class QvmFile(LEBinFile):
                 for jp in self.jumpPoints[count]:
                     output(" 0x%x" % jp)
                 output("\n")
-            elif count in self.jumpTableTargets:
+            elif count in self.jumpTableTargets  and  count not in self.switchJumpPoints:
                 output("\n;----------------------------------- table jump\n")
+
+            if count in self.switchJumpPoints:
+                if count in self.jumpTableTargets:
+                    output("\n;----------------------------------- case *from ")
+                else:
+                    output("\n;----------------------------------- case from ")
+                for jp in self.switchJumpPoints[count]:
+                    output(" 0x%x(0x%x)" % (jp[0], jp[1]))
+                output("\n")
 
             if name == "enter":
                 addr = count
@@ -1246,10 +1256,10 @@ class QvmFile(LEBinFile):
                                     if addr < 0  or  addr >= len(self.codeData):
                                         warning_msg("invalid switch target address at 0x%x: 0x%x" % (ins, addr))
                                     else:
-                                        if addr in self.jumpPoints:
-                                            self.jumpPoints[addr].append(ins)
+                                        if addr in self.switchJumpPoints:
+                                            self.switchJumpPoints[addr].append([ins, offset])
                                         else:
-                                            self.jumpPoints[addr] = [ins]
+                                            self.switchJumpPoints[addr] = [[ins, offset]]
 
             elif opcodes[opc][OP_JUMP_PARM]:
                 if parm in self.jumpPoints:
