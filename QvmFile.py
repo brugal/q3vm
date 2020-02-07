@@ -74,13 +74,13 @@ def xchr (i):
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-CGAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "cg_syscalls.asm")
-GAME_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "g_syscalls.asm")
-UI_SYSCALLS_ASM_FILE = os.path.join(BASE_DIR, "ui_syscalls.asm")
+CGAME_SYSCALLS_ASM_FILE = "cg_syscalls.asm"
+GAME_SYSCALLS_ASM_FILE = "g_syscalls.asm"
+UI_SYSCALLS_ASM_FILE = "ui_syscalls.asm"
 
-BASEQ3_CGAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-cgame-functions.hmap")
-BASEQ3_GAME_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-game-functions.hmap")
-BASEQ3_UI_FUNCTIONS_FILE = os.path.join(BASE_DIR, "baseq3-ui-functions.hmap")
+BASEQ3_CGAME_FUNCTIONS_FILE = "baseq3-cgame-functions.hmap"
+BASEQ3_GAME_FUNCTIONS_FILE = "baseq3-game-functions.hmap"
+BASEQ3_UI_FUNCTIONS_FILE = "baseq3-ui-functions.hmap"
 
 SYMBOLS_FILE = "symbols.dat"
 FUNCTIONS_FILE = "functions.dat"
@@ -378,13 +378,15 @@ class QvmFile(LEBinFile):
 
         if qvmType == "cgame":
             fname = CGAME_SYSCALLS_ASM_FILE
-            f = open(fname)
         elif qvmType == "game":
             fname = GAME_SYSCALLS_ASM_FILE
-            f = open(fname)
         elif qvmType == "ui":
             fname = UI_SYSCALLS_ASM_FILE
+
+        if os.path.exists(fname):
             f = open(fname)
+        else:
+            f = open(os.path.join(BASE_DIR, fname))
 
         lines = f.readlines()
         f.close()
@@ -401,13 +403,15 @@ class QvmFile(LEBinFile):
 
         if qvmType == "cgame":
             fname = BASEQ3_CGAME_FUNCTIONS_FILE
-            f = open(fname)
         elif qvmType == "game":
             fname = BASEQ3_GAME_FUNCTIONS_FILE
-            f = open(fname)
         elif qvmType == "ui":
             fname = BASEQ3_UI_FUNCTIONS_FILE
+
+        if os.path.exists(fname):
             f = open(fname)
+        else:
+            f = open(os.path.join(BASE_DIR, fname))
 
         lines = f.readlines()
         f.close()
