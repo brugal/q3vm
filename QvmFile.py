@@ -1174,7 +1174,7 @@ class QvmFile(LEBinFile):
                     # local ...  ; switch value pointer, ex: 0x10
                     # load4
                     # const ...  ; min switch value, ex: 0x0
-                    # lti        ; goto switch out of range, ex 0x1585
+                    # lti ...    ; goto switch out of range, ex 0x1585
                     # local ...  ; switch value pointer, ex: 0x10
                     # load4
                     # const ...  ; max switch value, ex: 0x7
@@ -1231,11 +1231,11 @@ class QvmFile(LEBinFile):
                                 warning_msg("invalid max switch address at 0x%x: 0x%x" % (ins, maxAddr))
                                 validValues = False
 
+                            #FIXME could also validate that minAddr and maxAddr fall within current function
+
                             if validValues:
                                 self.switchJumpStatements[ins] = [tmin, tmax, taddr]
-                                #print("switch statement at 0x%x: 0x%x (0x%x -> 0x%x)" % (ins, taddr, tmin, tmax))
                                 for offset in range(tmin, tmax + 1):
-                                    #addr = 10
                                     addr = struct.unpack("<L", self.dataData[taddr + (offset * 4): taddr + (offset * 4) + 4])[0]
 
                                     if addr < 0  or  addr >= len(self.codeData):
