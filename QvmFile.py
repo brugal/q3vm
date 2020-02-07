@@ -1222,12 +1222,12 @@ class QvmFile(LEBinFile):
                                 validValues = False
 
                             minAddr = taddr + (tmin * 4)
-                            if minAddr >= len(self.dataData):
+                            if minAddr < 0  or  minAddr >= len(self.dataData):
                                 warning_msg("invalid min switch address at 0x%x: 0x%x" % (ins, minAddr))
                                 validValues = False
 
                             maxAddr = taddr + (tmax * 4)
-                            if maxAddr >= len(self.dataData):
+                            if maxAddr < 0  or  maxAddr >= len(self.dataData):
                                 warning_msg("invalid max switch address at 0x%x: 0x%x" % (ins, maxAddr))
                                 validValues = False
 
