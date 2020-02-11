@@ -27,7 +27,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from QvmFile import opcodes, OP_NAME, OP_DESC
+from QvmFile import opcodes, OPCODE_NAME, OPCODE_DESC
 
 def usage ():
     sys.stderr.write("%s <opcode>\n" % sys.argv[0])
@@ -41,10 +41,10 @@ def main ():
     name = sys.argv[1]
 
     for op in opcodes:
-        if op[OP_NAME] == name:
+        if op[OPCODE_NAME] == name:
             print("%s:" % name)
             print("")
-            print(op[OP_DESC])
+            print(op[OPCODE_DESC])
             sys.exit(0)
 
     sys.stderr.write("unknown opcode: %s\n" % name)

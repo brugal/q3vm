@@ -36,7 +36,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from QvmFile import opcodes, OP_NAME, OP_PARM_SIZE, QVM_MAGIC_VER1
+from QvmFile import opcodes, OPCODE_NAME, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
 import struct
 
 def atoi (s, base=10):
@@ -92,8 +92,8 @@ def main ():
         opc = ord(opcStr)
         ins = ins + 1
         pos = pos + 1
-        name = opcodes[opc][OP_NAME]
-        psize = opcodes[opc][OP_PARM_SIZE]
+        name = opcodes[opc][OPCODE_NAME]
+        psize = opcodes[opc][OPCODE_PARM_SIZE]
         if psize:
             parmStr = codeData[pos : pos + psize]
         else:

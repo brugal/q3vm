@@ -107,11 +107,11 @@ def error_exit (msg, exitValue = 1):
     error_msg(msg)
     sys.exit(exitValue)
 
-OP_NAME = 0
-OP_PARM_SIZE = 1
-OP_JUMP_PARM = 2
-OP_STACK_CHANGE = 3
-OP_DESC = 4  # from q3vm_specs.html and ioquake3 source code (2020-01-30)
+OPCODE_NAME = 0
+OPCODE_PARM_SIZE = 1
+OPCODE_JUMP_PARM = 2
+OPCODE_STACK_CHANGE = 3
+OPCODE_DESC = 4  # from q3vm_specs.html and ioquake3 source code (2020-01-30)
 
 opcodes = [ \
     ["undef", 0, False, 0, "undefined opcode."],
@@ -178,84 +178,84 @@ opcodes = [ \
 
 
 (
-OPC_UNDEF,
+OP_UNDEF,
 
-OPC_IGNORE,
+OP_IGNORE,
 
-OPC_BREAK,
+OP_BREAK,
 
-OPC_ENTER,
-OPC_LEAVE,
-OPC_CALL,
-OPC_PUSH,
-OPC_POP,
+OP_ENTER,
+OP_LEAVE,
+OP_CALL,
+OP_PUSH,
+OP_POP,
 
-OPC_CONST,
-OPC_LOCAL,
+OP_CONST,
+OP_LOCAL,
 
-OPC_JUMP,
+OP_JUMP,
 
-OPC_EQ,
-OPC_NE,
+OP_EQ,
+OP_NE,
 
-OPC_LTI,
-OPC_LEI,
-OPC_GTI,
-OPC_GEI,
+OP_LTI,
+OP_LEI,
+OP_GTI,
+OP_GEI,
 
-OPC_LTU,
-OPC_LEU,
-OPC_GTU,
-OPC_GEU,
+OP_LTU,
+OP_LEU,
+OP_GTU,
+OP_GEU,
 
-OPC_EQF,
-OPC_NEF,
+OP_EQF,
+OP_NEF,
 
-OPC_LTF,
-OPC_LEF,
-OPC_GTF,
-OPC_GEF,
+OP_LTF,
+OP_LEF,
+OP_GTF,
+OP_GEF,
 
-OPC_LOAD1,
-OPC_LOAD2,
-OPC_LOAD4,
-OPC_STORE1,
-OPC_STORE2,
-OPC_STORE4,
-OPC_ARG,
+OP_LOAD1,
+OP_LOAD2,
+OP_LOAD4,
+OP_STORE1,
+OP_STORE2,
+OP_STORE4,
+OP_ARG,
 
-OPC_BLOCK_COPY,
+OP_BLOCK_COPY,
 
-OPC_SEX8,
-OPC_SEX16,
+OP_SEX8,
+OP_SEX16,
 
-OPC_NEGI,
-OPC_ADD,
-OPC_SUB,
-OPC_DIVI,
-OPC_DIVU,
-OPC_MODI,
-OPC_MODU,
-OPC_MULI,
-OPC_MULU,
+OP_NEGI,
+OP_ADD,
+OP_SUB,
+OP_DIVI,
+OP_DIVU,
+OP_MODI,
+OP_MODU,
+OP_MULI,
+OP_MULU,
 
-OPC_BAND,
-OPC_BOR,
-OPC_BXOR,
-OPC_BCOM,
+OP_BAND,
+OP_BOR,
+OP_BXOR,
+OP_BCOM,
 
-OPC_LSH,
-OPC_RSHI,
-OPC_RSHU,
+OP_LSH,
+OP_RSHI,
+OP_RSHU,
 
-OPC_NEGF,
-OPC_ADDF,
-OPC_SUBF,
-OPC_DIVF,
-OPC_MULF,
+OP_NEGF,
+OP_ADDF,
+OP_SUBF,
+OP_DIVF,
+OP_MULF,
 
-OPC_CVIF,
-OPC_CVFI ) = range(60)
+OP_CVIF,
+OP_CVFI ) = range(60)
 
 
 class InvalidQvmFile(Exception):
@@ -745,8 +745,8 @@ class QvmFile(LEBinFile):
             opcStr = self.codeData[pos]
             opc = xord(opcStr)
             pos += 1
-            name = opcodes[opc][OP_NAME]
-            psize = opcodes[opc][OP_PARM_SIZE]
+            name = opcodes[opc][OPCODE_NAME]
+            psize = opcodes[opc][OPCODE_PARM_SIZE]
 
             if name != "enter"  and  count in self.commentsBefore:
                 if count in self.commentsBeforeSpacing:
@@ -873,11 +873,11 @@ class QvmFile(LEBinFile):
                     else:
                         comment = self.constants[count][0]
 
-                elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
+                elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
                     output("\n  ; ")
                     self.print_lit_string(parm)
                     output("\n");
-                elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
+                elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
                     b0 = xchr(self.dataData[parm])
                     b1 = xchr(self.dataData[parm + 1])
                     b2 = xchr(self.dataData[parm + 2])
@@ -896,7 +896,7 @@ class QvmFile(LEBinFile):
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
 
-                elif opcodes[nextOp][OP_NAME] == "call":
+                elif opcodes[nextOp][OPCODE_NAME] == "call":
                     if parm < 0  and  parm in self.syscalls:
                         comment = "%s()" % self.syscalls[parm]
                     elif parm in self.functions:
@@ -909,7 +909,7 @@ class QvmFile(LEBinFile):
                         else:
                             comment = ":unknown function:"
 
-                elif parm >= self.dataSegLength  and  opcodes[nextOp][OP_NAME] not in ("call", "jump"):
+                elif parm >= self.dataSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
                     # bss segment
                     #FIXME check that it doesn't go past??
                     if parm in self.symbols:
@@ -956,7 +956,7 @@ class QvmFile(LEBinFile):
                     taddr = self.switchJumpStatements[count][2]
                     output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
 
-            sc = opcodes[opc][OP_STACK_CHANGE]
+            sc = opcodes[opc][OPCODE_STACK_CHANGE]
             if sc != 0  or parm != None:
                 output("%08x  %-13s" % (count, name))
             else:
@@ -1129,8 +1129,8 @@ class QvmFile(LEBinFile):
             funcInsCount += 1
             funcHashSum += "%d" % opc
             pos += 1
-            name = opcodes[opc][OP_NAME]
-            psize = opcodes[opc][OP_PARM_SIZE]
+            name = opcodes[opc][OPCODE_NAME]
+            psize = opcodes[opc][OPCODE_PARM_SIZE]
             if psize:
                 parmStr = self.codeData[pos : pos + psize]
                 if psize == 1:
@@ -1174,8 +1174,8 @@ class QvmFile(LEBinFile):
                 maxArgs = 0x8
                 lastArg = 0
                 funcOps = []
-            elif opcodes[opc][OP_NAME] == "jump":
-                if opcodes[prevOpc][OP_NAME] == "const":
+            elif opcodes[opc][OPCODE_NAME] == "jump":
+                if opcodes[prevOpc][OPCODE_NAME] == "const":
                     if prevParm in self.jumpPoints:
                         self.jumpPoints[prevParm].append(ins)
                     else:
@@ -1207,21 +1207,21 @@ class QvmFile(LEBinFile):
                     # jump
                     if len(funcOps) >= 16:
                         if (
-                            funcOps[-16][0] == OPC_LOCAL and
-                            funcOps[-15][0] == OPC_LOAD4 and
-                            funcOps[-14][0] == OPC_CONST and
-                            funcOps[-13][0] == OPC_LTI and
-                            funcOps[-12][0] == OPC_LOCAL and
-                            funcOps[-11][0] == OPC_LOAD4 and
-                            funcOps[-10][0] == OPC_CONST and
-                            funcOps[-9][0] == OPC_GTI and
-                            funcOps[-8][0] == OPC_LOCAL and
-                            funcOps[-7][0] == OPC_LOAD4 and
-                            funcOps[-6][0] == OPC_CONST and
-                            funcOps[-5][0] == OPC_LSH and
-                            funcOps[-4][0] == OPC_CONST and
-                            funcOps[-3][0] == OPC_ADD and
-                            funcOps[-2][0] == OPC_LOAD4
+                            funcOps[-16][0] == OP_LOCAL and
+                            funcOps[-15][0] == OP_LOAD4 and
+                            funcOps[-14][0] == OP_CONST and
+                            funcOps[-13][0] == OP_LTI and
+                            funcOps[-12][0] == OP_LOCAL and
+                            funcOps[-11][0] == OP_LOAD4 and
+                            funcOps[-10][0] == OP_CONST and
+                            funcOps[-9][0] == OP_GTI and
+                            funcOps[-8][0] == OP_LOCAL and
+                            funcOps[-7][0] == OP_LOAD4 and
+                            funcOps[-6][0] == OP_CONST and
+                            funcOps[-5][0] == OP_LSH and
+                            funcOps[-4][0] == OP_CONST and
+                            funcOps[-3][0] == OP_ADD and
+                            funcOps[-2][0] == OP_LOAD4
                         ):
                             tmin = funcOps[-14][1]
                             tmax = funcOps[-10][1]
@@ -1265,13 +1265,13 @@ class QvmFile(LEBinFile):
                                         else:
                                             self.switchJumpPoints[addr] = [[ins, offset]]
 
-            elif opcodes[opc][OP_JUMP_PARM]:
+            elif opcodes[opc][OPCODE_JUMP_PARM]:
                 if parm in self.jumpPoints:
                     self.jumpPoints[parm].append(ins)
                 else:
                     self.jumpPoints[parm] = [ins]
             elif name == "call":
-                if opcodes[prevOpc][OP_NAME] == "const":
+                if opcodes[prevOpc][OPCODE_NAME] == "const":
                     if prevParm in self.callPoints:
                         self.callPoints[prevParm].append(funcStartInsNum)
                     else:
@@ -1316,8 +1316,8 @@ class QvmFile(LEBinFile):
             opc = xord(opcStr)
             ins = ins + 1
             pos = pos + 1
-            name = opcodes[opc][OP_NAME]
-            psize = opcodes[opc][OP_PARM_SIZE]
+            name = opcodes[opc][OPCODE_NAME]
+            psize = opcodes[opc][OPCODE_PARM_SIZE]
             if psize:
                 parmStr = self.codeData[pos : pos + psize]
             else:
