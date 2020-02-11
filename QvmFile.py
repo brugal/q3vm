@@ -1236,7 +1236,7 @@ class QvmFile(LEBinFile):
                                 warning_msg("invalid max value for switch at 0x%x: %d" % (ins, tmax))
                                 validValues = False
                             if tmin > tmax:
-                                warning_msg("min greater than max for switch at 0x%x: %d -> %d" % (ins, tmin, tmax))
+                                warning_msg("min greater than max for switch at 0x%x: %d > %d" % (ins, tmin, tmax))
                                 validValues = False
 
                             minAddr = taddr + (tmin * 4)
