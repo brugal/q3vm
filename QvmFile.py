@@ -361,6 +361,7 @@ class QvmFile(LEBinFile):
         self.switchStartStatements = []  # [ addr1:int, addr2:int, ... ]
         self.switchJumpStatements = {}  # addr:int -> [ minValue:int, maxValue:int, switchJumpTableAddress:int ]
         self.switchJumpPoints = {}  # targetAddr:int -> [ [ jumpPointAddr1:int, caseValue:int ], [ jumpPointAddr2:int, caseValue:int ],  ... ]
+        self.switchDataTable = {}  # addr:int -> [ switchCodeAddr1:int, switchCodeAddr2:int, ... ]
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
         self.jumpTableTargets = []  # [ targetAddr1:int, targetAddr2:int, targetAddr3:int, ... ]
@@ -1018,6 +1019,11 @@ class QvmFile(LEBinFile):
             if count in self.dataCommentsInline:
                 output("  ; %s" % self.dataCommentsInline[count])
 
+            if count in self.switchDataTable:
+                output("  ; switch table data from")
+                for sj in self.switchDataTable[count]:
+                    output(" 0x%x" % sj)
+
             # finish printing line
             output("\n")
 
@@ -1260,6 +1266,12 @@ class QvmFile(LEBinFile):
                                     if addr < 0  or  addr >= len(self.codeData):
                                         warning_msg("invalid switch target address at 0x%x: 0x%x" % (ins, addr))
                                     else:
+                                        dataAddr = taddr + (offset * 4)
+                                        if dataAddr in self.switchDataTable:
+                                            self.switchDataTable[dataAddr].append(ins)
+                                        else:
+                                            self.switchDataTable[dataAddr] = [ins]
+
                                         if addr in self.switchJumpPoints:
                                             self.switchJumpPoints[addr].append([ins, offset])
                                         else:
