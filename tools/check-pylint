@@ -36,5 +36,7 @@ for f in files:
 
     (pylint_stdout, pylint_stderr) = epylint.py_run("\"%s\" --errors-only" % f, return_std=True)
     sys.stdout.write(pylint_stdout.getvalue())
+    if len(pylint_stdout.getvalue()) > 0:
+        sys.stdout.write("\n")
 
 print("done.")
