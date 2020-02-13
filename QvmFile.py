@@ -873,11 +873,11 @@ class QvmFile(LEBinFile):
                     else:
                         comment = self.constants[count][0]
 
-                elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
+                elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     output("\n  ; ")
                     self.print_lit_string(parm)
                     output("\n");
-                elif parm >= 0  and  parm < self.dataSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
+                elif parm >= 0  and  parm < self.dataSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     b0 = xchr(self.dataData[parm])
                     b1 = xchr(self.dataData[parm + 1])
                     b2 = xchr(self.dataData[parm + 2])
@@ -909,7 +909,7 @@ class QvmFile(LEBinFile):
                         else:
                             comment = ":unknown function:"
 
-                elif parm >= self.dataSegLength  and  opcodes[nextOp][OPCODE_NAME] not in ("call", "jump"):
+                elif parm >= self.dataSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     # bss segment
                     #FIXME check that it doesn't go past??
                     if parm in self.symbols:
