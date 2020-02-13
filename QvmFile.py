@@ -1134,7 +1134,6 @@ class QvmFile(LEBinFile):
             funcInsCount += 1
             funcHashSum += "%d" % opc
             pos += 1
-            name = opcodes[opc][OPCODE_NAME]
             psize = opcodes[opc][OPCODE_PARM_SIZE]
             if psize:
                 parmStr = self.codeData[pos : pos + psize]
@@ -1327,7 +1326,6 @@ class QvmFile(LEBinFile):
             opc = xord(opcStr)
             ins = ins + 1
             pos = pos + 1
-            name = opcodes[opc][OPCODE_NAME]
             psize = opcodes[opc][OPCODE_PARM_SIZE]
             if psize:
                 parmStr = self.codeData[pos : pos + psize]
