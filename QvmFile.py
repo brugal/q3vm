@@ -21,6 +21,7 @@
 
 import os.path, re, struct, sys
 from LEBinFile import LEBinFile
+from PythonCompat import atoi, xord, xchr
 
 # python hash() builtin gives different values for 32-bit and 64-bit implementations
 # http://effbot.org/zone/python-hash.htm
@@ -45,32 +46,6 @@ def hash32BitSigned (str):
     if value == -1:
         value = -2
     return value
-
-def atoi (s, base=10):
-    return int(s, base)
-
-# python 3 byte string ord() and chr() compatibility
-#
-#  s = b'\x00\x01\x02\x03'
-#    python 2:  b[0] is '\x00'
-#    python 3:  b[0] is 0
-#
-# slices are ok:  s[0:2] is b'\x00\x01' in both versions
-#
-# probably would have been easier to always access as slice to get a byte
-# string instead of xord() and xchr().  Ex:  s[0:1] instead of s[0]
-
-def xord (s):
-    if isinstance(s, int):
-        return s
-    else:
-        return ord(s)
-
-def xchr (i):
-    if isinstance(i, str):
-        return i
-    else:
-        return chr(i)
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 

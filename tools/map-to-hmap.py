@@ -19,6 +19,9 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 ####
 
+import AddParentSysPath
+
+from PythonCompat import atoi
 import os, subprocess, sys
 
 # converts q3asm .map file to hash map file (.hmap)
@@ -30,9 +33,6 @@ def usage ():
 
 def output (msg):
     sys.stdout.write(msg)
-
-def atoi (s, base=10):
-    return int(s, base)
 
 def main ():
     if len(sys.argv) < 2:

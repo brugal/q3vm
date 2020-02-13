@@ -30,11 +30,9 @@
 
 import AddParentSysPath
 
+from PythonCompat import atoi
 from QvmFile import opcodes, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
 import struct, sys
-
-def atoi (s, base=10):
-    return int(s, base)
 
 def usage ():
     sys.stderr.write("%s <output qvm name>\n" % sys.argv[0])
