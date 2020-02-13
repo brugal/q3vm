@@ -30,7 +30,7 @@
 
 import AddParentSysPath
 
-from PythonCompat import atoi
+from PythonCompat import atoi, xord
 from QvmFile import opcodes, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
 import struct, sys
 
@@ -81,7 +81,7 @@ def main ():
             break
         # use slice to get byte string in python 3
         opcStr = codeData[pos : pos + 1]
-        opc = ord(opcStr)
+        opc = xord(opcStr)
         ins = ins + 1
         pos = pos + 1
         psize = opcodes[opc][OPCODE_PARM_SIZE]
