@@ -21,7 +21,7 @@
 
 import AddParentSysPath
 
-from QvmFile import opcodes, OPCODE_NAME, OPCODE_DESC
+from QvmFile import opcodes, OPCODE_NAME, OPCODE_STACK_CHANGE, OPCODE_DESC
 import sys
 
 def usage ():
@@ -37,7 +37,7 @@ def main ():
 
     for op in opcodes:
         if op[OPCODE_NAME] == name:
-            print("%s:" % name)
+            print("%s: stack change %d" % (name, op[OPCODE_STACK_CHANGE]))
             print("")
             print(op[OPCODE_DESC])
             sys.exit(0)
