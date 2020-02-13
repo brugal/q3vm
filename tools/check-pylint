@@ -22,9 +22,12 @@
 import AddParentSysPath
 
 from pylint import epylint
-import sys
+import glob, sys
 
-files = ["../LEBinFile.py", "../QvmFile.py", "../qvmdis", "check-pylint", "map-to-hmap.py", "opinfo", "qvmjoin", "qvmsplit"]
+files = [ "../qvmdis" ]
+files.extend(glob.glob("../*.py"))
+files.extend(["check-pylint", "opinfo", "qvmjoin", "qvmsplit"])
+files.extend(glob.glob("*.py"))
 
 for f in files:
     print("pylint check of %s" % f)
