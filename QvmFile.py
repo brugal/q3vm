@@ -288,7 +288,6 @@ class QvmFile(LEBinFile):
         else:
             self.jumpTableLength = 0
 
-
         # validate header values
         if self.instructionCount < 0:
             raise InvalidQvmFile("bad header: instructionCount %d" % self.instructionCount)
@@ -749,7 +748,7 @@ class QvmFile(LEBinFile):
             name = opcodes[opc][OPCODE_NAME]
             psize = opcodes[opc][OPCODE_PARM_SIZE]
 
-            if name != "enter"  and  count in self.commentsBefore:
+            if opc != OP_ENTER  and  count in self.commentsBefore:
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][0]):
                         output("\n")
@@ -793,7 +792,7 @@ class QvmFile(LEBinFile):
                     output(" 0x%x(0x%x)" % (jp[0], jp[1]))
                 output("\n")
 
-            if name == "enter":
+            if opc == OP_ENTER:
                 addr = count
                 currentFuncAddr = addr
                 stackAdjust = parm
@@ -842,7 +841,7 @@ class QvmFile(LEBinFile):
                         for i in range(self.commentsBeforeSpacing[count][1]):
                             output("\n")
 
-            elif name == "local":
+            elif opc == OP_LOCAL:
                 if count in self.switchStartStatements:
                     output("; possible switch start\n")
 
@@ -865,7 +864,7 @@ class QvmFile(LEBinFile):
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
-            elif name == "const":
+            elif opc == OP_CONST:
                 nextOp = xord(self.codeData[pos])
 
                 if count in self.constants:
@@ -897,7 +896,7 @@ class QvmFile(LEBinFile):
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
 
-                elif opcodes[nextOp][OPCODE_NAME] == "call":
+                elif nextOp == OP_CALL:
                     if parm < 0  and  parm in self.syscalls:
                         comment = "%s()" % self.syscalls[parm]
                     elif parm in self.functions:
@@ -950,7 +949,7 @@ class QvmFile(LEBinFile):
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
-            elif name == "jump":
+            elif opc == OP_JUMP:
                 if count in self.switchJumpStatements:
                     tmin = self.switchJumpStatements[count][0]
                     tmax = self.switchJumpStatements[count][1]
@@ -1152,18 +1151,18 @@ class QvmFile(LEBinFile):
 
             funcOps.append([opc, parm])
 
-            if name == "const":
+            if opc == OP_CONST:
                 if parm < 0:
                     funcHashSum += "%d" % parm
-            elif name == "pop":
+            elif opc == OP_POP:
                 lastArg = 0
-            elif name == "local":
+            elif opc == OP_LOCAL:
                 funcHashSum += "%d" % parm
-            elif name == "arg":
+            elif opc == OP_ARG:
                 if parm > maxArgs:
                     maxArgs = parm
                 lastArg = parm
-            elif name == "enter":
+            elif opc == OP_ENTER:
                 if pos > 5:   # else it's first function of file  vmMain()
                     self.functionSizes[funcStartInsNum] = funcInsCount
                     h = hash32BitSigned(funcHashSum)
@@ -1180,8 +1179,8 @@ class QvmFile(LEBinFile):
                 maxArgs = 0x8
                 lastArg = 0
                 funcOps = []
-            elif opcodes[opc][OPCODE_NAME] == "jump":
-                if opcodes[prevOpc][OPCODE_NAME] == "const":
+            elif opc == OP_JUMP:
+                if prevOpc == OP_CONST:
                     if prevParm in self.jumpPoints:
                         self.jumpPoints[prevParm].append(ins)
                     else:
@@ -1282,8 +1281,8 @@ class QvmFile(LEBinFile):
                     self.jumpPoints[parm].append(ins)
                 else:
                     self.jumpPoints[parm] = [ins]
-            elif name == "call":
-                if opcodes[prevOpc][OPCODE_NAME] == "const":
+            elif opc == OP_CALL:
+                if prevOpc == OP_CONST:
                     if prevParm in self.callPoints:
                         self.callPoints[prevParm].append(funcStartInsNum)
                     else:
