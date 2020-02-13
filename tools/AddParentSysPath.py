@@ -19,31 +19,12 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 ####
 
-import AddParentSysPath
+# allow importing from parent directory
+# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+#  answered Jun 22 '12 at 14:30  Remi
 
-from QvmFile import opcodes, OPCODE_NAME, OPCODE_DESC
-import sys
+import inspect, os, sys
 
-def usage ():
-    sys.stderr.write("%s <opcode>\n" % sys.argv[0])
-    sys.stderr.write("\nSpecific opcodes (Q3VM bytecode): (TOS = Top Of Stack; NIS = Next In Stack (next value after TOS)) (Hack syntax: $PARM = code parameter)\n")
-    sys.exit(1)
-
-def main ():
-    if len(sys.argv) < 2:
-        usage()
-
-    name = sys.argv[1]
-
-    for op in opcodes:
-        if op[OPCODE_NAME] == name:
-            print("%s:" % name)
-            print("")
-            print(op[OPCODE_DESC])
-            sys.exit(0)
-
-    sys.stderr.write("unknown opcode: %s\n" % name)
-    sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)

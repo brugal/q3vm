@@ -19,15 +19,10 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 ####
 
-# allow importing from parent directory
-# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
-#  answered Jun 22 '12 at 14:30  Remi
-import inspect, os, sys
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+import AddParentSysPath
 
 from pylint import epylint
+import sys
 
 files = ["../LEBinFile.py", "../QvmFile.py", "../qvmdis", "check-pylint", "map-to-hmap.py", "opinfo", "qvmjoin", "qvmsplit"]
 

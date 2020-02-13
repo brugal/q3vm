@@ -28,16 +28,10 @@
 #  echo $?
 #  0
 
-# allow importing from parent directory
-# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
-#  answered Jun 22 '12 at 14:30  Remi
-import inspect, os, sys
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+import AddParentSysPath
 
 from QvmFile import opcodes, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
-import struct
+import struct, sys
 
 def atoi (s, base=10):
     return int(s, base)
