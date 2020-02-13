@@ -22,14 +22,36 @@
 import AddParentSysPath
 
 from pylint import epylint
-import glob, sys
+import glob, os.path, sys
 
-files = [ "../qvmdis" ]
-files.extend(glob.glob("../*.py"))
-files.extend(["check-pylint", "opinfo", "qvmjoin", "qvmsplit"])
-files.extend(glob.glob("*.py"))
+def isPythonFile (fname):
+    if os.path.isdir(fname):
+        return False
 
-for f in files:
+    if fname.lower().endswith(".py"):
+        return True
+
+    f = open(fname, "rb")
+    header = f.readline().strip()
+    f.close()
+
+    # generally could also be "#!/usr/bin/python", "#!/usr/local/bin/python3",
+    # etc...
+    if header.startswith(b"#!/usr/bin/env python"):
+        return True
+
+    return False
+
+# use glob() so it includes "../" in the name
+allFiles = sorted(glob.glob("../*"))
+allFiles.extend(sorted(glob.glob("*")))
+
+pythonFiles = []
+for f in allFiles:
+    if isPythonFile(f):
+        pythonFiles.append(f)
+
+for f in pythonFiles:
     print("pylint check of %s" % f)
 
     #epylint.lint(options=["--errors-only"], filename=f)
