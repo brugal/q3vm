@@ -20,7 +20,7 @@
 ####
 
 import os.path, sys, traceback
-from QvmFile import QvmFile, QVM_MAGIC_VER1
+from Qvm import Qvm, QVM_MAGIC_VER1
 
 def usage ():
     scriptName = os.path.basename(sys.argv[0])
@@ -58,11 +58,10 @@ def main ():
             output("invalid qvm type '%s'\n" % qvmType)
             usage()
 
-    q = QvmFile(qvmFile, qvmType)
+    q = Qvm(qvmFile, qvmType)
 
     if onlyPrintFunctionHashes:
         q.print_function_hashes()
-        q.close()
         return
 
     output(";; header\n")
@@ -87,8 +86,6 @@ def main ():
     if q.magic != QVM_MAGIC_VER1:
         output("\n;; jump table\n")
         q.print_jump_table()
-
-    q.close()
 
 if __name__ == "__main__":
     try:

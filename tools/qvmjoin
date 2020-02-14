@@ -31,7 +31,7 @@
 import AddParentSysPath
 
 from PythonCompat import atoi, xord
-from QvmFile import opcodes, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
+from Qvm import opcodes, OPCODE_PARM_SIZE, QVM_MAGIC_VER1
 import struct, sys
 
 def usage ():

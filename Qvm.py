@@ -231,69 +231,82 @@ OP_CVIF,
 OP_CVFI ) = range(60)
 
 
-class InvalidQvmFile(Exception):
+class InvalidQvm(Exception):
     pass
 
-class QvmFile(LEBinFile):
+class Qvm:
 
     # qvmType:("cgame", "game", "ui", None)
     def __init__ (self, qvmFileName, qvmType=None):
-        self._file = open(qvmFileName, "rb")
-        self.magic = self.read_int()
+        #self._file = open(qvmFileName, "rb")
+        qvmFile = LEBinFile(qvmFileName)
+
+        self.magic = qvmFile.read_int()
         if self.magic != QVM_MAGIC_VER1  and  self.magic != QVM_MAGIC_VER2:
-            raise InvalidQvmFile("not a valid qvm file, magic 0x%x != (0x%x | 0x%x)" % (self.magic, QVM_MAGIC_VER1, QVM_MAGIC_VER2))
+            qvmFile.close()
+            raise InvalidQvm("not a valid qvm file, magic 0x%x != (0x%x | 0x%x)" % (self.magic, QVM_MAGIC_VER1, QVM_MAGIC_VER2))
 
         # q3vm_specs.html wrong about header, it's offset and then length
 
-        self.instructionCount = self.read_int()
-        self.codeSegOffset = self.read_int()
-        self.codeSegLength = self.read_int()
-        self.dataSegOffset = self.read_int()
-        self.dataSegLength = self.read_int()
+        self.instructionCount = qvmFile.read_int()
+        self.codeSegOffset = qvmFile.read_int()
+        self.codeSegLength = qvmFile.read_int()
+        self.dataSegOffset = qvmFile.read_int()
+        self.dataSegLength = qvmFile.read_int()
         self.litSegOffset = self.dataSegOffset + self.dataSegLength
-        self.litSegLength = self.read_int()
+        self.litSegLength = qvmFile.read_int()
         self.bssSegOffset = self.dataSegOffset + self.dataSegLength + self.litSegLength
-        self.bssSegLength = self.read_int()
+        self.bssSegLength = qvmFile.read_int()
 
         if self.magic != QVM_MAGIC_VER1:
             self.jumpTableOffset = self.litSegOffset + self.litSegLength
-            self.jumpTableLength = self.read_int()
+            self.jumpTableLength = qvmFile.read_int()
         else:
             self.jumpTableLength = 0
 
         # validate header values
         if self.instructionCount < 0:
-            raise InvalidQvmFile("bad header: instructionCount %d" % self.instructionCount)
+            qvmFile.close()
+            raise InvalidQvm("bad header: instructionCount %d" % self.instructionCount)
         if self.codeSegOffset < 0:
-            raise InvalidQvmFile("bad header: codeSegOffset %d" % self.codeSegOffset)
+            qvmFile.close()
+            raise InvalidQvm("bad header: codeSegOffset %d" % self.codeSegOffset)
         if self.codeSegLength < 0:
-            raise InvalidQvmFile("bad header: codeSegLength %d" % self.codeSegLength)
+            qvmFile.close()
+            raise InvalidQvm("bad header: codeSegLength %d" % self.codeSegLength)
         if self.dataSegOffset < 0:
-            raise InvalidQvmFile("bad header: dataSegOffset %d" % self.dataSegOffset)
+            qvmFile.close()
+            raise InvalidQvm("bad header: dataSegOffset %d" % self.dataSegOffset)
         if self.dataSegLength < 0:
-            raise InvalidQvmFile("bad header: dataSegLength %d" % self.dataSegLength)
+            qvmFile.close()
+            raise InvalidQvm("bad header: dataSegLength %d" % self.dataSegLength)
         if self.litSegLength < 0:
-            raise InvalidQvmFile("bad header: litSegLength %d" % self.litSegLength)
+            qvmFile.close()
+            raise InvalidQvm("bad header: litSegLength %d" % self.litSegLength)
         if self.bssSegLength < 0:
-            raise InvalidQvmFile("bad header: bssSegLength %d" % self.bssSegLength)
+            qvmFile.close()
+            raise InvalidQvm("bad header: bssSegLength %d" % self.bssSegLength)
         if self.jumpTableLength < 0:
-            raise InvalidQvmFile("bad header: jumpTableLength %d" % self.jumpTableLength)
+            qvmFile.close()
+            raise InvalidQvm("bad header: jumpTableLength %d" % self.jumpTableLength)
 
-        self.seek(self.codeSegOffset)
-        self.codeData = self.read(self.codeSegLength)
+        qvmFile.seek(self.codeSegOffset)
+        self.codeData = qvmFile.read(self.codeSegLength)
         self.codeData = self.codeData + b"\x00\x00\x00\x00\x00"  # for look ahead
-        self.seek(self.dataSegOffset)
-        self.dataData = self.read(self.dataSegLength)
+        qvmFile.seek(self.dataSegOffset)
+        self.dataData = qvmFile.read(self.dataSegLength)
         self.dataData = self.dataData + b"\x00\x00\x00\x00"  # for look ahead
 
-        self.seek(self.litSegOffset)
-        self.litData = self.read(self.litSegLength)
+        qvmFile.seek(self.litSegOffset)
+        self.litData = qvmFile.read(self.litSegLength)
         self.litData = self.litData + b"\x00\x00\x00\x00"  # for look ahead
 
         if self.magic != QVM_MAGIC_VER1:
-            self.jumpTableData = self.read(self.jumpTableLength)
+            self.jumpTableData = qvmFile.read(self.jumpTableLength)
         else:
             self.jumpTableData = b""
+
+        qvmFile.close()
 
         self.syscalls = {}  # num:int -> name:str
         self.functions = {}  # addr:int -> name:str

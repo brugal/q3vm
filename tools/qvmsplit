@@ -30,7 +30,7 @@
 
 import AddParentSysPath
 
-from QvmFile import QvmFile, QVM_MAGIC_VER1
+from Qvm import Qvm, QVM_MAGIC_VER1
 import sys
 
 def usage ():
@@ -41,7 +41,7 @@ def main ():
     if len(sys.argv) < 2:
         usage ()
 
-    qvm = QvmFile(sys.argv[1])
+    qvm = Qvm(sys.argv[1])
     qvm.print_header()
 
     f = open("header-info.txt", "w")
@@ -79,8 +79,6 @@ def main ():
         fjump = open("x.jump", "wb")
         fjump.write(qvm.jumpTableData[:qvm.jumpTableLength])
         fjump.close()
-
-    qvm.close()
 
 if __name__ == "__main__":
     main()

@@ -21,7 +21,7 @@
 
 import AddParentSysPath
 
-from QvmFile import opcodes, OPCODE_NAME, OPCODE_STACK_CHANGE, OPCODE_DESC
+from Qvm import opcodes, OPCODE_NAME, OPCODE_STACK_CHANGE, OPCODE_DESC
 import sys
 
 def usage ():
