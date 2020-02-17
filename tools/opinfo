@@ -21,7 +21,7 @@
 
 import AddParentSysPath
 
-from Qvm import opcodes, OPCODE_NAME, OPCODE_STACK_CHANGE, OPCODE_DESC
+from Qvm import opcodes, OPCODE_NAME, OPCODE_STACK_CHANGE, OPCODE_DESC, OPCODE_C_CODE
 import sys
 
 def usage ():
@@ -40,6 +40,14 @@ def main ():
             print("%s: stack change %d" % (name, op[OPCODE_STACK_CHANGE]))
             print("")
             print(op[OPCODE_DESC])
+
+            if len(op[OPCODE_C_CODE]) > 0:
+                print("")
+                print("// r2 = $PARM, r1 = NIS, r0 = TOS")
+                print("")
+                print(op[OPCODE_C_CODE])
+                print("")
+
             sys.exit(0)
 
     sys.stderr.write("unknown opcode: %s\n" % name)
