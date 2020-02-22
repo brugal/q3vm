@@ -41,6 +41,7 @@ matches
 * Function names, arguments, and local variables can be labeled in separate
 functions.dat file
 * Symbol names can be labeled using separate symbols.dat file
+* Symbol templates to identify types using a separate *templates.dat* file
 * Constants can be labeled in constants.dat
 * Comments can be added in comments.dat
 
@@ -56,7 +57,7 @@ specified as hex.
     0x0000 vmMain
       ; argX name
       ;  or
-      ; local addr [size] name
+      ; local addr [size or type] name
       arg0 command
       local 0x14 commandTmp
 
@@ -64,9 +65,12 @@ specified as hex.
     0x28ae CG_Draw3DModel
       arg0 x
       local 0x18 0x170 refdef  ; also specifies the size
+      local 0x300 t:vec3_t angles  ; spacifies the type
 
-Local variables can optionally specify a size to identify references within a
-range.  See *symbols.dat* description for notes regarding ranges.
+Local variables can optionally specify a size or template type to identify
+references within a range.  See *symbols.dat* description for information
+regarding ranges.  See *templates.dat* description for information regarding
+template and types.
 
 ### *symbols.dat* ###
 
@@ -74,9 +78,10 @@ range.  See *symbols.dat* description for notes regarding ranges.
     0xab2a3 serverTime
     0xb23fa 0x1000 clientData
 
-Size can optionally be specified to identify references within a range.
-Symbol lookups without a size specified take precedence.  Multiple ranges
-beginning at the same address are printed as a comma separated list.  Ex:
+Size or type can optionally be specified to identify references within a range.
+Symbol lookups without a size or type specified take precedence.  Multiple
+ranges beginning at the same address are printed as a comma separated list.
+Ex:
 
     0xe87c8 0x26754 cgs
       0x87c8 0x4e84 cgs.gameState
@@ -98,6 +103,16 @@ for the element.  Ex:
 output:
 
 ```00001094  const           1   0xcba90   ; cg, cg.clientFrame```
+
+Templates or types automatically fill in ranges.  See the *templates.dat* for
+a description of template types.  Ex:
+
+    0xe87c8 0x26754 cgs
+      0x87c8 t:gameState_t cgs.gameState
+
+output:
+
+```00001051  const           1   0xe97c8   ; cgs.gameState.stringData[]```
 
 ### *constants.dat* ###
 
@@ -140,3 +155,33 @@ treated as a comment and discarded. Ex:
     @f{0x89}
     @d{0xcba94 could be clientNum}
 
+### *templates.dat* ###
+
+    ; [template] [size] {
+    ;    [offset] [size] name
+    ;    ...
+    ; }
+
+
+    ; typedef struct {
+    ;        cvarHandle_t    handle;
+    ;        int                     modificationCount;
+    ;        float           value;
+    ;        int                     integer;
+    ;        char            string[MAX_CVAR_VALUE_STRING];
+    ; } vmCvar_t;
+
+    vmCvar_t 0x110
+    {
+      0x0 0x4 handle
+      0x4 0x4 modificationCount
+      0x8 0x4 value
+      0xc 0x4 integer
+      0x10 0x100 string[]  ; string[MAX_CVAR_VALUE_STRING]
+    }
+
+Templates allow the repeated specification of structures.  Default templates
+are loaded from the *templates-default.dat* file in the installation directory.
+To ignore those definitions, you can include an empty *templates-default.dat*
+in the current directory.  *templates.dat* is read after the default one and
+allows additional definitions and overriding of the default ones.

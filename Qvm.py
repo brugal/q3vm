@@ -59,6 +59,8 @@ SYMBOLS_FILE = "symbols.dat"
 FUNCTIONS_FILE = "functions.dat"
 CONSTANTS_FILE = "constants.dat"
 COMMENTS_FILE = "comments.dat"
+TEMPLATES_DEFAULT_FILE = "templates-default.dat"
+TEMPLATES_FILE = "templates.dat"
 
 QVM_MAGIC_VER1 = 0x12721444
 QVM_MAGIC_VER2 = 0x12721445
@@ -327,6 +329,7 @@ class Qvm:
 
         self.symbols = {}  # addr:int -> sym:str
         self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ]
+        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str], [offsetMember2:int, sizeMember2:int, nameMember2:int], ... ] ]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
         # code segment comments
@@ -486,7 +489,109 @@ class Qvm:
         r = c.sub(matchFunc, line)
         return r
 
+    def load_symbol_templates_file (self, fname, allowOverride=False):
+        # ex:
+        # vmCvar_t 0x110
+        # {
+        #   0x0 0x4 handle
+        #   0x4 0x4 modificationCount
+        #   ...
+        # }
+
+        f = open(fname)
+        lines = f.readlines()
+        f.close()
+        lineCount = 0
+        haveTemplateInfo = False
+        skipOpeningBrace = False
+        for line in lines:
+            # strip comments and trailing/ending whitespace
+            line = line.split(";")[0]
+            line = line.strip()
+            words = line.split()
+
+            # skip empty lines
+            if len(words) == 0:
+                lineCount += 1
+                continue
+
+            if haveTemplateInfo  and  skipOpeningBrace:
+                if len(words) != 1  or  words[0] != "{":
+                    error_exit("invalid opening brace for in line %d of %s: %s" % (lineCount + 1, fname, line))
+                skipOpeningBrace = False
+                lineCount += 1
+                continue
+
+            if not haveTemplateInfo:
+                if len(words) != 2:
+                    error_exit("couldn't parse template name and size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                templateName = words[0]
+                if not allowOverride  and  templateName in self.symbolTemplates:
+                    error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                try:
+                    templateSize = atoi(words[1], 16)
+                except ValueError:
+                    error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                haveTemplateInfo = True
+                skipOpeningBrace = True
+                memberList = []
+                lineCount += 1
+                continue
+
+            # parsing template at this point
+
+            if words[0] == "}":
+                if len(words) != 1:
+                    error_exit("invalid closing brace in line %d of %s: %s" % (lineCount + 1, fname, line))
+                #FIXME store template info
+                self.symbolTemplates[templateName] = [templateSize, memberList]
+                lineCount += 1
+                haveTemplateInfo = False
+                continue
+
+            # parsing members, ex:  0x0 0x4 handle
+            if len(words) != 3:
+                error_exit("invalid member declaration in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            try:
+                memberOffset = atoi(words[0], 16)
+            except ValueError:
+                error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            try:
+                memberSize = atoi(words[1], 16)
+            except ValueError:
+                error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            memberName = words[2]
+
+            memberList.append([memberOffset, memberSize, memberName])
+
+            lineCount += 1
+
+        if haveTemplateInfo:
+            # never finished parsing last template
+            error_exit("last template not closed in %s" % fname)
+
     def load_address_info (self):
+        # symbol templates
+        fname = TEMPLATES_DEFAULT_FILE
+        if os.path.exists(fname):
+            # override default one
+            self.load_symbol_templates_file(fname, allowOverride=False)
+        else:
+            fname = os.path.join(BASE_DIR, TEMPLATES_DEFAULT_FILE)
+            if os.path.exists(fname):
+                self.load_symbol_templates_file(fname, allowOverride=False)
+
+        fname = TEMPLATES_FILE
+        if os.path.exists(fname):
+            self.load_symbol_templates_file(fname, allowOverride=True)
+
+        #print(self.symbolTemplates)
+
         fname = SYMBOLS_FILE
         if os.path.exists(fname):
             f = open(fname)
@@ -505,13 +610,45 @@ class Qvm:
                 elif len(words) == 3:
                     try:
                         addr = atoi(words[0], 16)
-                        size = atoi(words[1], 16)
                     except ValueError:
-                        error_exit("couldn't parse address or size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                    if words[1].startswith("t:")  and len(words[1]) > 2:
+                        # template
+                        template = words[1][2:]
+                        pass
+                    else:
+                        template = None
+                        try:
+                            size = atoi(words[1], 16)
+                        except ValueError:
+                            error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                     sym = words[2]
-                    if not addr in self.symbolsRange:
-                        self.symbolsRange[addr] = []
-                    self.symbolsRange[addr].append([size, sym])
+
+                    if template:
+                        if template not in self.symbolTemplates:
+                            error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        # add template
+                        if not addr in self.symbolsRange:
+                            self.symbolsRange[addr] = []
+                        templateSize = self.symbolTemplates[template][0]
+                        members = self.symbolTemplates[template][1]
+                        self.symbolsRange[addr].append([templateSize, sym])
+
+                        for m in members:
+                            memberOffset = m[0]
+                            memberSize = m[1]
+                            memberName = m[2]
+                            maddr = addr + memberOffset
+                            if not maddr in self.symbolsRange:
+                                self.symbolsRange[maddr] = []
+                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName)])
+                            #print("added %s.%s 0x%x  at 0x%x" % (sym, memberName, memberSize, maddr))
+                    else:  # not template
+                        if not addr in self.symbolsRange:
+                            self.symbolsRange[addr] = []
+                        self.symbolsRange[addr].append([size, sym])
 
                 lineCount += 1
 
@@ -539,19 +676,51 @@ class Qvm:
                             error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
                         if len(words) < 3:
                             error_exit("invalid local specification in line %d of %s: %s" % (lineCount + 1, fname, line))
-                        if len(words) > 3:  # range specified
+                        if len(words) > 3:  # range or template/type specified
                             try:
                                 localAddr = atoi(words[1], 16)
-                                size = atoi(words[2], 16)
                             except ValueError:
-                                error_exit("couldn't parse address or size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                            if words[2].startswith("t:")  and  len(words[2]) > 2:
+                                # template
+                                template = words[2][2:]
+                            else:
+                                template = None
+                                try:
+                                    size = atoi(words[2], 16)
+                                except ValueError:
+                                    error_exit("couldn't parse size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                             sym = words[3]
-                            if not currentFuncAddr in self.functionsLocalRangeLabels:
-                                self.functionsLocalRangeLabels[currentFuncAddr] = {}
-                            if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                            self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
+
+                            if template:
+                                if template not in self.symbolTemplates:
+                                    error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                # add template
+                                if not currentFuncAddr in self.functionsLocalRangeLabels:
+                                    self.functionsLocalRangeLabels[currentFuncAddr] = {}
+                                if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                    self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
+                                #self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
+                                templateSize = self.symbolTemplates[template][0]
+                                members = self.symbolTemplates[template][1]
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym])
+
+                                for m in members:
+                                    memberOffset = m[0]
+                                    memberSize = m[1]
+                                    memberName = m[2]
+                                    maddr = localAddr + memberOffset
+                                    if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                        self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append([memberSize, "%s.%s" % (sym, memberName)])
+                            else:  # not template
+                                if not currentFuncAddr in self.functionsLocalRangeLabels:
+                                    self.functionsLocalRangeLabels[currentFuncAddr] = {}
+                                if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                    self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
                         else:
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
