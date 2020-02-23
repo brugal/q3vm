@@ -39,17 +39,17 @@ Features:
 * Computes function hashes and compares to stock QVM to identify possible
 matches
 * Function names, arguments, and local variables can be labeled in separate
-functions.dat file
-* Symbol names can be labeled using separate symbols.dat file
+*functions.dat* file
+* Symbol names can be labeled using separate *symbols.dat* file
 * Symbol templates to identify types using a separate *templates.dat* file
-* Constants can be labeled in constants.dat
-* Comments can be added in comments.dat
+* Constants can be labeled in *constants.dat*
+* Comments can be added in *comments.dat*
 
-The .dat files are opened from the current working directory.  Comments in
-.dat files are specified with ';'.  Address and size values need to be
+The *.dat* files are opened from the current working directory.  Comments in
+*.dat* files are specified with ';'.  Address and size values need to be
 specified as hex.
 
-## Format of .dat files:
+## Format of *.dat* files:
 
 ### *functions.dat* ###
 
@@ -74,7 +74,7 @@ template and types.
 
 ### *symbols.dat* ###
 
-    ; addr [size] name
+    ; addr [size or type] name
     0xab2a3 serverTime
     0xb23fa 0x1000 clientData
 
@@ -104,8 +104,8 @@ output:
 
 ```00001094  const           1   0xcba90   ; cg, cg.clientFrame```
 
-Templates or types automatically fill in ranges.  See the *templates.dat* for
-a description of template types.  Ex:
+Templates or types automatically fill in ranges.  See the *templates.dat*
+section for a description of template types.  Ex:
 
     0xe87c8 0x26754 cgs
       0x87c8 t:gameState_t cgs.gameState
@@ -119,8 +119,8 @@ output:
     ; addr name value
     0x3f31 DEFAULT_SPEED 0x0
 
-The last value in the contants.dat entry is used to double check that the value
-is correct.
+The last value in the *contants.dat* entry is used to double check that the
+value is correct.
 
 ### *comments.dat* ###
 
