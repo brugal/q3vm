@@ -564,6 +564,12 @@ class Qvm:
                 memberTemplate = words[1][2:]
             else:
                 memberTemplate = None
+                try:
+                    memberSize = atoi(words[1], 16)
+                except ValueError:
+                    error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            memberName = words[2]
 
             if memberTemplate:
                 if memberTemplate not in self.symbolTemplates:
@@ -579,12 +585,6 @@ class Qvm:
                     adjOffset = memberOffset + mOffset
                     memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName)])
             else:
-                try:
-                    memberSize = atoi(words[1], 16)
-                except ValueError:
-                    error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                memberName = words[2]
                 memberList.append([memberOffset, memberSize, memberName])
 
             lineCount += 1
