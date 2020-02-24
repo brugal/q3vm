@@ -608,8 +608,7 @@ class Qvm:
         if os.path.exists(fname):
             self.load_symbol_templates_file(fname, allowOverride=True)
 
-        #print(self.symbolTemplates)
-
+        # symbols
         fname = SYMBOLS_FILE
         if os.path.exists(fname):
             f = open(fname)
@@ -632,9 +631,7 @@ class Qvm:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                     if words[1].startswith("t:")  and len(words[1]) > 2:
-                        # template
                         template = words[1][2:]
-                        pass
                     else:
                         template = None
                         try:
@@ -670,6 +667,7 @@ class Qvm:
 
                 lineCount += 1
 
+        # functions
         fname = FUNCTIONS_FILE
         if os.path.exists(fname):
             f = open(fname)
@@ -701,7 +699,6 @@ class Qvm:
                                 error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                             if words[2].startswith("t:")  and  len(words[2]) > 2:
-                                # template
                                 template = words[2][2:]
                             else:
                                 template = None
@@ -720,7 +717,6 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                #self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
                                 templateSize = self.symbolTemplates[template][0]
                                 members = self.symbolTemplates[template][1]
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym])
@@ -757,6 +753,7 @@ class Qvm:
 
                 lineCount += 1
 
+        # constants
         fname = CONSTANTS_FILE
         if os.path.exists(fname):
             f = open(fname)
@@ -778,6 +775,7 @@ class Qvm:
 
                 lineCount += 1
 
+        # comments
         # load after functions and symbols files to allow variable substitutions
         fname = COMMENTS_FILE
         if os.path.exists(fname):
