@@ -573,7 +573,7 @@ class Qvm:
 
             if memberTemplate:
                 if memberTemplate not in self.symbolTemplates:
-                    error_exit("unknown member template in line %d of %s %s" (lineCount + 1, fname, line))
+                    error_exit("unknown member template in line %d of %s %s" % (lineCount + 1, fname, line))
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
