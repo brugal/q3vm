@@ -158,7 +158,7 @@ treated as a comment and discarded. Ex:
 ### *templates.dat* ###
 
     ; [template] [size] {
-    ;    [offset] [size] name
+    ;    [offset] [size or type] name
     ;    ...
     ; }
 
@@ -184,4 +184,5 @@ Templates allow the repeated specification of structures.  Default templates
 are loaded from the *templates-default.dat* file in the installation directory.
 To ignore those definitions, you can include an empty *templates-default.dat*
 in the current directory.  *templates.dat* is read after the default one and
-allows additional definitions and overriding of the default ones.
+allows additional definitions and overriding of the default ones.  Template
+member declarations can use previously defined template types.

@@ -560,14 +560,32 @@ class Qvm:
             except ValueError:
                 error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-            try:
-                memberSize = atoi(words[1], 16)
-            except ValueError:
-                error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if words[1].startswith("t:")  and  len(words[1]) > 2:
+                memberTemplate = words[1][2:]
+            else:
+                memberTemplate = None
 
-            memberName = words[2]
+            if memberTemplate:
+                if memberTemplate not in self.symbolTemplates:
+                    error_exit("unknown member template in line %d of %s %s" (lineCount + 1, fname, line))
+                memberTemplateSize = self.symbolTemplates[memberTemplate][0]
+                memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
+                # add member template itself
+                memberList.append([memberOffset, memberTemplateSize, memberName])
+                for m in memberTemplateMembers:
+                    mOffset = m[0]
+                    mSize = m[1]
+                    mName = m[2]
+                    adjOffset = memberOffset + mOffset
+                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName)])
+            else:
+                try:
+                    memberSize = atoi(words[1], 16)
+                except ValueError:
+                    error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-            memberList.append([memberOffset, memberSize, memberName])
+                memberName = words[2]
+                memberList.append([memberOffset, memberSize, memberName])
 
             lineCount += 1
 
