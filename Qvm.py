@@ -241,7 +241,6 @@ class Qvm:
 
     # qvmType:("cgame", "game", "ui", None)
     def __init__ (self, qvmFileName, qvmType=None):
-        #self._file = open(qvmFileName, "rb")
         qvmFile = LEBinFile(qvmFileName)
 
         self.magic = qvmFile.read_int()
@@ -545,7 +544,6 @@ class Qvm:
             if words[0] == "}":
                 if len(words) != 1:
                     error_exit("invalid closing brace in line %d of %s: %s" % (lineCount + 1, fname, line))
-                #FIXME store template info
                 self.symbolTemplates[templateName] = [templateSize, memberList]
                 lineCount += 1
                 haveTemplateInfo = False
@@ -630,7 +628,7 @@ class Qvm:
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                    if words[1].startswith("t:")  and len(words[1]) > 2:
+                    if words[1].startswith("t:")  and  len(words[1]) > 2:
                         template = words[1][2:]
                     else:
                         template = None
@@ -659,7 +657,6 @@ class Qvm:
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
                             self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName)])
-                            #print("added %s.%s 0x%x  at 0x%x" % (sym, memberName, memberSize, maddr))
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
@@ -836,7 +833,7 @@ class Qvm:
                             except ValueError:
                                 error_exit("couldn't get space before or after value in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                        if spaceBefore > 0  or spaceAfter > 0:
+                        if spaceBefore > 0  or  spaceAfter > 0:
                             if commentType == "before":
                                 if dataComment:
                                     self.dataCommentsBeforeSpacing[codeAddr] = [spaceBefore, spaceAfter]
@@ -1129,7 +1126,7 @@ class Qvm:
                     output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
 
             sc = opcodes[opc][OPCODE_STACK_CHANGE]
-            if sc != 0  or parm != None:
+            if sc != 0  or  parm != None:
                 output("%08x  %-13s" % (count, name))
             else:
                 output("%08x  %s" % (count, name))
@@ -1139,7 +1136,7 @@ class Qvm:
             elif sc > 0:
                 output("   %d" % sc)
             else:
-                if parm != None  or  comment  or count in self.commentsInline:
+                if parm != None  or  comment  or  count in self.commentsInline:
                     output("    ")
 
             if parm != None:
