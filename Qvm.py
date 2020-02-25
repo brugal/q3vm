@@ -516,7 +516,7 @@ class Qvm:
 
             if haveTemplateInfo  and  skipOpeningBrace:
                 if len(words) != 1  or  words[0] != "{":
-                    error_exit("invalid opening brace for in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    error_exit("invalid opening brace in line %d of %s: %s" % (lineCount + 1, fname, line))
                 skipOpeningBrace = False
                 lineCount += 1
                 continue
