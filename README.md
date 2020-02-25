@@ -65,7 +65,7 @@ specified as hex.
     0x28ae CG_Draw3DModel
       arg0 x
       local 0x18 0x170 refdef  ; also specifies the size
-      local 0x300 t:vec3_t angles  ; spacifies the type
+      local 0x300 t:vec3_t angles  ; specifies the type
 
 Local variables can optionally specify a size or template type to identify
 references within a range.  See *symbols.dat* description for information
