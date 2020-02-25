@@ -165,9 +165,9 @@ treated as a comment and discarded. Ex:
 
     ; typedef struct {
     ;        cvarHandle_t    handle;
-    ;        int                     modificationCount;
+    ;        int             modificationCount;
     ;        float           value;
-    ;        int                     integer;
+    ;        int             integer;
     ;        char            string[MAX_CVAR_VALUE_STRING];
     ; } vmCvar_t;
 
