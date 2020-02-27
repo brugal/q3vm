@@ -46,7 +46,7 @@ matches
 * Comments can be added in *comments.dat*
 
 The *.dat* files are opened from the current working directory.  Comments in
-*.dat* files are specified with _;_.  Address and size values need to be
+*.dat* files are specified with _';'_.  Address and size values need to be
 specified as hex.
 
 ## Format of *.dat* files:
