@@ -46,7 +46,7 @@ matches
 * Comments can be added in *comments.dat*
 
 The *.dat* files are opened from the current working directory.  Comments in
-*.dat* files are specified with ';'.  Address and size values need to be
+*.dat* files are specified with _;_.  Address and size values need to be
 specified as hex.
 
 ## Format of *.dat* files:
@@ -84,7 +84,7 @@ ranges beginning at the same address are printed as a comma separated list.
 Ex:
 
     0xe87c8 0x26754 cgs
-      0x87c8 0x4e84 cgs.gameState
+      0xe87c8 0x4e84 cgs.gameState
 
 output:
 
@@ -108,7 +108,7 @@ Templates or types automatically fill in ranges.  See the *templates.dat*
 section for a description of template types.  Ex:
 
     0xe87c8 0x26754 cgs
-      0x87c8 t:gameState_t cgs.gameState
+      0xe87c8 t:gameState_t cgs.gameState
 
 output:
 
@@ -142,12 +142,12 @@ value is correct.
 
     d 0x30bc inline fullName
 
-Before and after comments are terminated with a line that only has '<<<'.
+Before and after comments are terminated with a line that only has _'<<<'_.
 They can also specify a number of blank lines before and after the comment.
 
-A 'd' before the address specifies it's a data segment comment.
+A _'d'_ before the address specifies it's a data segment comment.
 
-A '@' character before the comment type (ex: @before) allows symbol and
+A _'@'_ character before the comment type (ex: @before) allows symbol and
 function name replacement within the comment.  The format is
 `@[d|f]{addr ...}`.  Text after the address and before the closing brace is
 treated as a comment and discarded. Ex:
@@ -186,3 +186,9 @@ To ignore those definitions, you can include an empty *templates-default.dat*
 in the current directory.  *templates.dat* is read after the default one and
 allows additional definitions and overriding of the default ones.  Template
 member declarations can use previously defined template types.
+
+Templates are specified with a _'t:'_ tag.  Pointers to templates/types are specified with a _'*t:'_ tag.  Ex:
+
+    0xcbab0 *t:snapshot_t cg.snap
+    ...
+    0xe87c8 t:gameState_t cgs.gameState

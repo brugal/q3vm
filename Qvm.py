@@ -316,7 +316,7 @@ class Qvm:
         # user labels
         self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
-        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ] }
+        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str], [size2:int, sym2:str, isPointer2:bool, pointerType2:str], ... ] }
 
         self.functionHashes = {}  # addr:int -> hash:int
         self.functionRevHashes = {}  # hash:int -> [funcAddr1:int, funcAddr2:int, ...]
@@ -327,8 +327,8 @@ class Qvm:
         self.baseQ3FunctionRevHashes = {}  # hash:int -> [ funcName1, funcName2, ... ]
 
         self.symbols = {}  # addr:int -> sym:str
-        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ]
-        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str], [offsetMember2:int, sizeMember2:int, nameMember2:int], ... ] ]
+        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str], [size2:int, sym2:str, isPointer2:bool, pointerType2:str], ... ]
+        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str, isPointer1:bool, pointerType1:str], [offsetMember2:int, sizeMember2:int, nameMember2:int, isPointer2:bool, pointerType2:str], ... ] ]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
         # code segment comments
@@ -353,6 +353,8 @@ class Qvm:
         self.callPoints = {}  # targetAddr:int -> [ callerAddr1:int, callerAddr2:int, ... ]
 
         self.jumpTableTargets = []  # [ targetAddr1:int, targetAddr2:int, targetAddr3:int, ... ]
+
+        self.pointerDereference = {}  # addr:int -> [ local:bool, pointerAddr:int, offset:int ]
 
         self.set_qvm_type(qvmType)
         self.load_address_info()
@@ -558,14 +560,22 @@ class Qvm:
             except ValueError:
                 error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
+            memberIsPointer = False
+            memberPointerType = ""
+
             if words[1].startswith("t:")  and  len(words[1]) > 2:
                 memberTemplate = words[1][2:]
             else:
                 memberTemplate = None
-                try:
-                    memberSize = atoi(words[1], 16)
-                except ValueError:
-                    error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if words[1].startswith("*t:")  and  len(words[1]) > 3:
+                    memberPointerType = words[1][3:]
+                    memberSize = 0x4
+                    memberIsPointer = True
+                else:
+                    try:
+                        memberSize = atoi(words[1], 16)
+                    except ValueError:
+                        error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
             memberName = words[2]
 
@@ -575,15 +585,17 @@ class Qvm:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
-                memberList.append([memberOffset, memberTemplateSize, memberName])
+                memberList.append([memberOffset, memberTemplateSize, memberName, False, ""])
                 for m in memberTemplateMembers:
                     mOffset = m[0]
                     mSize = m[1]
                     mName = m[2]
+                    mIsPointer = m[3]
+                    mPointerType = m[4]
                     adjOffset = memberOffset + mOffset
-                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName)])
+                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName), mIsPointer, mPointerType])
             else:
-                memberList.append([memberOffset, memberSize, memberName])
+                memberList.append([memberOffset, memberSize, memberName, memberIsPointer, memberPointerType])
 
             lineCount += 1
 
@@ -628,14 +640,22 @@ class Qvm:
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
+                    isPointer = False
+                    pointerType = ""
+
                     if words[1].startswith("t:")  and  len(words[1]) > 2:
                         template = words[1][2:]
                     else:
                         template = None
-                        try:
-                            size = atoi(words[1], 16)
-                        except ValueError:
-                            error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        if words[1].startswith("*t:")  and  len(words[1]) > 3:
+                            pointerType = words[1][3:]
+                            size = 0x4
+                            isPointer = True
+                        else:
+                            try:
+                                size = atoi(words[1], 16)
+                            except ValueError:
+                                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                     sym = words[2]
 
@@ -647,20 +667,23 @@ class Qvm:
                             self.symbolsRange[addr] = []
                         templateSize = self.symbolTemplates[template][0]
                         members = self.symbolTemplates[template][1]
-                        self.symbolsRange[addr].append([templateSize, sym])
+                        # add template itself
+                        self.symbolsRange[addr].append([templateSize, sym, False, ""])
 
                         for m in members:
                             memberOffset = m[0]
                             memberSize = m[1]
                             memberName = m[2]
+                            memberIsPointer = m[3]
+                            memberPointerType = m[4]
                             maddr = addr + memberOffset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName)])
+                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType])
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        self.symbolsRange[addr].append([size, sym])
+                        self.symbolsRange[addr].append([size, sym, isPointer, pointerType])
 
                 lineCount += 1
 
@@ -695,14 +718,22 @@ class Qvm:
                             except ValueError:
                                 error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
+                            isPointer = False
+                            pointerType = ""
+
                             if words[2].startswith("t:")  and  len(words[2]) > 2:
                                 template = words[2][2:]
                             else:
                                 template = None
-                                try:
-                                    size = atoi(words[2], 16)
-                                except ValueError:
-                                    error_exit("couldn't parse size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                if words[2].startswith("*t:")  and  len(words[2]) > 3:
+                                    pointerType = words[2][3:]
+                                    size = 0x4
+                                    isPointer = True
+                                else:
+                                    try:
+                                        size = atoi(words[2], 16)
+                                    except ValueError:
+                                        error_exit("couldn't parse size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                             sym = words[3]
 
@@ -716,23 +747,26 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
                                 templateSize = self.symbolTemplates[template][0]
                                 members = self.symbolTemplates[template][1]
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym])
+                                # add template itself
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym, False, ""])
 
                                 for m in members:
                                     memberOffset = m[0]
                                     memberSize = m[1]
                                     memberName = m[2]
+                                    memberIsPointer = m[3]
+                                    memberPointerType = m[4]
                                     maddr = localAddr + memberOffset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
-                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append([memberSize, "%s.%s" % (sym, memberName)])
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType])
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym])
-                        else:
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym, isPointer, pointerType])
+                        else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
@@ -1124,6 +1158,10 @@ class Qvm:
                     tmax = self.switchJumpStatements[count][1]
                     taddr = self.switchJumpStatements[count][2]
                     output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
+            elif (opc == OP_LOAD4  or  opc == OP_LOAD2  or  opc == OP_LOAD1):
+                if count in self.pointerDereference:
+                    pdr = self.pointerDereference[count]
+                    ###output("; pointer dereference * 0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
 
             sc = opcodes[opc][OPCODE_STACK_CHANGE]
             if sc != 0  or  parm != None:
@@ -1330,6 +1368,50 @@ class Qvm:
                 if parm > maxArgs:
                     maxArgs = parm
                 lastArg = parm
+            elif (opc == OP_LOAD4  or  opc == OP_LOAD2  or  opc == OP_LOAD1):
+                #FIXME check pointer dereference
+                #FIXME don't cross jump boundaries
+                #FIXME load2 load1
+
+                # offset might be in a local variable.  ex:
+                #
+                #    000105c6  local           1   0x1c
+                #
+                #      ; 27 00 00 00  (0x27)
+                #    000105c7  const           1   0x8
+                #    000105c8  store4         -2
+                #    000105c9  const           1   0xcbab4  ; cg.nextSnap
+                #    000105ca  load4
+                #    000105cb  local           1   0x1c
+                #    000105cc  load4
+                #    000105cd  add            -1
+                #    000105ce  load4
+                #
+                # offset could also be specified explicitly.  ex:
+                #
+                #    00010602  const           1   0xcbab0  ; cg.snap
+                #    00010603  load4
+                #
+                #      ; 27 00 00 00  (0x27)
+                #    00010604  const           1   0x8
+                #    00010605  add            -1
+                #    00010606  load4
+
+                # explicit global var
+                if len(funcOps) > 4:
+                    if (
+                            funcOps[-5][0] == OP_CONST  and
+                            funcOps[-4][0] == OP_LOAD4  and
+                            funcOps[-3][0] == OP_CONST  and
+                            funcOps[-2][0] == OP_ADD
+                    ):
+                        pointerAddr = funcOps[-5][1]
+                        offset = funcOps[-3][1]
+                        local = False
+
+                        #FIXME pointer to pointer to pointer ...
+                        self.pointerDereference[ins] = [local, pointerAddr, offset]
+                pass
             elif opc == OP_ENTER:
                 if pos > 5:   # else it's first function of file  vmMain()
                     self.functionSizes[funcStartInsNum] = funcInsCount
