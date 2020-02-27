@@ -1161,7 +1161,42 @@ class Qvm:
             elif (opc == OP_LOAD4  or  opc == OP_LOAD2  or  opc == OP_LOAD1):
                 if count in self.pointerDereference:
                     pdr = self.pointerDereference[count]
-                    ###output("; pointer dereference * 0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
+
+                    # find template
+                    foundTemplate = False
+                    templateName = ""
+                    rangeAddr = pdr[1]
+                    sym = ""
+                    if rangeAddr in self.symbolsRange:
+                        for r in self.symbolsRange[rangeAddr]:
+                            # use first match
+                            size = r[0]
+                            sym = r[1]
+                            isPointer = r[2]
+                            pointerType = r[3]
+                            if size == 0x4  and  isPointer:
+                                templateName = pointerType
+                                foundTemplate = True
+                                break
+
+                    if foundTemplate:
+                        memberName = "?"
+                        if templateName not in self.symbolTemplates:
+                            error_exit("unknown template %s" % templateName)
+                        memberList = self.symbolTemplates[templateName][1]
+                        foundOffset = False
+                        for m in memberList:
+                            memberOffset = m[0]
+                            memberName = m[2]
+                            if memberOffset == pdr[2]:
+                                foundOffset = True
+                                break
+                        if not foundOffset:
+                            output("; pointer dereference (couldn't match offset) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
+                        else:
+                            output("; pointer dereference %s->%s\n" % (sym, memberName))
+                    else:
+                        output("; pointer dereference  (no template) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
 
             sc = opcodes[opc][OPCODE_STACK_CHANGE]
             if sc != 0  or  parm != None:

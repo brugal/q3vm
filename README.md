@@ -34,6 +34,7 @@ Features:
 * Identifies which other functions call a particular function
 * Identifies syscalls
 * Identifies references to function arguments
+* Identifies simple pointer dereferencing
 * Adds comments for possible string reference values
 * Adds comments for possible data reference values
 * Computes function hashes and compares to stock QVM to identify possible
@@ -147,10 +148,10 @@ They can also specify a number of blank lines before and after the comment.
 
 A _'d'_ before the address specifies it's a data segment comment.
 
-A _'@'_ character before the comment type (ex: @before) allows symbol and
+A _'@'_ character before the comment type (ex: _@before_) allows symbol and
 function name replacement within the comment.  The format is
 `@[d|f]{addr ...}`.  Text after the address and before the closing brace is
-treated as a comment and discarded. Ex:
+treated as a comment and discarded.  Ex:
 
     @f{0x89}
     @d{0xcba94 could be clientNum}
