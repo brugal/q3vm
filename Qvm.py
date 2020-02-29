@@ -45,6 +45,14 @@ def hash32BitSigned (str):
         value = -2
     return value
 
+# detect hex or base 10, also explicitly require 0[xX] hex notation to make
+# it easier to check if something is a number or a symbol.  Ex: s[0].isdigit()
+def parse_int (s):
+    if len(s) > 2  and  s[0] == '0'  and  (s[1] == 'x'  or  s[1] == 'X'):
+        return atoi(s, 16)
+    else:
+        return atoi(s, 10)
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CGAME_SYSCALLS_ASM_FILE = "cg_syscalls.asm"
@@ -387,7 +395,7 @@ class Qvm:
             words = line.split()
             if len(words) == 3:
                 try:
-                    self.syscalls[atoi(words[2])] = words[1]
+                    self.syscalls[parse_int(words[2])] = words[1]
                 except ValueError:
                     error_exit("couldn't parse system call number in line %d of %s: %s" % (lineCount + 1, fname, line))
             lineCount += 1
@@ -412,6 +420,7 @@ class Qvm:
             if len(words) > 2:
                 n = words[1]
                 try:
+                    # hex value without leading '0x':  2ad89a6d
                     h = atoi(words[2], 16)
                 except ValueError:
                     error_exit("couldn't parse hash value in line %d of %s: %s" % (lineCount + 1, fname, line))
@@ -463,7 +472,7 @@ class Qvm:
             v = match.group("value")
 
             try:
-                addr = atoi(v, 16)
+                addr = parse_int(v)
             except ValueError as ex:
                 error_msg("couldn't parse address: %s" % v)
                 # raise again to let caller print file and line number
@@ -532,7 +541,7 @@ class Qvm:
                     error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 try:
-                    templateSize = atoi(words[1], 16)
+                    templateSize = parse_int(words[1])
                 except ValueError:
                     error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
                 haveTemplateInfo = True
@@ -556,7 +565,7 @@ class Qvm:
                 error_exit("invalid member declaration in line %d of %s: %s" % (lineCount + 1, fname, line))
 
             try:
-                memberOffset = atoi(words[0], 16)
+                memberOffset = parse_int(words[0])
             except ValueError:
                 error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -573,7 +582,7 @@ class Qvm:
                     memberIsPointer = True
                 else:
                     try:
-                        memberSize = atoi(words[1], 16)
+                        memberSize = parse_int(words[1])
                     except ValueError:
                         error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -631,12 +640,12 @@ class Qvm:
                 words = line.split()
                 if len(words) == 2:
                     try:
-                        self.symbols[atoi(words[0], 16)] = words[1]
+                        self.symbols[parse_int(words[0])] = words[1]
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                 elif len(words) == 3:
                     try:
-                        addr = atoi(words[0], 16)
+                        addr = parse_int(words[0])
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -663,7 +672,7 @@ class Qvm:
                             isPointer = True
                         else:
                             try:
-                                size = atoi(words[1], 16)
+                                size = parse_int(words[1])
                             except ValueError:
                                 error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -724,7 +733,7 @@ class Qvm:
                             error_exit("invalid local specification in line %d of %s: %s" % (lineCount + 1, fname, line))
                         if len(words) > 3:  # range or template/type specified
                             try:
-                                localAddr = atoi(words[1], 16)
+                                localAddr = parse_int(words[1])
                             except ValueError:
                                 error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -752,7 +761,7 @@ class Qvm:
                                     isPointer = True
                                 else:
                                     try:
-                                        size = atoi(words[2], 16)
+                                        size = parse_int(words[2])
                                     except ValueError:
                                         error_exit("couldn't parse size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -791,13 +800,13 @@ class Qvm:
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
-                                self.functionsLocalLabels[currentFuncAddr][atoi(words[1], 16)] = words[2]
+                                self.functionsLocalLabels[currentFuncAddr][parse_int(words[1])] = words[2]
                             except ValueError:
                                 error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     else:
                         # function definition
                         try:
-                            funcAddr = atoi(words[0], 16)
+                            funcAddr = parse_int(words[0])
                         except ValueError:
                             error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                         self.functions[funcAddr] = words[1]
@@ -818,9 +827,9 @@ class Qvm:
                 words = line.split()
                 if len(words) > 2:
                     try:
-                        codeAddr = atoi(words[0], 16)
+                        codeAddr = parse_int(words[0])
                         n = words[1]
-                        val = atoi(words[2], 16)
+                        val = parse_int(words[2])
                     except ValueError:
                         error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
                     self.constants[codeAddr] = [n, val]
@@ -855,7 +864,7 @@ class Qvm:
 
                 if len(words) > 1:
                     try:
-                        codeAddr = atoi(words[0], 16)
+                        codeAddr = parse_int(words[0])
                     except ValueError:
                         error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     commentType = words[1]
@@ -882,9 +891,9 @@ class Qvm:
                         spaceAfter = 0
                         if len(words) > 2:
                             try:
-                                spaceBefore = atoi(words[2])
+                                spaceBefore = parse_int(words[2])
                                 if len(words) > 3:
-                                    spaceAfter = atoi(words[3])
+                                    spaceAfter = parse_int(words[3])
                             except ValueError:
                                 error_exit("couldn't get space before or after value in line %d of %s: %s" % (lineCount + 1, fname, line))
 
