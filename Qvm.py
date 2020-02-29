@@ -316,7 +316,7 @@ class Qvm:
         # user labels
         self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
-        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str], [size2:int, sym2:str, isPointer2:bool, pointerType2:str], ... ] }
+        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int ], [size2:int, sym2:str, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ] }
 
         self.functionHashes = {}  # addr:int -> hash:int
         self.functionRevHashes = {}  # hash:int -> [funcAddr1:int, funcAddr2:int, ...]
@@ -327,8 +327,8 @@ class Qvm:
         self.baseQ3FunctionRevHashes = {}  # hash:int -> [ funcName1, funcName2, ... ]
 
         self.symbols = {}  # addr:int -> sym:str
-        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str], [size2:int, sym2:str, isPointer2:bool, pointerType2:str], ... ]
-        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str, isPointer1:bool, pointerType1:str], [offsetMember2:int, sizeMember2:int, nameMember2:int, isPointer2:bool, pointerType2:str], ... ] ]
+        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int], [size2:int, sym2:str, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ]
+        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int], [offsetMember2:int, sizeMember2:int, nameMember2:int, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ] ]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
         # code segment comments
@@ -642,13 +642,23 @@ class Qvm:
 
                     isPointer = False
                     pointerType = ""
+                    pointerDepth = 0
 
                     if words[1].startswith("t:")  and  len(words[1]) > 2:
                         template = words[1][2:]
                     else:
                         template = None
-                        if words[1].startswith("*t:")  and  len(words[1]) > 3:
-                            pointerType = words[1][3:]
+                        if words[1].startswith("*"):
+                            # ***t:item  ->  [ "***", "item" ]
+                            ws = words[1].split("t:")
+                            if len(ws) != 2:
+                                error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            # validate
+                            for c in ws[0]:
+                                if c != "*":
+                                    error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            pointerDepth = len(ws[0])
+                            pointerType = ws[1]
                             size = 0x4
                             isPointer = True
                         else:
@@ -683,7 +693,7 @@ class Qvm:
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        self.symbolsRange[addr].append([size, sym, isPointer, pointerType])
+                        self.symbolsRange[addr].append([size, sym, isPointer, pointerType, pointerDepth])
 
                 lineCount += 1
 
@@ -720,13 +730,24 @@ class Qvm:
 
                             isPointer = False
                             pointerType = ""
+                            pointerDepth = 0
 
                             if words[2].startswith("t:")  and  len(words[2]) > 2:
                                 template = words[2][2:]
                             else:
                                 template = None
-                                if words[2].startswith("*t:")  and  len(words[2]) > 3:
-                                    pointerType = words[2][3:]
+                                #if words[2].startswith("*t:")  and  len(words[2]) > 3:
+                                if words[2].startswith("*"):
+                                    # ***t:item -> [ "***", "item" ]
+                                    ws = words[2].split("t:")
+                                    if len(ws) != 2:
+                                        error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                    # validate
+                                    for c in ws[0]:
+                                        if c != "*":
+                                            error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                    pointerDepth = len(ws[0])
+                                    pointerType = ws[1]
                                     size = 0x4
                                     isPointer = True
                                 else:
@@ -765,7 +786,7 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym, isPointer, pointerType])
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym, isPointer, pointerType, pointerDepth])
                         else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
@@ -1174,7 +1195,9 @@ class Qvm:
                             sym = r[1]
                             isPointer = r[2]
                             pointerType = r[3]
-                            if size == 0x4  and  isPointer:
+                            pointerDepth = r[4]
+                            #FIXME support for higher pointerDepth
+                            if size == 0x4  and  isPointer  and  pointerDepth == 1:
                                 templateName = pointerType
                                 foundTemplate = True
                                 break
