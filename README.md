@@ -193,3 +193,6 @@ Templates are specified with a _'t:'_ tag.  Pointers to templates/types are spec
     0xcbab0 *t:snapshot_t cg.snap
     ...
     0xe87c8 t:gameState_t cgs.gameState
+    ...
+    0xf1f23 **t:buffer bx  ; pointer to pointer
+
