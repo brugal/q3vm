@@ -843,14 +843,22 @@ class Qvm:
                 # strip comments
                 line = line.split(";")[0]
                 words = line.split()
-                if len(words) > 2:
-                    try:
-                        codeAddr = parse_int(words[0])
-                        n = words[1]
-                        val = parse_int(words[2])
-                    except ValueError:
-                        error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
-                    self.constants[codeAddr] = [n, val]
+
+                # skip blank lines
+                if len(words) == 0:
+                    lineCount += 1
+                    continue
+
+                if len(words) != 3:
+                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+                # len(words) == 3
+                try:
+                    codeAddr = parse_int(words[0])
+                    n = words[1]
+                    val = parse_int(words[2])
+                except ValueError:
+                    error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                self.constants[codeAddr] = [n, val]
 
                 lineCount += 1
 
