@@ -638,6 +638,11 @@ class Qvm:
                 # strip comments
                 line = line.split(";")[0]
                 words = line.split()
+                # skip blank lines
+                if len(words) == 0:
+                    lineCount += 1
+                    continue
+
                 if len(words) == 2:
                     try:
                         self.symbols[parse_int(words[0])] = words[1]
@@ -703,6 +708,8 @@ class Qvm:
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
                         self.symbolsRange[addr].append([size, sym, isPointer, pointerType, pointerDepth])
+                else:  # len(words) > 3
+                    error_exit("extra text specified in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 lineCount += 1
 
@@ -719,6 +726,11 @@ class Qvm:
                 # strip comments
                 line = line.split(";")[0]
                 words = line.split()
+                # skip blank lines
+                if len(words) == 0:
+                    lineCount += 1
+                    continue
+
                 if len(words) > 1:
                     if words[0].startswith("arg"):
                         if currentFuncAddr == None:
