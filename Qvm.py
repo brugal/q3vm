@@ -612,6 +612,37 @@ class Qvm:
             # never finished parsing last template
             error_exit("last template not closed in %s" % fname)
 
+    def parse_symbol_or_size (self, words, lineCount, fname, line):
+        size = 0
+        template = None
+        isPointer = False
+        pointerType = ""
+        pointerDepth = 0
+
+        if words[1].startswith("t:")  and  len(words[1]) > 2:
+            template = words[1][2:]
+        else:
+            template = None
+            if words[1].startswith("*"):
+                # ***t:item  ->  [ "***", "item" ]
+                ws = words[1].split("t:")
+                if len(ws) != 2:
+                    error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
+                # validate
+                for c in ws[0]:
+                    if c != "*":
+                        error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
+                pointerDepth = len(ws[0])
+                pointerType = ws[1]
+                size = 0x4
+                isPointer = True
+            else:
+                try:
+                    size = parse_int(words[1])
+                except ValueError:
+                    error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+        return (size, template, isPointer, pointerType, pointerDepth)
+
     def load_address_info (self):
         # symbol templates
         fname = TEMPLATES_DEFAULT_FILE
@@ -657,32 +688,7 @@ class Qvm:
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                    isPointer = False
-                    pointerType = ""
-                    pointerDepth = 0
-
-                    if words[1].startswith("t:")  and  len(words[1]) > 2:
-                        template = words[1][2:]
-                    else:
-                        template = None
-                        if words[1].startswith("*"):
-                            # ***t:item  ->  [ "***", "item" ]
-                            ws = words[1].split("t:")
-                            if len(ws) != 2:
-                                error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
-                            # validate
-                            for c in ws[0]:
-                                if c != "*":
-                                    error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
-                            pointerDepth = len(ws[0])
-                            pointerType = ws[1]
-                            size = 0x4
-                            isPointer = True
-                        else:
-                            try:
-                                size = parse_int(words[1])
-                            except ValueError:
-                                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
 
                     sym = words[2]
 
@@ -755,34 +761,7 @@ class Qvm:
                             except ValueError:
                                 error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                            isPointer = False
-                            pointerType = ""
-                            pointerDepth = 0
-
-                            if words[2].startswith("t:")  and  len(words[2]) > 2:
-                                template = words[2][2:]
-                            else:
-                                template = None
-                                #if words[2].startswith("*t:")  and  len(words[2]) > 3:
-                                if words[2].startswith("*"):
-                                    # ***t:item -> [ "***", "item" ]
-                                    ws = words[2].split("t:")
-                                    if len(ws) != 2:
-                                        error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
-                                    # validate
-                                    for c in ws[0]:
-                                        if c != "*":
-                                            error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
-                                    pointerDepth = len(ws[0])
-                                    pointerType = ws[1]
-                                    size = 0x4
-                                    isPointer = True
-                                else:
-                                    try:
-                                        size = parse_int(words[2])
-                                    except ValueError:
-                                        error_exit("couldn't parse size of range in line %d of %s: %s" % (lineCount + 1, fname, line))
-
+                            (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
                             sym = words[3]
 
                             if template:
