@@ -882,6 +882,15 @@ class Qvm:
                 #     <<<
 
                 words = line.split()
+
+                # skip blank lines
+                if len(words) == 0:
+                    lineCount += 1
+                    continue
+
+                if len(words) == 1:
+                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+
                 dataComment = False
                 if len(words) > 1:
                     if words[0] == "d":
