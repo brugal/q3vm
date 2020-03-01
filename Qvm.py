@@ -643,6 +643,9 @@ class Qvm:
                     lineCount += 1
                     continue
 
+                if len(words) == 1:
+                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+
                 if len(words) == 2:
                     try:
                         self.symbols[parse_int(words[0])] = words[1]
@@ -730,6 +733,9 @@ class Qvm:
                 if len(words) == 0:
                     lineCount += 1
                     continue
+
+                if len(words) == 1:
+                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 if len(words) > 1:
                     if words[0].startswith("arg"):
