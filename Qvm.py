@@ -612,6 +612,8 @@ class Qvm:
 
         if words[1].startswith("t:")  and  len(words[1]) > 2:
             template = words[1][2:]
+            if template[0].isdigit():
+                error_exit("template name begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
         else:
             template = None
             if words[1].startswith("*"):
@@ -625,6 +627,8 @@ class Qvm:
                         error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
                 pointerDepth = len(ws[0])
                 pointerType = ws[1]
+                if pointerType[0].isdigit():
+                    error_exit("pointer type begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
                 size = 0x4
                 isPointer = True
             else:
