@@ -584,7 +584,7 @@ class Qvm:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
-                memberList.append([memberOffset, memberTemplateSize, memberName, False, ""])
+                memberList.append([memberOffset, memberTemplateSize, memberName, False, "", 0])
                 for m in memberTemplateMembers:
                     mOffset = m[0]
                     mSize = m[1]
@@ -692,7 +692,7 @@ class Qvm:
                         templateSize = self.symbolTemplates[template][0]
                         members = self.symbolTemplates[template][1]
                         # add template itself
-                        self.symbolsRange[addr].append([templateSize, sym, False, ""])
+                        self.symbolsRange[addr].append([templateSize, sym, False, "", 0])
 
                         for m in members:
                             memberOffset = m[0]
@@ -700,10 +700,11 @@ class Qvm:
                             memberName = m[2]
                             memberIsPointer = m[3]
                             memberPointerType = m[4]
+                            memberPointerDepth = m[5]
                             maddr = addr + memberOffset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType])
+                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType, memberPointerDepth])
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
@@ -766,7 +767,7 @@ class Qvm:
                                 templateSize = self.symbolTemplates[template][0]
                                 members = self.symbolTemplates[template][1]
                                 # add template itself
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym, False, ""])
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym, False, "", 0])
 
                                 for m in members:
                                     memberOffset = m[0]
