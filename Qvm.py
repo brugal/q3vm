@@ -569,22 +569,7 @@ class Qvm:
             except ValueError:
                 error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-            memberIsPointer = False
-            memberPointerType = ""
-
-            if words[1].startswith("t:")  and  len(words[1]) > 2:
-                memberTemplate = words[1][2:]
-            else:
-                memberTemplate = None
-                if words[1].startswith("*t:")  and  len(words[1]) > 3:
-                    memberPointerType = words[1][3:]
-                    memberSize = 0x4
-                    memberIsPointer = True
-                else:
-                    try:
-                        memberSize = parse_int(words[1])
-                    except ValueError:
-                        error_exit("couldn't get member size in line %d of %s: %s" % (lineCount + 1, fname, line))
+            (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
 
             memberName = words[2]
 
@@ -601,10 +586,11 @@ class Qvm:
                     mName = m[2]
                     mIsPointer = m[3]
                     mPointerType = m[4]
+                    mPointerDepth = m[5]
                     adjOffset = memberOffset + mOffset
-                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName), mIsPointer, mPointerType])
+                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName), mIsPointer, mPointerType, mPointerDepth])
             else:
-                memberList.append([memberOffset, memberSize, memberName, memberIsPointer, memberPointerType])
+                memberList.append([memberOffset, memberSize, memberName, memberIsPointer, memberPointerType, memberPointerDepth])
 
             lineCount += 1
 
