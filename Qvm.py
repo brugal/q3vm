@@ -46,9 +46,15 @@ def hash32BitSigned (str):
     return value
 
 # detect hex or base 10, also explicitly require 0[xX] hex notation to make
-# it easier to check if something is a number or a symbol.  Ex: s[0].isdigit()
+# it easier to check if something is a number or a symbol.  Ex: c.isdigit()
 def parse_int (s):
-    if len(s) > 2  and  s[0] == '0'  and  (s[1] == 'x'  or  s[1] == 'X'):
+    # skip '+' and '-'
+    if len(s) > 0  and  (s[0] == '+'  or  s[0] == '-'):
+        st = s[1:]
+    else:
+        st = s
+
+    if len(st) > 2  and  st[0] == '0'  and  (st[1] == 'x'  or  st[1] == 'X'):
         return atoi(s, 16)
     else:
         return atoi(s, 10)
