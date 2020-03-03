@@ -195,4 +195,4 @@ Templates are specified with a _'t:'_ tag.  Pointers to templates/types are spec
     ...
     0xf1f23 **t:buffer bx  ; pointer to pointer
 
-Template and member names can't start with a digit.
+Template and member names can't start with a digit, '+', or '-'.

@@ -59,6 +59,14 @@ def parse_int (s):
     else:
         return atoi(s, 10)
 
+def valid_symbol_name (s):
+    if s == None  or len(s) == 0:
+        return False
+    c = s[0]
+    if c.isdigit()  or  c == '+'  or  c == '-':
+        return False
+    return True
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CGAME_SYSCALLS_ASM_FILE = "cg_syscalls.asm"
@@ -543,8 +551,8 @@ class Qvm:
                     error_exit("couldn't parse template name and size in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 templateName = words[0]
-                if templateName[0].isdigit():
-                    error_exit("template name begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if not valid_symbol_name(templateName):
+                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 if not allowOverride  and  templateName in self.symbolTemplates:
                     error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
@@ -587,8 +595,8 @@ class Qvm:
             (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
 
             memberName = words[2]
-            if memberName[0].isdigit():
-                error_exit("member name begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if not valid_symbol_name(memberName):
+                error_exit("invalid member name in line %d of %s: %s" % (lineCount + 1, fname, line))
 
             if memberTemplate:
                 if memberTemplate not in self.symbolTemplates:
@@ -624,8 +632,8 @@ class Qvm:
 
         if words[1].startswith("t:")  and  len(words[1]) > 2:
             template = words[1][2:]
-            if template[0].isdigit():
-                error_exit("template name begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if not valid_symbol_name(template):
+                error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
         else:
             template = None
             if words[1].startswith("*"):
@@ -639,8 +647,8 @@ class Qvm:
                         error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
                 pointerDepth = len(ws[0])
                 pointerType = ws[1]
-                if pointerType[0].isdigit():
-                    error_exit("pointer type begins with digit in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if not valid_symbol_name(pointerType):
+                    error_exit("invalid pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
                 size = 0x4
                 isPointer = True
             else:
