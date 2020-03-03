@@ -592,7 +592,7 @@ class Qvm:
             if memberOffset < 0:
                 error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-            (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
+            (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
             memberName = words[2]
             if not valid_symbol_name(memberName):
@@ -624,21 +624,23 @@ class Qvm:
             error_exit("last template not closed in %s" % fname)
 
     def parse_symbol_or_size (self, words, lineCount, fname, line):
+        # currently only checks words[0] but could potentially allow spaces
+        # for pointer or array declarations
         size = 0
         template = None
         isPointer = False
         pointerType = ""
         pointerDepth = 0
 
-        if words[1].startswith("t:")  and  len(words[1]) > 2:
-            template = words[1][2:]
+        if words[0].startswith("t:")  and  len(words[0]) > 2:
+            template = words[0][2:]
             if not valid_symbol_name(template):
                 error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
         else:
             template = None
-            if words[1].startswith("*"):
+            if words[0].startswith("*"):
                 # ***t:item  ->  [ "***", "item" ]
-                ws = words[1].split("t:")
+                ws = words[0].split("t:")
                 if len(ws) != 2:
                     error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
                 # validate
@@ -653,7 +655,7 @@ class Qvm:
                 isPointer = True
             else:
                 try:
-                    size = parse_int(words[1])
+                    size = parse_int(words[0])
                 except ValueError:
                     error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
                 if size < 0:
@@ -711,7 +713,7 @@ class Qvm:
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                    (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
+                    (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
                     sym = words[2]
 
@@ -787,7 +789,7 @@ class Qvm:
                             if localAddr < 0:
                                 error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                            (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                            (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[2:], lineCount, fname, line)
                             sym = words[3]
 
                             if template:
