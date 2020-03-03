@@ -547,6 +547,10 @@ class Qvm:
                     templateSize = parse_int(words[1])
                 except ValueError:
                     error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                if templateSize < 0:
+                    error_exit("invalid template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                 haveTemplateInfo = True
                 skipOpeningBrace = True
                 memberList = []
@@ -571,6 +575,8 @@ class Qvm:
                 memberOffset = parse_int(words[0])
             except ValueError:
                 error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if memberOffset < 0:
+                error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
             (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
 
@@ -636,6 +642,8 @@ class Qvm:
                     size = parse_int(words[1])
                 except ValueError:
                     error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if size < 0:
+                    error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
         return (size, template, isPointer, pointerType, pointerDepth)
 
     def load_address_info (self):
@@ -674,14 +682,20 @@ class Qvm:
 
                 if len(words) == 2:
                     try:
-                        self.symbols[parse_int(words[0])] = words[1]
+                        addr = parse_int(words[0])
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if addr < 0:
+                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    self.symbols[addr] = words[1]
+
                 elif len(words) == 3:
                     try:
                         addr = parse_int(words[0])
                     except ValueError:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if addr < 0:
+                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                     (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words, lineCount, fname, line)
 
@@ -756,6 +770,8 @@ class Qvm:
                                 localAddr = parse_int(words[1])
                             except ValueError:
                                 error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            if localAddr < 0:
+                                error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                             (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
                             sym = words[3]
@@ -802,6 +818,8 @@ class Qvm:
                             funcAddr = parse_int(words[0])
                         except ValueError:
                             error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        if funcAddr < 0:
+                            error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                         self.functions[funcAddr] = words[1]
                         currentFuncAddr = funcAddr
 
@@ -826,13 +844,15 @@ class Qvm:
 
                 if len(words) != 3:
                     error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
-                # len(words) == 3
+                # at this point len(words) == 3
                 try:
                     codeAddr = parse_int(words[0])
                     n = words[1]
                     val = parse_int(words[2])
                 except ValueError:
                     error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if codeAddr < 0:
+                    error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                 self.constants[codeAddr] = [n, val]
 
                 lineCount += 1
@@ -877,6 +897,8 @@ class Qvm:
                         codeAddr = parse_int(words[0])
                     except ValueError:
                         error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if codeAddr < 0:
+                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     commentType = words[1]
                     useVariableSubstitution = False
                     if commentType[0] == "@":
@@ -906,6 +928,8 @@ class Qvm:
                                     spaceAfter = parse_int(words[3])
                             except ValueError:
                                 error_exit("couldn't get space before or after value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        if spaceBefore < 0  or  spaceAfter < 0:
+                            error_exit("invalid space before or after in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                         if spaceBefore > 0  or  spaceAfter > 0:
                             if commentType == "before":
