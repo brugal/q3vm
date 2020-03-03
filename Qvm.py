@@ -632,34 +632,35 @@ class Qvm:
         pointerType = ""
         pointerDepth = 0
 
-        if words[0].startswith("t:")  and  len(words[0]) > 2:
-            template = words[0][2:]
-            if not valid_symbol_name(template):
-                error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
-        else:
-            template = None
-            if words[0].startswith("*"):
-                # ***t:item  ->  [ "***", "item" ]
-                ws = words[0].split("t:")
-                if len(ws) != 2:
-                    error_exit("couldn't parse pointer in line %d of %s: %s" % (lineCount + 1, fname, line))
-                # validate
-                for c in ws[0]:
-                    if c != "*":
-                        error_exit("invalid pointer declaration character in line %d of %s: %s" % (lineCount + 1, fname, line))
-                pointerDepth = len(ws[0])
-                pointerType = ws[1]
-                if not valid_symbol_name(pointerType):
-                    error_exit("invalid pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
+        word = words[0]
+        firstChar = word[0]
+        if firstChar.isdigit()  or  firstChar in ('+', '-'):
+            try:
+                size = parse_int(word)
+            except ValueError:
+                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if size < 0:
+                error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
+        else:  # template or pointer
+            # check for pointer and pointer depth
+            wlen = len(word)
+            for i in range(wlen):
+                if word[i] == '*':
+                    isPointer = True
+                    pointerDepth += 1
+                else:
+                    break
+
+            if isPointer:
+                w = word[i:]
+                pointerType = w
                 size = 0x4
-                isPointer = True
-            else:
-                try:
-                    size = parse_int(words[0])
-                except ValueError:
-                    error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
-                if size < 0:
-                    error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
+            else:  # template
+                w = word
+                template = w
+                if not valid_symbol_name(template):
+                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+
         return (size, template, isPointer, pointerType, pointerDepth)
 
     def load_address_info (self):

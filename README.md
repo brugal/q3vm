@@ -65,7 +65,7 @@ The *.dat* files are opened from the current working directory.  Comments in
     0x28ae CG_Draw3DModel
       arg0 x
       local 0x18 0x170 refdef  ; also specifies the size
-      local 0x300 t:vec3_t angles  ; specifies the type
+      local 0x300 vec3_t angles  ; specifies the type
 
 Local variables can optionally specify a size or template type to identify
 references within a range.  See *symbols.dat* description for information
@@ -108,7 +108,7 @@ Templates or types automatically fill in ranges.  See the *templates.dat*
 section for a description of template types.  Ex:
 
     0xe87c8 0x26754 cgs
-      0xe87c8 t:gameState_t cgs.gameState
+      0xe87c8 gameState_t cgs.gameState
 
 output:
 
@@ -187,13 +187,11 @@ in the current directory.  *templates.dat* is read after the default one and
 allows additional definitions and overriding of the default ones.  Template
 member declarations can use previously defined template types.
 
-Templates are specified with a _'t:'_ tag.  Pointers to templates/types are specified with a _'*t:'_ tag.  Ex:
+Pointers to templates/types are specified with '*'.  Ex:
 
-    0xcbab0 *t:snapshot_t cg.snap
+    0xcbab0 *snapshot_t cg.snap
     ...
-    0xe87c8 t:gameState_t cgs.gameState
-    ...
-    0xf1f23 **t:buffer bx  ; pointer to pointer
+    0xf1f23 **buffer bx  ; pointer to pointer
 
 Template and member names can't contain spaces or start with a digit, '+', or
 '-'.
