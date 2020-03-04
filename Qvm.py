@@ -263,6 +263,15 @@ class RangeElement:
         self.pointerType = pointerType
         self.pointerDepth = pointerDepth
 
+class TemplateMember:
+    def __init__ (self, offset=0, size=0, name="", isPointer=False, pointerType="", pointerDepth=0):
+        self.offset = offset
+        self.size = size
+        self.name = name
+        self.isPointer = isPointer
+        self.pointerType = pointerType
+        self.pointerDepth = pointerDepth
+
 class InvalidQvm(Exception):
     pass
 
@@ -358,7 +367,8 @@ class Qvm:
         self.symbols = {}  # addr:int -> sym:str
         self.symbolsRange = {}  # addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
 
-        self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int], [offsetMember2:int, sizeMember2:int, nameMember2:int, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ] ]
+        self.symbolTemplates = {}  # name:str -> [ size:int, [ member1:TemplateMember, member2:TemplateMember ] ]
+
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
         # code segment comments
@@ -612,18 +622,12 @@ class Qvm:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
-                memberList.append([memberOffset, memberTemplateSize, memberName, False, "", 0])
+                memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName))
                 for m in memberTemplateMembers:
-                    mOffset = m[0]
-                    mSize = m[1]
-                    mName = m[2]
-                    mIsPointer = m[3]
-                    mPointerType = m[4]
-                    mPointerDepth = m[5]
-                    adjOffset = memberOffset + mOffset
-                    memberList.append([adjOffset, mSize, "%s.%s" % (memberName, mName), mIsPointer, mPointerType, mPointerDepth])
+                    adjOffset = memberOffset + m.offset
+                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), isPointer=m.isPointer, pointerDepth=m.pointerDepth))
             else:
-                memberList.append([memberOffset, memberSize, memberName, memberIsPointer, memberPointerType, memberPointerDepth])
+                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
 
             lineCount += 1
 
@@ -738,16 +742,10 @@ class Qvm:
                         self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
 
                         for m in members:
-                            memberOffset = m[0]
-                            memberSize = m[1]
-                            memberName = m[2]
-                            memberIsPointer = m[3]
-                            memberPointerType = m[4]
-                            memberPointerDepth = m[5]
-                            maddr = addr + memberOffset
+                            maddr = addr + m.offset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append(RangeElement(size=memberSize, symbolName="%s.%s" % (sym, memberName), isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
+                            self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth))
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
@@ -815,15 +813,10 @@ class Qvm:
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=templateSize, symbolName=sym))
 
                                 for m in members:
-                                    memberOffset = m[0]
-                                    memberSize = m[1]
-                                    memberName = m[2]
-                                    memberIsPointer = m[3]
-                                    memberPointerType = m[4]
-                                    maddr = localAddr + memberOffset
+                                    maddr = localAddr + m.offset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
-                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=memberSize, symbolName="%s.%s" % (sym, memberName), isPointer=memberIsPointer, pointerType=memberPointerType))
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType))
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
@@ -1273,9 +1266,8 @@ class Qvm:
                         memberList = self.symbolTemplates[templateName][1]
                         foundOffset = False
                         for m in memberList:
-                            memberOffset = m[0]
-                            memberName = m[2]
-                            if memberOffset == pdr[2]:
+                            memberName = m.name
+                            if m.offset == pdr[2]:
                                 foundOffset = True
                                 break
                         if not foundOffset:
