@@ -255,6 +255,13 @@ OP_MULF,
 OP_CVIF,
 OP_CVFI ) = range(60)
 
+class RangeElement:
+    def __init__ (self, size=0, symbolName="", isPointer=False, pointerType="", pointerDepth=0):
+        self.size = size;
+        self.symbolName = symbolName
+        self.isPointer = isPointer
+        self.pointerType = pointerType
+        self.pointerDepth = pointerDepth
 
 class InvalidQvm(Exception):
     pass
@@ -338,7 +345,7 @@ class Qvm:
         # user labels
         self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
-        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int ], [size2:int, sym2:str, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ] }
+        self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ range1:RangeElement, range2:RangeElement, ... ] }
 
         self.functionHashes = {}  # addr:int -> hash:int
         self.functionRevHashes = {}  # hash:int -> [funcAddr1:int, funcAddr2:int, ...]
@@ -349,7 +356,8 @@ class Qvm:
         self.baseQ3FunctionRevHashes = {}  # hash:int -> [ funcName1, funcName2, ... ]
 
         self.symbols = {}  # addr:int -> sym:str
-        self.symbolsRange = {}  # addr:int -> [ [size1:int, sym1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int], [size2:int, sym2:str, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ]
+        self.symbolsRange = {}  # addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
+
         self.symbolTemplates = {}  # name:str -> [ size:int, [ [offsetMember1:int, sizeMember1:int, nameMember1:str, isPointer1:bool, pointerType1:str, pointerDepth1:int], [offsetMember2:int, sizeMember2:int, nameMember2:int, isPointer2:bool, pointerType2:str, pointerDepth2:int], ... ] ]
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
@@ -444,7 +452,7 @@ class Qvm:
                     self.baseQ3FunctionRevHashes[h] = [n]
             lineCount += 1
 
-    # addr:int, symbolsRange:{} addr:int -> [ [size1:int, sym1:str], [size2:int, sym2:str], ... ]
+    # addr: int, symbolsRange:{} addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
     def find_in_symbol_range (self, addr, symbolsRange):
         exactMatches = []  #FIXME sorted
         match = None
@@ -453,8 +461,8 @@ class Qvm:
         matchRangeSize = 0
         for rangeAddr in symbolsRange:
             for r in symbolsRange[rangeAddr]:
-                size = r[0]
-                sym = r[1]
+                size = r.size
+                sym = r.symbolName
                 if addr == rangeAddr:
                     exactMatches.append(sym)
                 elif addr >= rangeAddr  and  addr < (rangeAddr + size):
@@ -727,7 +735,7 @@ class Qvm:
                         templateSize = self.symbolTemplates[template][0]
                         members = self.symbolTemplates[template][1]
                         # add template itself
-                        self.symbolsRange[addr].append([templateSize, sym, False, "", 0])
+                        self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
 
                         for m in members:
                             memberOffset = m[0]
@@ -739,11 +747,11 @@ class Qvm:
                             maddr = addr + memberOffset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType, memberPointerDepth])
+                            self.symbolsRange[maddr].append(RangeElement(size=memberSize, symbolName="%s.%s" % (sym, memberName), isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        self.symbolsRange[addr].append([size, sym, isPointer, pointerType, pointerDepth])
+                        self.symbolsRange[addr].append(RangeElement(size=size, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
                 else:  # len(words) > 3
                     error_exit("extra text specified in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -804,7 +812,7 @@ class Qvm:
                                 templateSize = self.symbolTemplates[template][0]
                                 members = self.symbolTemplates[template][1]
                                 # add template itself
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([templateSize, sym, False, "", 0])
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=templateSize, symbolName=sym))
 
                                 for m in members:
                                     memberOffset = m[0]
@@ -815,13 +823,13 @@ class Qvm:
                                     maddr = localAddr + memberOffset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
-                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append([memberSize, "%s.%s" % (sym, memberName), memberIsPointer, memberPointerType])
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=memberSize, symbolName="%s.%s" % (sym, memberName), isPointer=memberIsPointer, pointerType=memberPointerType))
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append([size, sym, isPointer, pointerType, pointerDepth])
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
                         else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
@@ -1206,8 +1214,8 @@ class Qvm:
                         matchRangeSize = 0
                         for rangeAddr in self.symbolsRange:
                             for r in self.symbolsRange[rangeAddr]:
-                                size = r[0]
-                                sym = r[1]
+                                size = r.size
+                                sym = r.symbolName
                                 if parm == rangeAddr:
                                     exactMatches.append(sym)
                                 elif parm >= rangeAddr  and  parm < (rangeAddr + size):
@@ -1251,14 +1259,10 @@ class Qvm:
                     if rangeAddr in self.symbolsRange:
                         for r in self.symbolsRange[rangeAddr]:
                             # use first match
-                            size = r[0]
-                            sym = r[1]
-                            isPointer = r[2]
-                            pointerType = r[3]
-                            pointerDepth = r[4]
+                            sym = r.symbolName
                             #FIXME support for higher pointerDepth
-                            if size == 0x4  and  isPointer  and  pointerDepth == 1:
-                                templateName = pointerType
+                            if r.size == 0x4  and  r.isPointer  and  r.pointerDepth == 1:
+                                templateName = r.pointerType
                                 foundTemplate = True
                                 break
 
