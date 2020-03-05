@@ -617,8 +617,6 @@ class Qvm:
                 error_exit("invalid member name in line %d of %s: %s" % (lineCount + 1, fname, line))
 
             if memberTemplate:
-                if memberTemplate not in self.symbolTemplates:
-                    error_exit("unknown member template in line %d of %s %s" % (lineCount + 1, fname, line))
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
@@ -676,6 +674,8 @@ class Qvm:
                 template = w
                 if not valid_symbol_name(template):
                     error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if template not in self.symbolTemplates:
+                    error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
 
         return (size, template, isPointer, pointerType, pointerDepth)
 
@@ -735,8 +735,6 @@ class Qvm:
                     sym = words[2]
 
                     if template:
-                        if template not in self.symbolTemplates:
-                            error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
                         # add template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
@@ -804,8 +802,6 @@ class Qvm:
                             sym = words[3]
 
                             if template:
-                                if template not in self.symbolTemplates:
-                                    error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
                                 # add template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
