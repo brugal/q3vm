@@ -462,7 +462,7 @@ class Qvm:
                     self.baseQ3FunctionRevHashes[h] = [n]
             lineCount += 1
 
-    # addr: int, symbolsRange:{} addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
+    # addr:int, symbolsRange:{} addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
     def find_in_symbol_range (self, addr, symbolsRange):
         exactMatches = []  #FIXME sorted
         match = None
@@ -666,6 +666,10 @@ class Qvm:
             if isPointer:
                 w = word[i:]
                 pointerType = w
+                if not valid_symbol_name(pointerType):
+                    error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if pointerType not in self.symbolTemplates:
+                    error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
                 size = 0x4
             else:  # template
                 w = word
