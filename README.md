@@ -67,10 +67,10 @@ The *.dat* files are opened from the current working directory.  Comments in
       local 0x18 0x170 refdef  ; also specifies the size
       local 0x300 vec3_t angles  ; specifies the type
 
-Local variables can optionally specify a size or template type to identify
-references within a range.  See *symbols.dat* description for information
-regarding ranges.  See *templates.dat* description for information regarding
-template and types.
+Local variables can optionally specify a size, template type, or basic type to
+identify references within a range.  See *symbols.dat* description for
+information regarding ranges.  See *templates.dat* description for information
+regarding template and types.
 
 ### *symbols.dat* ###
 
@@ -174,8 +174,8 @@ treated as a comment and discarded.  Ex:
     vmCvar_t 0x110
     {
       0x0 0x4 handle
-      0x4 0x4 modificationCount
-      0x8 0x4 value
+      0x4 int modificationCount
+      0x8 float value
       0xc 0x4 integer
       0x10 0x100 string[]  ; string[MAX_CVAR_VALUE_STRING]
     }
@@ -194,4 +194,6 @@ Pointers to templates/types are specified with '*'.  Ex:
     0xf1f23 **buffer bx  ; pointer to pointer
 
 Template and member names can't contain spaces or start with a digit, '+', or
-'-'.
+'-'.  Template names can't match basic type names or "void".  Basic types are:
+byte, char, int, and float.
+

@@ -65,6 +65,8 @@ def valid_symbol_name (s):
     c = s[0]
     if c.isdigit()  or  c == '+'  or  c == '-':
         return False
+    if s == "void"  or  s in basicTypes:
+        return False
     return True
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -255,19 +257,40 @@ OP_MULF,
 OP_CVIF,
 OP_CVFI ) = range(60)
 
+basicTypes = ("byte", "char", "int", "float")
+
+SYMBOL_RANGE = 0  # size specified directly
+SYMBOL_TEMPLATE = 1
+SYMBOL_POINTER_VOID = 2
+SYMBOL_POINTER_BASIC = 3  # pointer to basic type
+SYMBOL_POINTER_TEMPLATE = 4
+# basic types
+SYMBOL_BYTE = 5
+SYMBOL_CHAR = 6
+SYMBOL_INT = 7
+SYMBOL_FLOAT = 8
+
 class RangeElement:
-    def __init__ (self, size=0, symbolName="", isPointer=False, pointerType="", pointerDepth=0):
+    def __init__ (self, size=0, symbolName="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0):
         self.size = size;
         self.symbolName = symbolName
+
+        # templates should have been expanded by the time they are added as ranges
+        if symbolType == SYMBOL_TEMPLATE:
+            #error_msg("range element created with template symbol")
+            raise Exception("range element created with template symbol")
+
+        self.symbolType = symbolType
         self.isPointer = isPointer
         self.pointerType = pointerType
         self.pointerDepth = pointerDepth
 
 class TemplateMember:
-    def __init__ (self, offset=0, size=0, name="", isPointer=False, pointerType="", pointerDepth=0):
+    def __init__ (self, offset=0, size=0, name="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0):
         self.offset = offset
         self.size = size
         self.name = name
+        self.symbolType = symbolType
         self.isPointer = isPointer
         self.pointerType = pointerType
         self.pointerDepth = pointerDepth
@@ -610,7 +633,7 @@ class Qvm:
             if memberOffset < 0:
                 error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-            (memberSize, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
             memberName = words[2]
             if not valid_symbol_name(memberName):
@@ -623,9 +646,9 @@ class Qvm:
                 memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName))
                 for m in memberTemplateMembers:
                     adjOffset = memberOffset + m.offset
-                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), isPointer=m.isPointer, pointerDepth=m.pointerDepth))
+                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth))
             else:
-                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
+                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
 
             lineCount += 1
 
@@ -638,6 +661,7 @@ class Qvm:
         # for pointer or array declarations
         size = 0
         template = None
+        symbolType = SYMBOL_RANGE
         isPointer = False
         pointerType = ""
         pointerDepth = 0
@@ -651,7 +675,7 @@ class Qvm:
                 error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
             if size < 0:
                 error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
-        else:  # template or pointer
+        else:  # template or basic type
             # check for pointer and pointer depth
             wlen = len(word)
             for i in range(wlen):
@@ -664,20 +688,42 @@ class Qvm:
             if isPointer:
                 w = word[i:]
                 pointerType = w
-                if not valid_symbol_name(pointerType):
-                    error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
-                if pointerType not in self.symbolTemplates:
-                    error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
+                symbolType = SYMBOL_POINTER_TEMPLATE
+                if pointerType == "void":
+                    symbolType = SYMBOL_POINTER_VOID
+                elif pointerType in basicTypes:
+                    symbolType = SYMBOL_POINTER_BASIC
+                else:
+                    if not valid_symbol_name(pointerType):
+                        error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if pointerType not in self.symbolTemplates:
+                        error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    symbolType = SYMBOL_POINTER_TEMPLATE
                 size = 0x4
-            else:  # template
+            else:  # template or basic type
                 w = word
-                template = w
-                if not valid_symbol_name(template):
-                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
-                if template not in self.symbolTemplates:
-                    error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
+                if w == "byte":
+                    symbolType = SYMBOL_BYTE
+                    size = 0x1
+                elif w == "char":
+                    symbolType = SYMBOL_CHAR
+                    size = 0x1
+                elif w == "int":
+                    symbolType = SYMBOL_INT
+                    size = 0x4
+                elif w == "float":
+                    symbolType = SYMBOL_FLOAT
+                    size = 0x4
+                else:
+                    symbolType = SYMBOL_TEMPLATE
+                    size = 0x4
+                    template = w
+                    if not valid_symbol_name(template):
+                        error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if template not in self.symbolTemplates:
+                        error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-        return (size, template, isPointer, pointerType, pointerDepth)
+        return (size, symbolType, template, isPointer, pointerType, pointerDepth)
 
     def load_address_info (self):
         # symbol templates
@@ -730,7 +776,7 @@ class Qvm:
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                    (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                    (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
                     sym = words[2]
 
@@ -747,11 +793,11 @@ class Qvm:
                             maddr = addr + m.offset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth))
+                            self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth))
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        self.symbolsRange[addr].append(RangeElement(size=size, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
+                        self.symbolsRange[addr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
                 else:  # len(words) > 3
                     error_exit("extra text specified in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -798,7 +844,7 @@ class Qvm:
                             if localAddr < 0:
                                 error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                            (size, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[2:], lineCount, fname, line)
+                            (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[2:], lineCount, fname, line)
                             sym = words[3]
 
                             if template:
@@ -816,13 +862,13 @@ class Qvm:
                                     maddr = localAddr + m.offset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
-                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType))
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType))
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
                         else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
@@ -1244,8 +1290,10 @@ class Qvm:
                 if count in self.pointerDereference:
                     pdr = self.pointerDereference[count]
 
-                    # find template
+                    # find template or basic type
                     foundTemplate = False
+                    foundBasicType = False
+                    btype = ""
                     templateName = ""
                     rangeAddr = pdr[1]
                     sym = ""
@@ -1255,9 +1303,14 @@ class Qvm:
                             sym = r.symbolName
                             #FIXME support for higher pointerDepth
                             if r.size == 0x4  and  r.isPointer  and  r.pointerDepth == 1:
-                                templateName = r.pointerType
-                                foundTemplate = True
-                                break
+                                if r.symbolType == SYMBOL_POINTER_TEMPLATE:
+                                    templateName = r.pointerType
+                                    foundTemplate = True
+                                    break
+                                elif r.symbolType == SYMBOL_POINTER_VOID  or  r.symbolType == SYMBOL_POINTER_BASIC:
+                                    btype = r.pointerType
+                                    foundBasicType = True
+                                    break
 
                     if foundTemplate:
                         memberName = "?"
@@ -1274,6 +1327,8 @@ class Qvm:
                             output("; pointer dereference (couldn't match offset) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
                         else:
                             output("; pointer dereference %s->%s\n" % (sym, memberName))
+                    elif foundBasicType:
+                        output("; pointer dereference  (basic type: %s) *0x%x -> (0x%x)\n" % (btype, pdr[1], pdr[2]))
                     else:
                         output("; pointer dereference  (no template) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
 
