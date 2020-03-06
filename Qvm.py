@@ -781,6 +781,9 @@ class Qvm:
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     self.symbols[addr] = words[1]
+                    # check if it would override previously declared range
+                    if addr in self.symbolsRange:
+                        warning_msg("simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 elif len(words) == 3:
                     try:
@@ -802,16 +805,27 @@ class Qvm:
                         members = self.templateManager.symbolTemplates[template][1]
                         # add template itself
                         self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
+                        # check if it matches previously declared simple symbol
+                        if addr in self.symbols:
+                            warning_msg("template range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                         for m in members:
                             maddr = addr + m.offset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
                             self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth))
+                            # check if it matches previously declared simple symbol
+                            if addr in self.symbols:
+                                warning_msg("member template range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                     else:  # not template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
                         self.symbolsRange[addr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
+                        # check if it would be overriden by previously declared simple symbol
+                        if addr in self.symbols:
+                            warning_msg("range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                 else:  # len(words) > 3
                     error_exit("extra text specified in line %d of %s: %s" % (lineCount + 1, fname, line))
 
@@ -871,23 +885,40 @@ class Qvm:
                                 members = self.templateManager.symbolTemplates[template][1]
                                 # add template itself
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=templateSize, symbolName=sym))
+                                # check if it is overriden by previously declared simple symbol
+                                if currentFuncAddr in self.functionsLocalLabels:
+                                    if localAddr in self.functionsLocalLabels[currentFuncAddr]:
+                                        warning_msg("local template range would be overriden by local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
 
                                 for m in members:
                                     maddr = localAddr + m.offset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
                                     self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType))
+                                    # check if it matches previously declared simple symbol
+                                    if currentFuncAddr in self.functionsLocalLabels:
+                                        if maddr in self.functionsLocalLabels[currentFuncAddr]:
+                                            warning_msg("local member template range would be override by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
+                                # check if it matches previously declared simple symbol
+                                if currentFuncAddr in self.functionsLocalLabels:
+                                    if localAddr in self.functionsLocalLabels[currentFuncAddr]:
+                                        warning_msg("local range would be override by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
                         else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
-                                self.functionsLocalLabels[currentFuncAddr][parse_int(words[1])] = words[2]
+                                laddr = parse_int(words[1])
+                                self.functionsLocalLabels[currentFuncAddr][laddr] = words[2]
+                                # check if it overrides previously declared range
+                                if currentFuncAddr in self.functionsLocalRangeLabels:
+                                    if laddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                        warning_msg("local simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
                             except ValueError:
                                 error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     else:
