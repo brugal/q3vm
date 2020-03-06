@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+####
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+####
+
+import AddParentSysPath
+
+from Qvm import TemplateManager, TemplateMember
+import sys
+
+def usage ():
+    sys.stderr.write("%s <template name>\n" % sys.argv[0])
+    sys.exit(1)
+
+def main ():
+    if len(sys.argv) < 2:
+        usage()
+
+    name = sys.argv[1]
+
+    templateManager = TemplateManager()
+    templateManager.load_default_templates()
+
+    if name not in templateManager.symbolTemplates:
+        #print("no template with that name")
+        sys.stderr.write("unknown template: %s\n" % name)
+        sys.exit(1)
+
+    #print(templateManager.symbolTemplates[name])
+    tinfo = templateManager.symbolTemplates[name]
+    size = tinfo[0]
+    members = tinfo[1]
+    print("%s 0x%x" % (name, size))
+    print("{")
+    for m in members:
+        print("    0x%x 0x%x %s" % (m.offset, m.size, m.name))
+    print("}")
+
+if __name__ == "__main__":
+    main()
