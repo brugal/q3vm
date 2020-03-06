@@ -295,6 +295,197 @@ class TemplateMember:
         self.pointerType = pointerType
         self.pointerDepth = pointerDepth
 
+class TemplateManager:
+    def __init__ (self):
+        # name:str -> [ size:int, [ member1:TemplateMember, member2:TemplateMember ] ]
+        self.symbolTemplates = {}
+
+    def parse_symbol_or_size (self, words, lineCount, fname, line):
+        # currently only checks words[0] but could potentially allow spaces
+        # for pointer or array declarations
+        size = 0
+        template = None
+        symbolType = SYMBOL_RANGE
+        isPointer = False
+        pointerType = ""
+        pointerDepth = 0
+
+        word = words[0]
+        firstChar = word[0]
+        if firstChar.isdigit()  or  firstChar in ('+', '-'):
+            try:
+                size = parse_int(word)
+            except ValueError:
+                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if size < 0:
+                error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
+        else:  # template or basic type
+            # check for pointer and pointer depth
+            wlen = len(word)
+            for i in range(wlen):
+                if word[i] == '*':
+                    isPointer = True
+                    pointerDepth += 1
+                else:
+                    break
+
+            if isPointer:
+                w = word[i:]
+                pointerType = w
+                symbolType = SYMBOL_POINTER_TEMPLATE
+                if pointerType == "void":
+                    symbolType = SYMBOL_POINTER_VOID
+                elif pointerType in basicTypes:
+                    symbolType = SYMBOL_POINTER_BASIC
+                else:
+                    if not valid_symbol_name(pointerType):
+                        error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if pointerType not in self.symbolTemplates:
+                        error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    symbolType = SYMBOL_POINTER_TEMPLATE
+                size = 0x4
+            else:  # template or basic type
+                w = word
+                if w == "byte":
+                    symbolType = SYMBOL_BYTE
+                    size = 0x1
+                elif w == "char":
+                    symbolType = SYMBOL_CHAR
+                    size = 0x1
+                elif w == "int":
+                    symbolType = SYMBOL_INT
+                    size = 0x4
+                elif w == "float":
+                    symbolType = SYMBOL_FLOAT
+                    size = 0x4
+                else:
+                    symbolType = SYMBOL_TEMPLATE
+                    size = 0x4
+                    template = w
+                    if not valid_symbol_name(template):
+                        error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    if template not in self.symbolTemplates:
+                        error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+        return (size, symbolType, template, isPointer, pointerType, pointerDepth)
+
+    def load_symbol_templates_file (self, fname, allowOverride=False):
+        # ex:
+        # vmCvar_t 0x110
+        # {
+        #   0x0 0x4 handle
+        #   0x4 0x4 modificationCount
+        #   ...
+        # }
+
+        f = open(fname)
+        lines = f.readlines()
+        f.close()
+        lineCount = 0
+        haveTemplateInfo = False
+        skipOpeningBrace = False
+        for line in lines:
+            # strip comments and trailing/ending whitespace
+            line = line.split(";")[0]
+            line = line.strip()
+            words = line.split()
+
+            # skip empty lines
+            if len(words) == 0:
+                lineCount += 1
+                continue
+
+            if haveTemplateInfo  and  skipOpeningBrace:
+                if len(words) != 1  or  words[0] != "{":
+                    error_exit("invalid opening brace in line %d of %s: %s" % (lineCount + 1, fname, line))
+                skipOpeningBrace = False
+                lineCount += 1
+                continue
+
+            if not haveTemplateInfo:
+                if len(words) != 2:
+                    error_exit("couldn't parse template name and size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                templateName = words[0]
+                if not valid_symbol_name(templateName):
+                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                if not allowOverride  and  templateName in self.symbolTemplates:
+                    error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                try:
+                    templateSize = parse_int(words[1])
+                except ValueError:
+                    error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                if templateSize < 0:
+                    error_exit("invalid template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                haveTemplateInfo = True
+                skipOpeningBrace = True
+                memberList = []
+                lineCount += 1
+                continue
+
+            # parsing template at this point
+
+            if words[0] == "}":
+                if len(words) != 1:
+                    error_exit("invalid closing brace in line %d of %s: %s" % (lineCount + 1, fname, line))
+                self.symbolTemplates[templateName] = [templateSize, memberList]
+                lineCount += 1
+                haveTemplateInfo = False
+                continue
+
+            # parsing members, ex:  0x0 0x4 handle
+            if len(words) != 3:
+                error_exit("invalid member declaration in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            try:
+                memberOffset = parse_int(words[0])
+            except ValueError:
+                error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+            if memberOffset < 0:
+                error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+
+            memberName = words[2]
+            if not valid_symbol_name(memberName):
+                error_exit("invalid member name in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+            if memberTemplate:
+                memberTemplateSize = self.symbolTemplates[memberTemplate][0]
+                memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
+                # add member template itself
+                memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName))
+                for m in memberTemplateMembers:
+                    adjOffset = memberOffset + m.offset
+                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth))
+            else:
+                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
+
+            lineCount += 1
+
+        if haveTemplateInfo:
+            # never finished parsing last template
+            error_exit("last template not closed in %s" % fname)
+
+    def load_default_templates (self):
+        fname = TEMPLATES_DEFAULT_FILE
+        if os.path.exists(fname):
+            # override default one
+            self.load_symbol_templates_file(fname, allowOverride=False)
+        else:
+            fname = os.path.join(BASE_DIR, TEMPLATES_DEFAULT_FILE)
+            if os.path.exists(fname):
+                self.load_symbol_templates_file(fname, allowOverride=False)
+
+        fname = TEMPLATES_FILE
+        if os.path.exists(fname):
+            self.load_symbol_templates_file(fname, allowOverride=True)
+
+
 class InvalidQvm(Exception):
     pass
 
@@ -390,7 +581,7 @@ class Qvm:
         self.symbols = {}  # addr:int -> sym:str
         self.symbolsRange = {}  # addr:int -> [ range1:RangeElement, range2:RangeElement, ... ]
 
-        self.symbolTemplates = {}  # name:str -> [ size:int, [ member1:TemplateMember, member2:TemplateMember ] ]
+        self.templateManager = TemplateManager()
 
         self.constants = {}  # codeAddr:int -> [ name:str, value:int ]
 
@@ -554,191 +745,9 @@ class Qvm:
         r = c.sub(matchFunc, line)
         return r
 
-    def load_symbol_templates_file (self, fname, allowOverride=False):
-        # ex:
-        # vmCvar_t 0x110
-        # {
-        #   0x0 0x4 handle
-        #   0x4 0x4 modificationCount
-        #   ...
-        # }
-
-        f = open(fname)
-        lines = f.readlines()
-        f.close()
-        lineCount = 0
-        haveTemplateInfo = False
-        skipOpeningBrace = False
-        for line in lines:
-            # strip comments and trailing/ending whitespace
-            line = line.split(";")[0]
-            line = line.strip()
-            words = line.split()
-
-            # skip empty lines
-            if len(words) == 0:
-                lineCount += 1
-                continue
-
-            if haveTemplateInfo  and  skipOpeningBrace:
-                if len(words) != 1  or  words[0] != "{":
-                    error_exit("invalid opening brace in line %d of %s: %s" % (lineCount + 1, fname, line))
-                skipOpeningBrace = False
-                lineCount += 1
-                continue
-
-            if not haveTemplateInfo:
-                if len(words) != 2:
-                    error_exit("couldn't parse template name and size in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                templateName = words[0]
-                if not valid_symbol_name(templateName):
-                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                if not allowOverride  and  templateName in self.symbolTemplates:
-                    error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                try:
-                    templateSize = parse_int(words[1])
-                except ValueError:
-                    error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                if templateSize < 0:
-                    error_exit("invalid template size in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                haveTemplateInfo = True
-                skipOpeningBrace = True
-                memberList = []
-                lineCount += 1
-                continue
-
-            # parsing template at this point
-
-            if words[0] == "}":
-                if len(words) != 1:
-                    error_exit("invalid closing brace in line %d of %s: %s" % (lineCount + 1, fname, line))
-                self.symbolTemplates[templateName] = [templateSize, memberList]
-                lineCount += 1
-                haveTemplateInfo = False
-                continue
-
-            # parsing members, ex:  0x0 0x4 handle
-            if len(words) != 3:
-                error_exit("invalid member declaration in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-            try:
-                memberOffset = parse_int(words[0])
-            except ValueError:
-                error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
-            if memberOffset < 0:
-                error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
-
-            memberName = words[2]
-            if not valid_symbol_name(memberName):
-                error_exit("invalid member name in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-            if memberTemplate:
-                memberTemplateSize = self.symbolTemplates[memberTemplate][0]
-                memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
-                # add member template itself
-                memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName))
-                for m in memberTemplateMembers:
-                    adjOffset = memberOffset + m.offset
-                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth))
-            else:
-                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
-
-            lineCount += 1
-
-        if haveTemplateInfo:
-            # never finished parsing last template
-            error_exit("last template not closed in %s" % fname)
-
-    def parse_symbol_or_size (self, words, lineCount, fname, line):
-        # currently only checks words[0] but could potentially allow spaces
-        # for pointer or array declarations
-        size = 0
-        template = None
-        symbolType = SYMBOL_RANGE
-        isPointer = False
-        pointerType = ""
-        pointerDepth = 0
-
-        word = words[0]
-        firstChar = word[0]
-        if firstChar.isdigit()  or  firstChar in ('+', '-'):
-            try:
-                size = parse_int(word)
-            except ValueError:
-                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
-            if size < 0:
-                error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
-        else:  # template or basic type
-            # check for pointer and pointer depth
-            wlen = len(word)
-            for i in range(wlen):
-                if word[i] == '*':
-                    isPointer = True
-                    pointerDepth += 1
-                else:
-                    break
-
-            if isPointer:
-                w = word[i:]
-                pointerType = w
-                symbolType = SYMBOL_POINTER_TEMPLATE
-                if pointerType == "void":
-                    symbolType = SYMBOL_POINTER_VOID
-                elif pointerType in basicTypes:
-                    symbolType = SYMBOL_POINTER_BASIC
-                else:
-                    if not valid_symbol_name(pointerType):
-                        error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
-                    if pointerType not in self.symbolTemplates:
-                        error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
-                    symbolType = SYMBOL_POINTER_TEMPLATE
-                size = 0x4
-            else:  # template or basic type
-                w = word
-                if w == "byte":
-                    symbolType = SYMBOL_BYTE
-                    size = 0x1
-                elif w == "char":
-                    symbolType = SYMBOL_CHAR
-                    size = 0x1
-                elif w == "int":
-                    symbolType = SYMBOL_INT
-                    size = 0x4
-                elif w == "float":
-                    symbolType = SYMBOL_FLOAT
-                    size = 0x4
-                else:
-                    symbolType = SYMBOL_TEMPLATE
-                    size = 0x4
-                    template = w
-                    if not valid_symbol_name(template):
-                        error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
-                    if template not in self.symbolTemplates:
-                        error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-        return (size, symbolType, template, isPointer, pointerType, pointerDepth)
-
     def load_address_info (self):
         # symbol templates
-        fname = TEMPLATES_DEFAULT_FILE
-        if os.path.exists(fname):
-            # override default one
-            self.load_symbol_templates_file(fname, allowOverride=False)
-        else:
-            fname = os.path.join(BASE_DIR, TEMPLATES_DEFAULT_FILE)
-            if os.path.exists(fname):
-                self.load_symbol_templates_file(fname, allowOverride=False)
-
-        fname = TEMPLATES_FILE
-        if os.path.exists(fname):
-            self.load_symbol_templates_file(fname, allowOverride=True)
+        self.templateManager.load_default_templates()
 
         # symbols
         fname = SYMBOLS_FILE
@@ -776,7 +785,7 @@ class Qvm:
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                    (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                    (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
                     sym = words[2]
 
@@ -784,8 +793,8 @@ class Qvm:
                         # add template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        templateSize = self.symbolTemplates[template][0]
-                        members = self.symbolTemplates[template][1]
+                        templateSize = self.templateManager.symbolTemplates[template][0]
+                        members = self.templateManager.symbolTemplates[template][1]
                         # add template itself
                         self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
 
@@ -844,7 +853,7 @@ class Qvm:
                             if localAddr < 0:
                                 error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
-                            (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.parse_symbol_or_size(words[2:], lineCount, fname, line)
+                            (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[2:], lineCount, fname, line)
                             sym = words[3]
 
                             if template:
@@ -853,8 +862,8 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                templateSize = self.symbolTemplates[template][0]
-                                members = self.symbolTemplates[template][1]
+                                templateSize = self.templateManager.symbolTemplates[template][0]
+                                members = self.templateManager.symbolTemplates[template][1]
                                 # add template itself
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=templateSize, symbolName=sym))
 
@@ -1314,9 +1323,9 @@ class Qvm:
 
                     if foundTemplate:
                         memberName = "?"
-                        if templateName not in self.symbolTemplates:
+                        if templateName not in self.templateManager.symbolTemplates:
                             error_exit("unknown template %s" % templateName)
-                        memberList = self.symbolTemplates[templateName][1]
+                        memberList = self.templateManager.symbolTemplates[templateName][1]
                         foundOffset = False
                         for m in memberList:
                             memberName = m.name
