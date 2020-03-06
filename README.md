@@ -1,9 +1,10 @@
 # Qvmdis : Quake3 QVM disassembler
 
 ```
-  Usage: qvmdis [--func-hash] <qvm file> [cgame|game|ui]
+  Usage: qvmdis [--func-hash, -q] <qvm file> [cgame|game|ui]
     optionally specify cgame, game, or ui qvm to match syscalls and function hashes
     --func-hash  :  only print function hash values
+    --q          :  suppress warnings
 
     ex: qvmdis cgame.qvm cgame > cgame.dis
 ```

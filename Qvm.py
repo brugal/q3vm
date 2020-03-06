@@ -92,7 +92,12 @@ QVM_MAGIC_VER2 = 0x12721445
 def output (msg):
     sys.stdout.write(msg)
 
+SuppressWarnings = False
+
 def warning_msg (msg):
+    global SuppressWarnings
+    if SuppressWarnings:
+        return
     # send to both stdout and stderr since output is usually redirected to file
     sys.stdout.write("; warning : %s\n" % msg)
     sys.stderr.write("warning: %s\n" % msg)

@@ -19,14 +19,14 @@
 # along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
 ####
 
-import os.path, sys, traceback
-from Qvm import Qvm, QVM_MAGIC_VER1
+import os.path, sys, traceback, Qvm
 
 def usage ():
     scriptName = os.path.basename(sys.argv[0])
-    sys.stderr.write("Usage: %s [--func-hash] <qvm file> [cgame|game|ui]\n" % scriptName)
+    sys.stderr.write("Usage: %s [--func-hash, -q] <qvm file> [cgame|game|ui]\n" % scriptName)
     sys.stderr.write("  optionally specify cgame, game, or ui qvm to match syscalls and function hashes\n")
     sys.stderr.write("  --func-hash  :  only print function hash values\n")
+    sys.stderr.write("  -q           :  suppress warnings\n")
     sys.stderr.write("\n")
     sys.stderr.write("  ex: %s cgame.qvm cgame > cgame.dis\n" % scriptName)
     sys.exit(1)
@@ -43,6 +43,8 @@ def main ():
     for arg in sys.argv[1:]:
         if arg == "--func-hash"  and  parsingOptions:
             onlyPrintFunctionHashes = True
+        elif arg == "-q"  and  parsingOptions:
+            Qvm.SuppressWarnings = True
         elif arg == "--"  and  parsingOptions:
             parsingOptions = False
         elif qvmFile == None:
@@ -58,7 +60,7 @@ def main ():
             output("invalid qvm type '%s'\n" % qvmType)
             usage()
 
-    q = Qvm(qvmFile, qvmType)
+    q = Qvm.Qvm(qvmFile, qvmType)
 
     if onlyPrintFunctionHashes:
         q.print_function_hashes()
@@ -83,7 +85,7 @@ def main ():
     output(";; lit segment\n")
     q.print_lit_disassembly()
 
-    if q.magic != QVM_MAGIC_VER1:
+    if q.magic != Qvm.QVM_MAGIC_VER1:
         output("\n;; jump table\n")
         q.print_jump_table()
 
