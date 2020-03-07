@@ -1020,7 +1020,9 @@ class Qvm:
             f = open(fname)
             lines = f.readlines()
             f.close()
+
             lineCount = 0
+            lastCodeAddr = -1
             for line in lines:
                 # strip comments
                 line = line.split(";")[0]
@@ -1043,6 +1045,11 @@ class Qvm:
                 if codeAddr < 0:
                     error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                 self.constants[codeAddr] = [n, val]
+
+                # check if it is out of order
+                if codeAddr < lastCodeAddr:
+                    warning_msg("constant address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                lastCodeAddr = codeAddr
 
                 lineCount += 1
 
