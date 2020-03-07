@@ -976,23 +976,23 @@ class Qvm:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
                                 laddr = parse_int(words[1])
-
-                                # check if it replaces previous symbol
-                                if laddr in self.functionsLocalLabels[currentFuncAddr]:
-                                    warning_msg("replacing local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
-
-                                # check if it is out of order
-                                if laddr < lastLocalAddr:
-                                    warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
-                                lastLocalAddr = laddr
-
-                                self.functionsLocalLabels[currentFuncAddr][laddr] = words[2]
-                                # check if it overrides previously declared range
-                                if currentFuncAddr in self.functionsLocalRangeLabels:
-                                    if laddr in self.functionsLocalRangeLabels[currentFuncAddr]:
-                                        warning_msg("local simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
                             except ValueError:
                                 error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                            # check if it replaces previous symbol
+                            if laddr in self.functionsLocalLabels[currentFuncAddr]:
+                                warning_msg("replacing local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                            # check if it is out of order
+                            if laddr < lastLocalAddr:
+                                warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            lastLocalAddr = laddr
+
+                            self.functionsLocalLabels[currentFuncAddr][laddr] = words[2]
+                            # check if it overrides previously declared range
+                            if currentFuncAddr in self.functionsLocalRangeLabels:
+                                if laddr in self.functionsLocalRangeLabels[currentFuncAddr]:
+                                    warning_msg("local simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
                     else:
                         # function definition
                         try:
