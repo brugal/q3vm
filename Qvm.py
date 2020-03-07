@@ -1060,7 +1060,10 @@ class Qvm:
             f = open(fname)
             lines = f.readlines()
             f.close()
+
             lineCount = 0
+            lastCodeAddr = -1
+            lastDataAddr = -1
             while lineCount < len(lines):
                 line = lines[lineCount]
                 # strip comments
@@ -1095,6 +1098,17 @@ class Qvm:
                         error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     if codeAddr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                    # check if it is out of order
+                    if dataComment:
+                        if codeAddr < lastDataAddr:
+                            warning_msg("data comment out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        lastDataAddr = codeAddr
+                    else:
+                        if codeAddr < lastCodeAddr:
+                            warning_msg("code comment out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        lastCodeAddr = codeAddr
+
                     commentType = words[1]
                     useVariableSubstitution = False
                     if commentType[0] == "@":
