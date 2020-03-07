@@ -868,8 +868,10 @@ class Qvm:
             f = open(fname)
             lines = f.readlines()
             f.close()
+
             lineCount = 0
             currentFuncAddr = None
+            lastArgNum = -1
             while lineCount < len(lines):
                 line = lines[lineCount]
                 # strip comments
@@ -884,12 +886,26 @@ class Qvm:
                     error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
 
                 if len(words) > 1:
+                    # arg0, arg1, ...
                     if words[0].startswith("arg"):
                         if currentFuncAddr == None:
                             error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
-                        numStr = words[0][len("arg")]
+
+                        # validate arg number
+                        numStr = words[0][len("arg"):]
                         if not numStr.isdigit():
-                            error_exit("invalid arg number in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            error_exit("invalid arg number '%s' in line %d of %s: %s" % (numStr, lineCount + 1, fname, line))
+
+                        # don't allow zero padding (ex: arg0001) since arg
+                        # dictionary is checked using "arg%d" % num
+                        if numStr[0] == '0'  and  len(numStr) > 1:
+                            error_exit("zero padded arg number in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                        # check if out of order
+                        argNum = atoi(numStr)
+                        if argNum < lastArgNum:
+                            warning_msg("arg number out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        lastArgNum = argNum
 
                         if not currentFuncAddr in self.functionsArgLabels:
                             self.functionsArgLabels[currentFuncAddr] = {}
@@ -966,6 +982,7 @@ class Qvm:
                             error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                         self.functions[funcAddr] = words[1]
                         currentFuncAddr = funcAddr
+                        lastArgNum = -1
 
                 lineCount += 1
 
