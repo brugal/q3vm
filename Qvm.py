@@ -1002,6 +1002,12 @@ class Qvm:
                         if funcAddr < 0:
                             error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
                         self.functions[funcAddr] = words[1]
+
+                        # check if it is out of order
+                        if currentFuncAddr:
+                            if funcAddr < currentFuncAddr:
+                                warning_msg("function out of order in %d of %s: %s" % (lineCount + 1, fname, line))
+
                         currentFuncAddr = funcAddr
                         lastArgNum = -1
                         lastLocalAddr = -1
