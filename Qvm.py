@@ -887,6 +887,10 @@ class Qvm:
                     if words[0].startswith("arg"):
                         if currentFuncAddr == None:
                             error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        numStr = words[0][len("arg")]
+                        if not numStr.isdigit():
+                            error_exit("invalid arg number in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                         if not currentFuncAddr in self.functionsArgLabels:
                             self.functionsArgLabels[currentFuncAddr] = {}
                         self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
