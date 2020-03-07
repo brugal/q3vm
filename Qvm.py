@@ -872,6 +872,7 @@ class Qvm:
             lineCount = 0
             currentFuncAddr = None
             lastArgNum = -1
+            lastLocalAddr = -1
             while lineCount < len(lines):
                 line = lines[lineCount]
                 # strip comments
@@ -928,6 +929,11 @@ class Qvm:
                             if localAddr < 0:
                                 error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
 
+                            # validate order
+                            if localAddr < lastLocalAddr:
+                                warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            lastLocalAddr = localAddr
+
                             (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[2:], lineCount, fname, line)
                             sym = words[3]
 
@@ -970,6 +976,16 @@ class Qvm:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
                                 laddr = parse_int(words[1])
+
+                                # check if it replaces previous symbol
+                                if laddr in self.functionsLocalLabels[currentFuncAddr]:
+                                    warning_msg("replacing local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                                # check if it is out of order
+                                if laddr < lastLocalAddr:
+                                    warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                lastLocalAddr = laddr
+
                                 self.functionsLocalLabels[currentFuncAddr][laddr] = words[2]
                                 # check if it overrides previously declared range
                                 if currentFuncAddr in self.functionsLocalRangeLabels:
@@ -988,6 +1004,7 @@ class Qvm:
                         self.functions[funcAddr] = words[1]
                         currentFuncAddr = funcAddr
                         lastArgNum = -1
+                        lastLocalAddr = -1
 
                 lineCount += 1
 
