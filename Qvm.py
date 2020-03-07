@@ -778,6 +778,7 @@ class Qvm:
             f = open(fname)
             lines = f.readlines()
             f.close()
+            prevAddr = -1
             lineCount = 0
             for line in lines:
                 # strip comments
@@ -798,6 +799,14 @@ class Qvm:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    # check if it replaces previous symbol
+                    if addr in self.symbols:
+                        warning_msg("replacing simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    # check if it is out of order
+                    if addr < prevAddr:
+                        warning_msg("simple symbol out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    prevAddr = addr;
+
                     self.symbols[addr] = words[1]
                     # check if it would override previously declared range
                     if addr in self.symbolsRange:
@@ -810,6 +819,10 @@ class Qvm:
                         error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
                     if addr < 0:
                         error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+
+                    if addr < prevAddr:
+                        warning_msg("symbol out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    prevAddr = addr
 
                     (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
