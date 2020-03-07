@@ -275,6 +275,9 @@ SYMBOL_CHAR = 6
 SYMBOL_INT = 7
 SYMBOL_FLOAT = 8
 
+class RangeException(Exception):
+    pass
+
 class RangeElement:
     def __init__ (self, size=0, symbolName="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0):
         self.size = size;
@@ -282,8 +285,7 @@ class RangeElement:
 
         # templates should have been expanded by the time they are added as ranges
         if symbolType == SYMBOL_TEMPLATE:
-            #error_msg("range element created with template symbol")
-            raise Exception("range element created with template symbol")
+            raise RangeException("range element created with template symbol")
 
         self.symbolType = symbolType
         self.isPointer = isPointer
