@@ -909,6 +909,11 @@ class Qvm:
 
                         if not currentFuncAddr in self.functionsArgLabels:
                             self.functionsArgLabels[currentFuncAddr] = {}
+
+                        # check if replacing
+                        if words[0] in self.functionsArgLabels[currentFuncAddr]:
+                            warning_msg("replacing arg in line %d of %s: %s" % (lineCount + 1, fname, line))
+
                         self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
                     elif words[0] == "local":
                         if currentFuncAddr == None:
