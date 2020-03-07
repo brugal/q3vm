@@ -469,9 +469,9 @@ class TemplateManager:
                 if len(memberList) > 1:
                     prevMember = memberList[-2]
                     if memberOffset < prevMember.offset:
-                        warning_msg("member template %s out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        warning_msg("member template '%s' out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
                     elif memberOffset < (prevMember.offset + prevMember.size):
-                        warning_msg("member template %s overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        warning_msg("member template '%s' overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
 
                 for m in memberTemplateMembers:
                     adjOffset = memberOffset + m.offset
@@ -484,9 +484,9 @@ class TemplateManager:
                 if len(memberList) > 1:
                     prevMember = memberList[-2]
                     if memberOffset < prevMember.offset:
-                        warning_msg("member template %s out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        warning_msg("member '%s' out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
                     elif memberOffset < (prevMember.offset + prevMember.size):
-                        warning_msg("member %s overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        warning_msg("member '%s' overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
 
             lineCount += 1
 
