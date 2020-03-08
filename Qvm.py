@@ -1464,10 +1464,20 @@ class Qvm:
                     foundBasicType = False
                     btype = ""
                     templateName = ""
+                    isLocal = pdr[0]
                     rangeAddr = pdr[1]
                     sym = ""
-                    if rangeAddr in self.symbolsRange:
-                        for r in self.symbolsRange[rangeAddr]:
+
+                    if isLocal:
+                        if currentFuncAddr in self.functionsLocalRangeLabels:
+                            symbolsRange = self.functionsLocalRangeLabels[currentFuncAddr]
+                        else:
+                            symbolsRange = []
+                    else:
+                        symbolsRange = self.symbolsRange
+
+                    if rangeAddr in symbolsRange:
+                        for r in symbolsRange[rangeAddr]:
                             # use first match
                             sym = r.symbolName
                             #FIXME support for higher pointerDepth
@@ -1735,21 +1745,35 @@ class Qvm:
                 #    00010605  add            -1
                 #    00010606  load4
 
-                # explicit global var
+                #FIXME global var read/write when offset in local variable
+
+                #FIXME global var write
+
                 if len(funcOps) > 4:
                     if (
                             funcOps[-5][0] == OP_CONST  and
                             funcOps[-4][0] == OP_LOAD4  and
                             funcOps[-3][0] == OP_CONST  and
                             funcOps[-2][0] == OP_ADD
-                    ):
+                    ):  # explicit global var read
                         pointerAddr = funcOps[-5][1]
                         offset = funcOps[-3][1]
                         local = False
 
                         #FIXME pointer to pointer to pointer ...
                         self.pointerDereference[ins] = [local, pointerAddr, offset]
-                pass
+                    elif (
+                            funcOps[-5][0] == OP_LOCAL  and
+                            funcOps[-4][0] == OP_LOAD4  and
+                            funcOps[-3][0] == OP_CONST  and
+                            funcOps[-2][0] == OP_ADD
+                    ):  # explicit local var read
+                        pointerAddr = funcOps[-5][1]
+                        offset = funcOps[-3][1]
+                        local = True
+
+                        #FIXME pointer to pointer to pointer ...
+                        self.pointerDereference[ins] = [local, pointerAddr, offset]
             elif opc == OP_ENTER:
                 if pos > 5:   # else it's first function of file  vmMain()
                     self.functionSizes[funcStartInsNum] = funcInsCount
