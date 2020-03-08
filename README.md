@@ -195,6 +195,6 @@ Pointers to templates/types are specified with '*'.  Ex:
     0xf1f23 **buffer bx  ; pointer to pointer
 
 Template and member names can't contain spaces or start with a digit, '+', or
-'-'.  Template names can't match basic type names or "void".  Basic types are:
+'-'.  Template names can't match basic type names or 'void'.  Basic types are:
 byte, char, int, and float.  Note that messages regarding dereferencing use
 '.' and '->' notation.
