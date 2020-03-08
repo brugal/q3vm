@@ -310,6 +310,10 @@ class TemplateManager:
     def parse_symbol_or_size (self, words, lineCount, fname, line):
         # currently only checks words[0] but could potentially allow spaces
         # for pointer or array declarations
+
+        def ferror_exit (msg):
+            error_exit("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
+
         size = 0
         template = None
         symbolType = SYMBOL_RANGE
@@ -323,9 +327,9 @@ class TemplateManager:
             try:
                 size = parse_int(word)
             except ValueError:
-                error_exit("couldn't parse size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("couldn't parse size")
             if size < 0:
-                error_exit("invalid size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("invalid size")
         else:  # template or basic type
             # check for pointer and pointer depth
             wlen = len(word)
@@ -346,9 +350,9 @@ class TemplateManager:
                     symbolType = SYMBOL_POINTER_BASIC
                 else:
                     if not valid_symbol_name(pointerType):
-                        error_exit("invalid pointer name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("invalid pointer name")
                     if pointerType not in self.symbolTemplates:
-                        error_exit("unknown pointer type in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("unknown pointer type")
                     symbolType = SYMBOL_POINTER_TEMPLATE
                 size = 0x4
             else:  # template or basic type
@@ -370,9 +374,9 @@ class TemplateManager:
                     size = 0x4
                     template = w
                     if not valid_symbol_name(template):
-                        error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("invalid template name")
                     if template not in self.symbolTemplates:
-                        error_exit("unknown template in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("unknown template")
 
         return (size, symbolType, template, isPointer, pointerType, pointerDepth)
 
@@ -384,6 +388,11 @@ class TemplateManager:
         #   0x4 0x4 modificationCount
         #   ...
         # }
+
+        def ferror_exit (msg):
+            error_exit("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
+        def fwarning_msg (msg):
+            warning_msg("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
 
         f = open(fname)
         lines = f.readlines()
@@ -404,29 +413,29 @@ class TemplateManager:
 
             if haveTemplateInfo  and  skipOpeningBrace:
                 if len(words) != 1  or  words[0] != "{":
-                    error_exit("invalid opening brace in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid opening brace")
                 skipOpeningBrace = False
                 lineCount += 1
                 continue
 
             if not haveTemplateInfo:
                 if len(words) != 2:
-                    error_exit("couldn't parse template name and size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("couldn't parse template name and size")
 
                 templateName = words[0]
                 if not valid_symbol_name(templateName):
-                    error_exit("invalid template name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid template name")
 
                 if not allowOverride  and  templateName in self.symbolTemplates:
-                    error_exit("template already exists in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("template already exists")
 
                 try:
                     templateSize = parse_int(words[1])
                 except ValueError:
-                    error_exit("couldn't parse template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("couldn't parse template size")
 
                 if templateSize < 0:
-                    error_exit("invalid template size in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid template size")
 
                 haveTemplateInfo = True
                 skipOpeningBrace = True
@@ -438,7 +447,7 @@ class TemplateManager:
 
             if words[0] == "}":
                 if len(words) != 1:
-                    error_exit("invalid closing brace in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid closing brace")
                 self.symbolTemplates[templateName] = [templateSize, memberList]
                 lineCount += 1
                 haveTemplateInfo = False
@@ -446,20 +455,20 @@ class TemplateManager:
 
             # parsing members, ex:  0x0 0x4 handle
             if len(words) != 3:
-                error_exit("invalid member declaration in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("invalid member declaration")
 
             try:
                 memberOffset = parse_int(words[0])
             except ValueError:
-                error_exit("couldn't get member offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("couldn't get member offset")
             if memberOffset < 0:
-                error_exit("invalid offset in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("invalid offset")
 
             (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
             memberName = words[2]
             if not valid_symbol_name(memberName):
-                error_exit("invalid member name in line %d of %s: %s" % (lineCount + 1, fname, line))
+                ferror_exit("invalid member name")
 
             if memberTemplate:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
@@ -471,9 +480,9 @@ class TemplateManager:
                 if len(memberList) > 1:
                     prevMember = memberList[-2]
                     if memberOffset < prevMember.offset:
-                        warning_msg("member template '%s' out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        fwarning_msg("member template '%s' out of order" % memberName)
                     elif memberOffset < (prevMember.offset + prevMember.size):
-                        warning_msg("member template '%s' overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        fwarning_msg("member template '%s' overrides previous member" % memberName)
 
                 for m in memberTemplateMembers:
                     adjOffset = memberOffset + m.offset
@@ -486,15 +495,15 @@ class TemplateManager:
                 if len(memberList) > 1:
                     prevMember = memberList[-2]
                     if memberOffset < prevMember.offset:
-                        warning_msg("member '%s' out of order in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        fwarning_msg("member '%s' out of order" % memberName)
                     elif memberOffset < (prevMember.offset + prevMember.size):
-                        warning_msg("member '%s' overrides previous member in line %d of %s: %s" % (memberName, lineCount + 1, fname, line))
+                        fwarning_msg("member '%s' overrides previous member" % memberName)
 
             lineCount += 1
 
         if haveTemplateInfo:
             # never finished parsing last template
-            error_exit("last template not closed in %s" % fname)
+           ferror_exit("last template not closed")
 
     def load_default_templates (self):
         fname = TEMPLATES_DEFAULT_FILE
@@ -641,6 +650,10 @@ class Qvm:
         self.compute_function_info()
 
     def set_qvm_type (self, qvmType):
+
+        def ferror_exit (msg):
+            error_exit("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
+
         self.qvmType = qvmType
 
         if qvmType not in ("cgame", "game", "ui"):
@@ -668,7 +681,7 @@ class Qvm:
                 try:
                     self.syscalls[parse_int(words[2])] = words[1]
                 except ValueError:
-                    error_exit("couldn't parse system call number in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("couldn't parse system call number")
             lineCount += 1
 
         if qvmType == "cgame":
@@ -694,7 +707,7 @@ class Qvm:
                     # hex value without leading '0x':  2ad89a6d
                     h = atoi(words[2], 16)
                 except ValueError:
-                    error_exit("couldn't parse hash value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("couldn't parse hash value")
                 if h in self.baseQ3FunctionRevHashes:
                     self.baseQ3FunctionRevHashes[h].append(n)
                 else:
@@ -771,6 +784,12 @@ class Qvm:
         return r
 
     def load_address_info (self):
+
+        def ferror_exit (msg):
+            error_exit("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
+        def fwarning_msg (msg):
+            warning_msg("%s in line %d of %s: %s" % (msg, lineCount + 1, fname, line))
+
         # symbol templates
         self.templateManager.load_default_templates()
 
@@ -792,38 +811,38 @@ class Qvm:
                     continue
 
                 if len(words) == 1:
-                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid word count")
 
                 if len(words) == 2:
                     try:
                         addr = parse_int(words[0])
                     except ValueError:
-                        error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("couldn't parse address")
                     if addr < 0:
-                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("invalid address")
                     # check if it replaces previous symbol
                     if addr in self.symbols:
-                        warning_msg("replacing simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        fwarning_msg("replacing simple symbol")
                     # check if it is out of order
                     if addr < prevAddr:
-                        warning_msg("simple symbol out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        fwarning_msg("simple symbol out of order")
                     prevAddr = addr;
 
                     self.symbols[addr] = words[1]
                     # check if it would override previously declared range
                     if addr in self.symbolsRange:
-                        warning_msg("simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        fwarning_msg("simple symbol overrides range")
 
                 elif len(words) == 3:
                     try:
                         addr = parse_int(words[0])
                     except ValueError:
-                        error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("couldn't parse address")
                     if addr < 0:
-                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("invalid address")
 
                     if addr < prevAddr:
-                        warning_msg("symbol out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        fwarning_msg("symbol out of order")
                     prevAddr = addr
 
                     (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
@@ -840,7 +859,7 @@ class Qvm:
                         self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
                         # check if it matches previously declared simple symbol
                         if addr in self.symbols:
-                            warning_msg("template range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("template range would be overriden by simple symbol")
 
                         for m in members:
                             maddr = addr + m.offset
@@ -849,7 +868,7 @@ class Qvm:
                             self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth))
                             # check if it matches previously declared simple symbol
                             if addr in self.symbols:
-                                warning_msg("member template range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                fwarning_msg("member template range would be overriden by simple symbol")
 
                     else:  # not template
                         if not addr in self.symbolsRange:
@@ -857,10 +876,10 @@ class Qvm:
                         self.symbolsRange[addr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth))
                         # check if it would be overriden by previously declared simple symbol
                         if addr in self.symbols:
-                            warning_msg("range would be overriden by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("range would be overriden by simple symbol")
 
                 else:  # len(words) > 3
-                    error_exit("extra text specified in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("extra text specified")
 
                 lineCount += 1
 
@@ -886,28 +905,28 @@ class Qvm:
                     continue
 
                 if len(words) == 1:
-                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid word count")
 
                 if len(words) > 1:
                     # arg0, arg1, ...
                     if words[0].startswith("arg"):
                         if currentFuncAddr == None:
-                            error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("function not defined yet")
 
                         # validate arg number
                         numStr = words[0][len("arg"):]
                         if not numStr.isdigit():
-                            error_exit("invalid arg number '%s' in line %d of %s: %s" % (numStr, lineCount + 1, fname, line))
+                            ferror_exit("invalid arg number '%s'" % numStr)
 
                         # don't allow zero padding (ex: arg0001) since arg
                         # dictionary is checked using "arg%d" % num
                         if numStr[0] == '0'  and  len(numStr) > 1:
-                            error_exit("zero padded arg number in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("zero padded arg number")
 
                         # check if out of order
                         argNum = atoi(numStr)
                         if argNum < lastArgNum:
-                            warning_msg("arg number out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("arg number out of order")
                         lastArgNum = argNum
 
                         if not currentFuncAddr in self.functionsArgLabels:
@@ -915,25 +934,25 @@ class Qvm:
 
                         # check if replacing
                         if words[0] in self.functionsArgLabels[currentFuncAddr]:
-                            warning_msg("replacing arg in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("replacing arg")
 
                         self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
                     elif words[0] == "local":
                         if currentFuncAddr == None:
-                            error_exit("function not defined yet in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("function not defined yet")
                         if len(words) < 3:
-                            error_exit("invalid local specification in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("invalid local specification")
                         if len(words) > 3:  # range or template/type specified
                             try:
                                 localAddr = parse_int(words[1])
                             except ValueError:
-                                error_exit("couldn't parse local address of range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                ferror_exit("couldn't parse local address of range")
                             if localAddr < 0:
-                                error_exit("invalid local address range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                ferror_exit("invalid local address range")
 
                             # validate order
                             if localAddr < lastLocalAddr:
-                                warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                fwarning_msg("local address out of order")
                             lastLocalAddr = localAddr
 
                             (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[2:], lineCount, fname, line)
@@ -952,7 +971,7 @@ class Qvm:
                                 # check if it is overriden by previously declared simple symbol
                                 if currentFuncAddr in self.functionsLocalLabels:
                                     if localAddr in self.functionsLocalLabels[currentFuncAddr]:
-                                        warning_msg("local template range would be overriden by local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                        fwarning_msg("local template range would be overriden by local simple symbol")
 
                                 for m in members:
                                     maddr = localAddr + m.offset
@@ -962,7 +981,7 @@ class Qvm:
                                     # check if it matches previously declared simple symbol
                                     if currentFuncAddr in self.functionsLocalLabels:
                                         if maddr in self.functionsLocalLabels[currentFuncAddr]:
-                                            warning_msg("local member template range would be override by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                            fwarning_msg("local member template range would be override by simple symbol")
                             else:  # not template
                                 if not currentFuncAddr in self.functionsLocalRangeLabels:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
@@ -972,43 +991,43 @@ class Qvm:
                                 # check if it matches previously declared simple symbol
                                 if currentFuncAddr in self.functionsLocalLabels:
                                     if localAddr in self.functionsLocalLabels[currentFuncAddr]:
-                                        warning_msg("local range would be override by simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                        fwarning_msg("local range would be override by simple symbol")
                         else:  # range or template/type not specified
                             if not currentFuncAddr in self.functionsLocalLabels:
                                 self.functionsLocalLabels[currentFuncAddr] = {}
                             try:
                                 laddr = parse_int(words[1])
                             except ValueError:
-                                error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                ferror_exit("couldn't parse address")
 
                             # check if it replaces previous symbol
                             if laddr in self.functionsLocalLabels[currentFuncAddr]:
-                                warning_msg("replacing local simple symbol in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                fwarning_msg("replacing local simple symbol")
 
                             # check if it is out of order
                             if laddr < lastLocalAddr:
-                                warning_msg("local address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                fwarning_msg("local address out of order")
                             lastLocalAddr = laddr
 
                             self.functionsLocalLabels[currentFuncAddr][laddr] = words[2]
                             # check if it overrides previously declared range
                             if currentFuncAddr in self.functionsLocalRangeLabels:
                                 if laddr in self.functionsLocalRangeLabels[currentFuncAddr]:
-                                    warning_msg("local simple symbol overrides range in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                    fwarning_msg("local simple symbol overrides range")
                     else:
                         # function definition
                         try:
                             funcAddr = parse_int(words[0])
                         except ValueError:
-                            error_exit("couldn't parse address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("couldn't parse address")
                         if funcAddr < 0:
-                            error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("invalid address")
                         self.functions[funcAddr] = words[1]
 
                         # check if it is out of order
                         if currentFuncAddr:
                             if funcAddr < currentFuncAddr:
-                                warning_msg("function out of order in %d of %s: %s" % (lineCount + 1, fname, line))
+                                fwarning_msg("function out of order")
 
                         currentFuncAddr = funcAddr
                         lastArgNum = -1
@@ -1036,21 +1055,23 @@ class Qvm:
                     continue
 
                 if len(words) != 3:
-                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid word count")
+
                 # at this point len(words) == 3
                 try:
                     codeAddr = parse_int(words[0])
                     n = words[1]
                     val = parse_int(words[2])
                 except ValueError:
-                    error_exit("couldn't parse address or value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("couldn't parse address or value")
                 if codeAddr < 0:
-                    error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid address")
+
                 self.constants[codeAddr] = [n, val]
 
                 # check if it is out of order
                 if codeAddr < lastCodeAddr:
-                    warning_msg("constant address out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                    fwarning_msg("constant address out of order")
                 lastCodeAddr = codeAddr
 
                 lineCount += 1
@@ -1085,7 +1106,7 @@ class Qvm:
                     continue
 
                 if len(words) == 1:
-                    error_exit("invalid line %d of %s: %s" % (lineCount + 1, fname, line))
+                    ferror_exit("invalid word count")
 
                 dataComment = False
                 if len(words) > 1:
@@ -1097,18 +1118,18 @@ class Qvm:
                     try:
                         codeAddr = parse_int(words[0])
                     except ValueError:
-                        error_exit("couldn't get address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("couldn't get address")
                     if codeAddr < 0:
-                        error_exit("invalid address in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        error_exit("invalid address")
 
                     # check if it is out of order
                     if dataComment:
                         if codeAddr < lastDataAddr:
-                            warning_msg("data comment out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("data comment out of order")
                         lastDataAddr = codeAddr
                     else:
                         if codeAddr < lastCodeAddr:
-                            warning_msg("code comment out of order in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            fwarning_msg("code comment out of order")
                         lastCodeAddr = codeAddr
 
                     commentType = words[1]
@@ -1124,7 +1145,7 @@ class Qvm:
                                 try:
                                     comment = self.substitute_variables(comment)
                                 except ValueError:
-                                    error_exit("couldn't substitute variable in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                    ferror_exit("couldn't substitute variable")
 
                             if dataComment:
                                 self.dataCommentsInline[codeAddr] = comment
@@ -1139,9 +1160,9 @@ class Qvm:
                                 if len(words) > 3:
                                     spaceAfter = parse_int(words[3])
                             except ValueError:
-                                error_exit("couldn't get space before or after value in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                ferror_exit("couldn't get space before or after value")
                         if spaceBefore < 0  or  spaceAfter < 0:
-                            error_exit("invalid space before or after in line %d of %s: %s" % (lineCount + 1, fname, line))
+                            ferror_exit("invalid space before or after")
 
                         if spaceBefore > 0  or  spaceAfter > 0:
                             if commentType == "before":
@@ -1176,7 +1197,7 @@ class Qvm:
                                     try:
                                         commentLine = self.substitute_variables(commentLine)
                                     except ValueError:
-                                        error_exit("couldn't substitute variable in line %d of %s: %s" % (lineCount + 1, fname, line))
+                                        ferror_exit("couldn't substitute variable")
                                 if commentType == "before":
                                     if dataComment:
                                         self.dataCommentsBefore[codeAddr].append(commentLine)
@@ -1189,7 +1210,7 @@ class Qvm:
                                         self.commentsAfter[codeAddr].append(commentLine)
                             lineCount += 1
                     else:
-                        error_exit("invalid comment type in line %d of %s: %s" % (lineCount + 1, fname, line))
+                        ferror_exit("invalid comment type")
 
                 lineCount += 1
 
