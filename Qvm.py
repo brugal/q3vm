@@ -1527,7 +1527,7 @@ class Qvm:
 
             if parm != None:
                 if parm < 0:
-                    output("  -0x%x" % -parm)
+                    output("  -0x%x" % abs(parm))  # -parm pylint warning
                 else:
                     output("   0x%x" % parm)
 
