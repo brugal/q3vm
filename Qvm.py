@@ -601,9 +601,9 @@ class Qvm:
 
         # user labels
 
-        # ArgLabels could just be part of LocalRangeLabels but local address
-        # isn't known when the function is defined
-        self.functionsArgLabels = {}  # addr:int -> { argX:str -> range:RangeElement }
+        # ArgRangeLabels could just be part of LocalRangeLabels but local
+        # address isn't known when the function is defined
+        self.functionsArgRangeLabels = {}  # addr:int -> { argX:str -> range:RangeElement }
 
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
         self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ range1:RangeElement, range2:RangeElement, ... ] }
@@ -933,11 +933,11 @@ class Qvm:
                             fwarning_msg("arg number out of order")
                         lastArgNum = argNum
 
-                        if not currentFuncAddr in self.functionsArgLabels:
-                            self.functionsArgLabels[currentFuncAddr] = {}
+                        if not currentFuncAddr in self.functionsArgRangeLabels:
+                            self.functionsArgRangeLabels[currentFuncAddr] = {}
 
                         # check if replacing
-                        if words[0] in self.functionsArgLabels[currentFuncAddr]:
+                        if words[0] in self.functionsArgRangeLabels[currentFuncAddr]:
                             fwarning_msg("replacing arg")
 
                         if len(words) > 2:
@@ -949,10 +949,10 @@ class Qvm:
                                 ferror_exit("invalid argument type, arguments are integers (values or pointers)")
 
                             # validates, it is either a basice type or pointer
-                            self.functionsArgLabels[currentFuncAddr][words[0]] = RangeElement(size=size, symbolName=words[2], symbolType=symbolType, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth)
+                            self.functionsArgRangeLabels[currentFuncAddr][words[0]] = RangeElement(size=size, symbolName=words[2], symbolType=symbolType, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth)
                         else:
                             # label
-                            self.functionsArgLabels[currentFuncAddr][words[0]] = RangeElement(size=0x4, symbolName=words[1], symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0)
+                            self.functionsArgRangeLabels[currentFuncAddr][words[0]] = RangeElement(size=0x4, symbolName=words[1], symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0)
 
                     elif words[0] == "local":
                         if currentFuncAddr == None:
@@ -1366,9 +1366,9 @@ class Qvm:
                 if argNum >= 0:
                     argstr = "arg%d" % (argNum / 4)
                     comment = argstr
-                    if currentFuncAddr in self.functionsArgLabels:
-                        if argstr in self.functionsArgLabels[currentFuncAddr]:
-                            comment = comment + " : " + self.functionsArgLabels[currentFuncAddr][argstr].symbolName
+                    if currentFuncAddr in self.functionsArgRangeLabels:
+                        if argstr in self.functionsArgRangeLabels[currentFuncAddr]:
+                            comment = comment + " : " + self.functionsArgRangeLabels[currentFuncAddr][argstr].symbolName
                 else:
                     if currentFuncAddr in self.functionsLocalLabels:
                         if parm in self.functionsLocalLabels[currentFuncAddr]:
@@ -1492,9 +1492,9 @@ class Qvm:
                         if argNum >= 0:
                             # hack to use range check below
                             argstr = "arg%d" % (argNum / 4)
-                            if currentFuncAddr in self.functionsArgLabels:
-                                if argstr in self.functionsArgLabels[currentFuncAddr]:
-                                    symbolsRange = { rangeAddr : [self.functionsArgLabels[currentFuncAddr][argstr]] }
+                            if currentFuncAddr in self.functionsArgRangeLabels:
+                                if argstr in self.functionsArgRangeLabels[currentFuncAddr]:
+                                    symbolsRange = { rangeAddr : [self.functionsArgRangeLabels[currentFuncAddr][argstr]] }
                                 else:
                                     symbolsRange = {}
                             else:
