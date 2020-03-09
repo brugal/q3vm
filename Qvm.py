@@ -600,7 +600,7 @@ class Qvm:
         self.functions = {}  # addr:int -> name:str
 
         # user labels
-        self.functionsArgLabels = {}  # addr:int -> { argX:str -> sym:str }
+        self.functionsArgLabels = {}  # addr:int -> { argX:str -> range:RangeElement }
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
         self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ range1:RangeElement, range2:RangeElement, ... ] }
 
@@ -936,7 +936,20 @@ class Qvm:
                         if words[0] in self.functionsArgLabels[currentFuncAddr]:
                             fwarning_msg("replacing arg")
 
-                        self.functionsArgLabels[currentFuncAddr][words[0]] = words[1]
+                        if len(words) > 2:
+                            (size, symbolType, template, isPointer, pointerType, pointerDepth) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                            # validate
+                            if symbolType == SYMBOL_RANGE  and  size > 4:
+                                ferror_exit("invalid argument range size, arguments are integers (values or pointers)")
+                            elif symbolType == SYMBOL_TEMPLATE:
+                                ferror_exit("invalid argument type, arguments are integers (values or pointers)")
+
+                            # validates, it is either a basice type or pointer
+                            self.functionsArgLabels[currentFuncAddr][words[0]] = RangeElement(size=size, symbolName=words[2], symbolType=symbolType, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth)
+                        else:
+                            # label
+                            self.functionsArgLabels[currentFuncAddr][words[0]] = RangeElement(size=0x4, symbolName=words[1], symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0)
+
                     elif words[0] == "local":
                         if currentFuncAddr == None:
                             ferror_exit("function not defined yet")
@@ -1351,7 +1364,7 @@ class Qvm:
                     comment = argstr
                     if currentFuncAddr in self.functionsArgLabels:
                         if argstr in self.functionsArgLabels[currentFuncAddr]:
-                            comment = comment + " : " + self.functionsArgLabels[currentFuncAddr][argstr]
+                            comment = comment + " : " + self.functionsArgLabels[currentFuncAddr][argstr].symbolName
                 else:
                     if currentFuncAddr in self.functionsLocalLabels:
                         if parm in self.functionsLocalLabels[currentFuncAddr]:
@@ -1469,10 +1482,24 @@ class Qvm:
                     sym = ""
 
                     if isLocal:
-                        if currentFuncAddr in self.functionsLocalRangeLabels:
-                            symbolsRange = self.functionsLocalRangeLabels[currentFuncAddr]
+                        # check if arg first
+                        argNum = rangeAddr - stackAdjust - 0x8
+
+                        if argNum >= 0:
+                            # hack to use range check below
+                            argstr = "arg%d" % (argNum / 4)
+                            if currentFuncAddr in self.functionsArgLabels:
+                                if argstr in self.functionsArgLabels[currentFuncAddr]:
+                                    symbolsRange = { rangeAddr : [self.functionsArgLabels[currentFuncAddr][argstr]] }
+                                else:
+                                    symbolsRange = {}
+                            else:
+                                symbolsRange = {}
                         else:
-                            symbolsRange = []
+                            if currentFuncAddr in self.functionsLocalRangeLabels:
+                                symbolsRange = self.functionsLocalRangeLabels[currentFuncAddr]
+                            else:
+                                symbolsRange = {}
                     else:
                         symbolsRange = self.symbolsRange
 

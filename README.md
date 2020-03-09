@@ -56,10 +56,10 @@ The *.dat* files are opened from the current working directory.  Comments in
 
     ; addr name
     0x0000 vmMain
-      ; argX name
+      ; argX [size or type] name
       ;  or
       ; local addr [size or type] name
-      arg0 command
+      arg0 int command
       local 0x14 commandTmp
 
     0x1223 CG_DrawAttacker
