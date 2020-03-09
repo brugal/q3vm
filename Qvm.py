@@ -600,7 +600,11 @@ class Qvm:
         self.functions = {}  # addr:int -> name:str
 
         # user labels
+
+        # ArgLabels could just be part of LocalRangeLabels but local address
+        # isn't known when the function is defined
         self.functionsArgLabels = {}  # addr:int -> { argX:str -> range:RangeElement }
+
         self.functionsLocalLabels = {}  # addr:int -> { localAddr:int -> sym:str }
         self.functionsLocalRangeLabels = {}  # addr:int -> { localAddr:int -> [ range1:RangeElement, range2:RangeElement, ... ] }
 
