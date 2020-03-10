@@ -28,6 +28,9 @@ def usage ():
     sys.stderr.write("%s <template name>\n" % sys.argv[0])
     sys.exit(1)
 
+def output (msg):
+    sys.stdout.write(msg)
+
 def main ():
     if len(sys.argv) < 2:
         usage()
@@ -46,11 +49,17 @@ def main ():
     tinfo = templateManager.symbolTemplates[name]
     size = tinfo[0]
     members = tinfo[1]
-    print("%s 0x%x" % (name, size))
-    print("{")
+    output("%s 0x%x\n" % (name, size))
+    output("{\n")
     for m in members:
-        print("    0x%x 0x%x %s" % (m.offset, m.size, m.name))
-    print("}")
+        output("    0x%x 0x%x %s" % (m.offset, m.size, m.name))
+        if m.parentTemplate:
+            if m.parentMemberName:
+                output("  ; 0x%x  .%s" % (m.parentOffset, m.parentMemberName))
+            else:  # template itself
+                output("  ; template %s" % m.parentTemplate)
+        output("\n")
+    output("}\n")
 
 if __name__ == "__main__":
     main()
