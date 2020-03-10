@@ -293,7 +293,7 @@ class RangeElement:
         self.pointerDepth = pointerDepth
 
 class TemplateMember:
-    def __init__ (self, offset=0, size=0, name="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, parentTemplate=None, parentMemberName=None, parentOffset=None):
+    def __init__ (self, offset=0, size=0, name="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, parentTemplate=None, nameInParent=None, offsetInParent=None):
         self.offset = offset
         self.size = size
         self.name = name
@@ -304,8 +304,9 @@ class TemplateMember:
 
         # info with respect to parent template
         self.parentTemplate = parentTemplate
-        self.parentMemberName = parentMemberName  # our name in parent
-        self.parentOffset = parentOffset  # our offset in parent
+        # if nameInParent and offsetInParent are None it's the template definition itself
+        self.nameInParent = nameInParent
+        self.offsetInParent = offsetInParent
 
 class TemplateManager:
     def __init__ (self):
@@ -479,7 +480,7 @@ class TemplateManager:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
                 memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
                 # add member template itself
-                memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName, parentTemplate=templateName, parentMemberName=None, parentOffset=None))
+                memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName, parentTemplate=templateName, nameInParent=None, offsetInParent=None))
                 # check if it overrides, only need to check previous member if
                 # there's also a check that members are added in order
                 if len(memberList) > 1:
@@ -492,7 +493,7 @@ class TemplateManager:
                 for m in memberTemplateMembers:
                     adjOffset = memberOffset + m.offset
                     # don't need to check for override or order since this is a previously defined template
-                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplate=templateName, parentMemberName=m.name, parentOffset=m.offset))
+                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplate=templateName, nameInParent=m.name, offsetInParent=m.offset))
             else:
                 memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth))
                 # check if it overrides, only need to check previous member if
