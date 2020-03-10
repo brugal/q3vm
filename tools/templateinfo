@@ -21,11 +21,17 @@
 
 import AddParentSysPath
 
-from Qvm import TemplateManager, TemplateMember
+from Qvm import TemplateManager, TemplateMember, parse_int
+
+from Qvm import SYMBOL_RANGE, SYMBOL_TEMPLATE, SYMBOL_POINTER_VOID
+from Qvm import SYMBOL_POINTER_BASIC, SYMBOL_POINTER_TEMPLATE, SYMBOL_BYTE
+from Qvm import SYMBOL_CHAR, SYMBOL_INT, SYMBOL_FLOAT
+
 import sys
 
 def usage ():
-    sys.stderr.write("%s <template name>\n" % sys.argv[0])
+    sys.stderr.write("%s <template name> [offset:int, 'range', 'type']\n" % sys.argv[0])
+    sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
 
 def output (msg):
@@ -37,33 +43,97 @@ def main ():
 
     name = sys.argv[1]
 
+    printAsRange = True
+    printAsTypes = False
+    printOffset = False
+    offset = -1
+
+    if len(sys.argv) > 2:
+        arg = sys.argv[2]
+        if arg == "range":
+            printAsRange = True
+        elif arg == "type":
+            printAsTypes = True
+            printAsRange = False
+        else:  # try as int to print offset
+            try:
+                offset = parse_int(arg)
+                printOffset = True
+            except ValueError as ex:
+                sys.stderr.write("unknown option %s\n" % arg)
+                sys.exit(1)
+
     templateManager = TemplateManager()
     templateManager.load_default_templates()
 
     if name not in templateManager.symbolTemplates:
-        #print("no template with that name")
         sys.stderr.write("unknown template: %s\n" % name)
         sys.exit(1)
 
-    #print(templateManager.symbolTemplates[name])
     tinfo = templateManager.symbolTemplates[name]
     size = tinfo[0]
     members = tinfo[1]
+
+    if printOffset:
+        for m in members:
+            if offset >= m.offset  and  offset < (m.offset + m.size):
+                output("0x%x 0x%x %s\n" % (m.offset, m.size, m.name))
+                sys.exit(0)
+        # didn't find anything
+        sys.stderr.write("couldn't find offset member\n")
+        sys.exit(1)
+
+    # print as range or types
     output("%s 0x%x\n" % (name, size))
     output("{\n")
-    for m in members:
-        if m.parentTemplate  and  m.nameInParent:
-            output("        ")
-        else:
-            output("    ")
 
-        output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
-        if m.parentTemplate:
-            if m.nameInParent:
-                output("  ; 0x%x %s .%s" % (m.offsetInParent, m.parentTemplate, m.nameInParent))
-            else:  # template itself
-                output("  ; template %s" % m.parentTemplate)
-        output("\n")
+    if printAsRange:
+        for m in members:
+            if m.parentTemplate  and  m.nameInParent:
+                output("        ")
+            else:
+                output("    ")
+
+            output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
+
+            if m.parentTemplate:
+                if m.nameInParent:
+                    output("  ; 0x%x %s .%s" % (m.offsetInParent, m.parentTemplate, m.nameInParent))
+                else:  # template itself
+                    output("  ; template %s" % m.parentTemplate)
+            output("\n")
+    else:  # as types
+        for m in members:
+            # skip sub template members
+            if m.parentTemplate  and  m.nameInParent:
+                continue
+
+            output("    0x%x " % m.offset)
+
+            # type
+            if m.symbolType == SYMBOL_RANGE:
+                if m.parentTemplate:
+                    output("%s" % m.parentTemplate)
+                else:
+                    output("0x%x" % m.size)
+            elif m.symbolType == SYMBOL_TEMPLATE:
+                output("%s" % m.parentTemplate)
+            elif m.symbolType == SYMBOL_POINTER_VOID:
+                output("*void")
+            elif m.symbolType == SYMBOL_POINTER_BASIC  or  m.symbolType == SYMBOL_POINTER_TEMPLATE:
+                output("*%s" % m.pointerType)
+            elif m.symbolType == SYMBOL_BYTE:
+                output("byte")
+            elif m.symbolType == SYMBOL_CHAR:
+                output("char")
+            elif m.symbolType == SYMBOL_INT:
+                output("int")
+            elif m.symbolType == SYMBOL_FLOAT:
+                output("float")
+
+            output(" %s" % m.name)
+            output("\n")
+
     output("}\n")
 
 if __name__ == "__main__":
