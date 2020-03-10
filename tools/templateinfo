@@ -37,6 +37,28 @@ def usage ():
 def output (msg):
     sys.stdout.write(msg)
 
+def print_member_type (m):
+    if m.symbolType == SYMBOL_RANGE:
+        if m.parentTemplate:
+            output("%s" % m.parentTemplate)
+        else:
+            output("0x%x" % m.size)
+    elif m.symbolType == SYMBOL_TEMPLATE:
+        output("%s" % m.parentTemplate)
+    elif m.symbolType == SYMBOL_POINTER_VOID:
+        output("*void")
+    elif m.symbolType == SYMBOL_POINTER_BASIC  or  m.symbolType == SYMBOL_POINTER_TEMPLATE:
+        output("*%s" % m.pointerType)
+    elif m.symbolType == SYMBOL_BYTE:
+        output("byte")
+    elif m.symbolType == SYMBOL_CHAR:
+        output("char")
+    elif m.symbolType == SYMBOL_INT:
+        output("int")
+    elif m.symbolType == SYMBOL_FLOAT:
+        output("float")
+
+
 def main ():
     if len(sys.argv) < 2:
         usage()
@@ -111,6 +133,11 @@ def main ():
                     output("  ; 0x%x %s .%s" % (m.offsetInParent, m.parentTemplate, m.nameInParent))
                 else:  # template itself
                     output("  ; template %s" % m.parentTemplate)
+            else:
+                if m.symbolType != SYMBOL_RANGE:
+                    output("  ; ")
+                    print_member_type(m)
+
             output("\n")
     else:  # as types
         for m in members:
@@ -119,28 +146,7 @@ def main ():
                 continue
 
             output("    0x%x " % m.offset)
-
-            # type
-            if m.symbolType == SYMBOL_RANGE:
-                if m.parentTemplate:
-                    output("%s" % m.parentTemplate)
-                else:
-                    output("0x%x" % m.size)
-            elif m.symbolType == SYMBOL_TEMPLATE:
-                output("%s" % m.parentTemplate)
-            elif m.symbolType == SYMBOL_POINTER_VOID:
-                output("*void")
-            elif m.symbolType == SYMBOL_POINTER_BASIC  or  m.symbolType == SYMBOL_POINTER_TEMPLATE:
-                output("*%s" % m.pointerType)
-            elif m.symbolType == SYMBOL_BYTE:
-                output("byte")
-            elif m.symbolType == SYMBOL_CHAR:
-                output("char")
-            elif m.symbolType == SYMBOL_INT:
-                output("int")
-            elif m.symbolType == SYMBOL_FLOAT:
-                output("float")
-
+            print_member_type(m)
             output(" %s" % m.name)
             output("\n")
 
