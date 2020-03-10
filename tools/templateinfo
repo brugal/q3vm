@@ -130,7 +130,14 @@ def main ():
 
             if m.parentTemplate:
                 if m.nameInParent:
-                    output("  ; 0x%x %s .%s" % (m.offsetInParent, m.parentTemplate, m.nameInParent))
+                    subTinfo = templateManager.symbolTemplates[m.parentTemplate]
+                    subSize = subTinfo[0]
+                    subMembers = subTinfo[1]
+                    for sm in subMembers:
+                        if m.nameInParent == sm.name:
+                            output("  ; 0x%x " % m.offsetInParent)
+                            print_member_type(sm)
+                            break
                 else:  # template itself
                     output("  ; template %s" % m.parentTemplate)
             else:
