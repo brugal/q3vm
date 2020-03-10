@@ -52,10 +52,15 @@ def main ():
     output("%s 0x%x\n" % (name, size))
     output("{\n")
     for m in members:
-        output("    0x%x 0x%x %s" % (m.offset, m.size, m.name))
+        if m.parentTemplate  and  m.nameInParent:
+            output("        ")
+        else:
+            output("    ")
+
+        output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
         if m.parentTemplate:
             if m.nameInParent:
-                output("  ; 0x%x  .%s" % (m.offsetInParent, m.nameInParent))
+                output("  ; 0x%x %s .%s" % (m.offsetInParent, m.parentTemplate, m.nameInParent))
             else:  # template itself
                 output("  ; template %s" % m.parentTemplate)
         output("\n")
