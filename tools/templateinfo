@@ -75,13 +75,23 @@ def main ():
     members = tinfo[1]
 
     if printOffset:
+        # find best match
+        match = None
         for m in members:
             if offset >= m.offset  and  offset < (m.offset + m.size):
-                output("0x%x 0x%x %s\n" % (m.offset, m.size, m.name))
-                sys.exit(0)
-        # didn't find anything
-        sys.stderr.write("couldn't find offset member\n")
-        sys.exit(1)
+                if match == None:
+                    match = m
+                else:
+                    if m.size < match.size:
+                        match = m
+
+        if match:
+            output("0x%x 0x%x %s\n" % (match.offset, match.size, match.name))
+            sys.exit(0)
+        else:
+            # didn't find anything
+            sys.stderr.write("couldn't find offset member\n")
+            sys.exit(1)
 
     # print as range or types
     output("%s 0x%x\n" % (name, size))
