@@ -473,6 +473,10 @@ class TemplateManager:
             memberName = words[2]
             if not valid_symbol_name(memberName):
                 ferror_exit("invalid member name")
+            # make sure name is unique
+            for m in memberList:
+                if m.name == memberName:
+                    ferror_exit("duplicate member name")
 
             if memberTemplate:
                 memberTemplateSize = self.symbolTemplates[memberTemplate][0]
@@ -490,11 +494,12 @@ class TemplateManager:
 
                 for m in memberTemplateMembers:
                     adjOffset = memberOffset + m.offset
-                    # don't need to check for override or order since this is a previously defined template
+
                     ptinfo = m.parentTemplatesInfo[:]
                     # ptinfo[-1][3] : keep specifying that it's the range for entire template, also keep the template name
                     ptinfo.append([templateName, "%s.%s" % (memberName, m.name), m.offset, ptinfo[-1][3], ptinfo[-1][4]])
 
+                    # don't need to check for override or order since this is a previously defined template
                     memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplatesInfo=ptinfo[:]))
             else:
                 memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth, parentTemplatesInfo=[[templateName, memberName, memberOffset, False, ""]]))
