@@ -158,13 +158,15 @@ treated as a comment and discarded.  Ex:
 
 ### *templates.dat* ###
 
-    ; [template] [size] {
+    ; [template] [size]
+    ; {
     ;    [offset] [size or type] name
     ;    ...
     ; }
 
 
-    ; typedef struct {
+    ; typedef struct
+    ; {
     ;        cvarHandle_t    handle;
     ;        int             modificationCount;
     ;        float           value;
@@ -197,4 +199,6 @@ Pointers to templates/types are specified with '*'.  Ex:
 Template and member names can't contain spaces or start with a digit, '+', or
 '-'.  Template names can't match basic type names or 'void'.  Basic types are:
 byte, char, int, and float.  Note that messages regarding dereferencing use
-'.' and '->' notation.
+'.' and '->' notation.  Pointer declaractions can't contain space between the
+type.  Template opening and closing braces need to be the first and single
+character in a line.
