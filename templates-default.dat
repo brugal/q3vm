@@ -1,11 +1,13 @@
 
-; [template] [size] {
-;    [offset] [size or type] name
+; template size
+; {
+;    offset <size or type> name
 ;    ...
 ; }
 
 
-; typedef struct {
+; typedef struct
+; {
 ;        cvarHandle_t    handle;
 ;        int             modificationCount;
 ;        float           value;
@@ -16,8 +18,8 @@
 vmCvar_t 0x110
 {
   0x0 0x4 handle
-  0x4 0x4 modificationCount
-  0x8 0x4 value
-  0xc 0x4 integer
+  0x4 int modificationCount
+  0x8 float value
+  0xc int integer
   0x10 0x100 string[]  ; string[MAX_CVAR_VALUE_STRING]
 }

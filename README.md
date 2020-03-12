@@ -158,9 +158,9 @@ treated as a comment and discarded.  Ex:
 
 ### *templates.dat* ###
 
-    ; [template] [size]
+    ; template size
     ; {
-    ;    [offset] [size or type] name
+    ;    offset <size or type> name
     ;    ...
     ; }
 
