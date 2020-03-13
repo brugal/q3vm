@@ -123,7 +123,7 @@ def main ():
                         matchSize = size
 
         if match:
-            output("0x%x 0x%x %s\n" % (match.offset, matchSize, match.name))
+            output("0x%x 0x%x %s (+0x%x)\n" % (match.offset, matchSize, match.name, offset - match.offset))
             sys.exit(0)
         else:
             # didn't find anything
