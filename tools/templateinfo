@@ -106,16 +106,24 @@ def main ():
     if printOffset:
         # find best match
         match = None
+        matchSize = 0
         for m in members:
-            if offset >= m.offset  and  offset < (m.offset + m.size):
+            size = m.size
+            if m.isArray:
+                for a in m.arrayLevels:
+                    size *= a
+
+            if offset >= m.offset  and  offset < (m.offset + size):
                 if match == None:
                     match = m
+                    matchSize = size
                 else:
-                    if m.size < match.size:
+                    if size < matchSize:
                         match = m
+                        matchSize = size
 
         if match:
-            output("0x%x 0x%x %s\n" % (match.offset, match.size, match.name))
+            output("0x%x 0x%x %s\n" % (match.offset, matchSize, match.name))
             sys.exit(0)
         else:
             # didn't find anything
