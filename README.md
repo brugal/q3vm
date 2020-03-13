@@ -180,7 +180,7 @@ treated as a comment and discarded.  Ex:
       0x4 int modificationCount
       0x8 float value
       0xc 0x4 integer
-      0x10 0x100 string[]  ; string[MAX_CVAR_VALUE_STRING]
+      0x10 char[256] string  ; string[MAX_CVAR_VALUE_STRING]
     }
 
 Templates allow the repeated specification of structures.  Default templates
@@ -199,6 +199,6 @@ Pointers to templates/types are specified with '*'.  Ex:
 Template and member names can't contain spaces or start with a digit, '+', or
 '-'.  Template names can't match basic type names or 'void'.  Basic types are:
 byte, char, int, and float.  Note that messages regarding dereferencing use
-'.' and '->' notation.  Pointer declaractions can't contain space between the
-type.  Template opening and closing braces need to be the first and single
-character in a line.
+'.' and '->' notation.  Pointer and array declaractions can't contain spaces
+Template opening and closing braces need to be the first and single character
+in a line.
