@@ -279,7 +279,7 @@ class RangeException(Exception):
     pass
 
 class RangeElement:
-    def __init__ (self, size=0, symbolName="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, isArray=False, arrayLevels=[], arrayTemplate=""):
+    def __init__ (self, size=0, symbolName="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, isArray=False, arrayLevels=[], arrayTemplate="", arrayElementSize=0):
         self.size = size;
         self.symbolName = symbolName
 
@@ -295,16 +295,14 @@ class RangeElement:
         self.isArray = isArray
         self.arrayLevels = arrayLevels
         self.arrayTemplate = arrayTemplate  # '' if basic type or pointer
+        self.arrayElementSize = arrayElementSize
 
         # turn arrays into ranges
         if isArray:
-            self.arrayElementSize = size
-            for a in arrayLevels:
-                self.size *= a
             self.symbolType = SYMBOL_RANGE
 
 class TemplateMember:
-    def __init__ (self, offset=0, size=0, name="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, parentTemplatesInfo=[], isArray=False, arrayLevels=[], arrayTemplate=""):
+    def __init__ (self, offset=0, size=0, name="", symbolType=SYMBOL_RANGE, isPointer=False, pointerType="", pointerDepth=0, parentTemplatesInfo=[], isArray=False, arrayLevels=[], arrayTemplate="", arrayElementSize=0):
         self.offset = offset
         self.size = size
         self.name = name
@@ -316,6 +314,7 @@ class TemplateMember:
         self.isArray = isArray
         self.arrayLevels = arrayLevels
         self.arrayTemplate = arrayTemplate
+        self.arrayElementSize = arrayElementSize
 
         # for debugging
         # info with respect to parent templates
@@ -380,6 +379,7 @@ class TemplateManager:
         pointerDepth = 0
         isArray = False
         arrayLevels = []  # ex: [3, 3] for float[3][3]
+        arrayElementSize = 0
 
         word = words[0]
         firstChar = word[0]
@@ -443,7 +443,12 @@ class TemplateManager:
                     if template not in self.symbolTemplates:
                         ferror_exit("parsed unknown template")
 
-        return (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels)
+        if isArray:
+            arrayElementSize = size
+            for a in arrayLevels:
+                size *= a
+
+        return (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels, arrayElementSize)
 
     def load_symbol_templates_file (self, fname, allowOverride=False):
         # ex:
@@ -529,7 +534,7 @@ class TemplateManager:
             if memberOffset < 0:
                 ferror_exit("invalid offset")
 
-            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels, memberArrayElementSize) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
             memberName = words[2]
             if not valid_symbol_name(memberName):
@@ -563,11 +568,7 @@ class TemplateManager:
                     # don't need to check for override or order since this is a previously defined template
                     memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplatesInfo=ptinfo[:]))
             else:  # basic type, range, pointer, or array
-                bsize = memberSize
-                if memberIsArray  and  memberTemplate:
-                    bsize = self.symbolTemplates[memberTemplate][0]
-
-                memberList.append(TemplateMember(offset=memberOffset, size=bsize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth, parentTemplatesInfo=[[templateName, memberName, memberOffset, False, ""]], isArray=memberIsArray, arrayLevels=memberArrayLevels, arrayTemplate=memberTemplate))
+                memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth, parentTemplatesInfo=[[templateName, memberName, memberOffset, False, ""]], isArray=memberIsArray, arrayLevels=memberArrayLevels, arrayTemplate=memberTemplate, arrayElementSize=memberArrayElementSize))
 
                 # check if it overrides, only need to check previous member if
                 # there's also a check that members are added in order
@@ -928,7 +929,7 @@ class Qvm:
                         fwarning_msg("symbol out of order")
                     prevAddr = addr
 
-                    (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                    (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels, arrayElementSize) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
 
                     sym = words[2]
 
@@ -948,7 +949,7 @@ class Qvm:
                             maddr = addr + m.offset
                             if not maddr in self.symbolsRange:
                                 self.symbolsRange[maddr] = []
-                            self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth, isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate))
+                            self.symbolsRange[maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth, isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate, arrayElementSize=m.arrayElementSize))
                             # check if it matches previously declared simple symbol
                             if addr in self.symbols:
                                 fwarning_msg("member template range would be overriden by simple symbol")
@@ -956,7 +957,7 @@ class Qvm:
                     else:  # basic type, range, pointer, or array
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        self.symbolsRange[addr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth, isArray=isArray, arrayLevels=arrayLevels, arrayTemplate=template))
+                        self.symbolsRange[addr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth, isArray=isArray, arrayLevels=arrayLevels, arrayTemplate=template, arrayElementSize=arrayElementSize))
                         # check if it would be overriden by previously declared simple symbol
                         if addr in self.symbols:
                             fwarning_msg("range would be overriden by simple symbol")
@@ -1020,7 +1021,7 @@ class Qvm:
                             fwarning_msg("replacing arg")
 
                         if len(words) > 2:
-                            (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
+                            (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels, arrayElementSize) = self.templateManager.parse_symbol_or_size(words[1:], lineCount, fname, line)
                             # validate
                             if symbolType == SYMBOL_RANGE  and  size > 4:
                                 ferror_exit("invalid argument range size, arguments are integers (values or pointers)")
@@ -1051,7 +1052,7 @@ class Qvm:
                                 fwarning_msg("local address out of order")
                             lastLocalAddr = localAddr
 
-                            (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels) = self.templateManager.parse_symbol_or_size(words[2:], lineCount, fname, line)
+                            (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels, arrayElementSize) = self.templateManager.parse_symbol_or_size(words[2:], lineCount, fname, line)
                             sym = words[3]
 
                             if template  and  not isArray:
@@ -1073,7 +1074,7 @@ class Qvm:
                                     maddr = localAddr + m.offset
                                     if not maddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                         self.functionsLocalRangeLabels[currentFuncAddr][maddr] = []
-                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate))
+                                    self.functionsLocalRangeLabels[currentFuncAddr][maddr].append(RangeElement(size=m.size, symbolType=m.symbolType, symbolName="%s.%s" % (sym, m.name), isPointer=m.isPointer, pointerType=m.pointerType, isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate, arrayElementSize=m.arrayElementSize))
                                     # check if it matches previously declared simple symbol
                                     if currentFuncAddr in self.functionsLocalLabels:
                                         if maddr in self.functionsLocalLabels[currentFuncAddr]:
@@ -1083,7 +1084,7 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth, isArray=isArray, arrayLevels=arrayLevels, arrayTemplate=template))
+                                self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=size, symbolType=symbolType, symbolName=sym, isPointer=isPointer, pointerType=pointerType, pointerDepth=pointerDepth, isArray=isArray, arrayLevels=arrayLevels, arrayTemplate=template, arrayElementSize=arrayElementSize))
                                 # check if it matches previously declared simple symbol
                                 if currentFuncAddr in self.functionsLocalLabels:
                                     if localAddr in self.functionsLocalLabels[currentFuncAddr]:
