@@ -566,7 +566,7 @@ class TemplateManager:
                     ptinfo.append([templateName, "%s.%s" % (memberName, m.name), m.offset, ptinfo[-1][3], ptinfo[-1][4]])
 
                     # don't need to check for override or order since this is a previously defined template
-                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplatesInfo=ptinfo[:]))
+                    memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerDepth=m.pointerDepth, parentTemplatesInfo=ptinfo[:], isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate, arrayElementSize=m.arrayElementSize))
             else:  # basic type, range, pointer, or array
                 memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth, parentTemplatesInfo=[[templateName, memberName, memberOffset, False, ""]], isArray=memberIsArray, arrayLevels=memberArrayLevels, arrayTemplate=memberTemplate, arrayElementSize=memberArrayElementSize))
 
