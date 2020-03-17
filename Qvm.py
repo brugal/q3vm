@@ -325,9 +325,14 @@ class TemplateMember:
         # info with respect to parent templates
         self.parentTemplatesInfo = parentTemplatesInfo  # [ [parentTemplate1:str, name1:str, offset1:int, isTemplateRange1:bool, ourTemplate1:str], [parentTemplate2:str, name2:str, offset2:int, isTemplateRange2:bool, ourTemplate2:str], ... ]
 
+class Template:
+    def __init__ (self, size, members=[]):
+        self.size = size
+        self.members = members  # [ member1:TemplateMember, member2:TemplateMember, ... ]
+
 class TemplateManager:
     def __init__ (self):
-        # name:str -> [ size:int, [ member1:TemplateMember, member2:TemplateMember ] ]
+        # name: str -> [ template:Template ]
         self.symbolTemplates = {}
 
     def check_for_array_declaration (self, typeString):
@@ -538,7 +543,7 @@ class TemplateManager:
             if words[0] == "}":
                 if len(words) != 1:
                     ferror_exit("invalid closing brace")
-                self.symbolTemplates[templateName] = [templateSize, memberList]
+                self.symbolTemplates[templateName] = Template(size=templateSize, members=memberList)
                 lineCount += 1
                 haveTemplateInfo = False
                 continue
@@ -565,8 +570,8 @@ class TemplateManager:
                     ferror_exit("duplicate member name")
 
             if memberTemplate  and  not memberIsArray:
-                memberTemplateSize = self.symbolTemplates[memberTemplate][0]
-                memberTemplateMembers = self.symbolTemplates[memberTemplate][1]
+                memberTemplateSize = self.symbolTemplates[memberTemplate].size
+                memberTemplateMembers = self.symbolTemplates[memberTemplate].members
                 # add member template itself
                 memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName, parentTemplatesInfo=[[templateName, memberName, memberOffset, True, memberTemplate]]))
                 # check if it overrides, only need to check previous member if
@@ -957,8 +962,8 @@ class Qvm:
                         # add template
                         if not addr in self.symbolsRange:
                             self.symbolsRange[addr] = []
-                        templateSize = self.templateManager.symbolTemplates[template][0]
-                        members = self.templateManager.symbolTemplates[template][1]
+                        templateSize = self.templateManager.symbolTemplates[template].size
+                        members = self.templateManager.symbolTemplates[template].members
                         # add template itself
                         self.symbolsRange[addr].append(RangeElement(size=templateSize, symbolName=sym))
                         # check if it matches previously declared simple symbol
@@ -1081,8 +1086,8 @@ class Qvm:
                                     self.functionsLocalRangeLabels[currentFuncAddr] = {}
                                 if not localAddr in self.functionsLocalRangeLabels[currentFuncAddr]:
                                     self.functionsLocalRangeLabels[currentFuncAddr][localAddr] = []
-                                templateSize = self.templateManager.symbolTemplates[template][0]
-                                members = self.templateManager.symbolTemplates[template][1]
+                                templateSize = self.templateManager.symbolTemplates[template].size
+                                members = self.templateManager.symbolTemplates[template].members
                                 # add template itself
                                 self.functionsLocalRangeLabels[currentFuncAddr][localAddr].append(RangeElement(size=templateSize, symbolName=sym))
                                 # check if it is overriden by previously declared simple symbol
@@ -1626,7 +1631,7 @@ class Qvm:
                         memberName = "?"
                         if templateName not in self.templateManager.symbolTemplates:
                             error_exit("unknown template %s" % templateName)
-                        memberList = self.templateManager.symbolTemplates[templateName][1]
+                        memberList = self.templateManager.symbolTemplates[templateName].members
                         foundOffset = False
                         for m in memberList:
                             memberName = m.name

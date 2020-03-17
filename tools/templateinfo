@@ -109,8 +109,8 @@ def main ():
         sys.exit(1)
 
     tinfo = templateManager.symbolTemplates[name]
-    size = tinfo[0]
-    members = tinfo[1]
+    size = tinfo.size
+    members = tinfo.members
 
     if printOffset:
         # find best match
