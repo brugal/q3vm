@@ -397,6 +397,9 @@ class TemplateManager:
                 ferror_exit("invalid size")
         else:  # template or basic type
             # check for array
+
+            # Note: pointer to array isn't supported, if both pointer and
+            # array declarations are used it will be array of pointers
             (isValid, word, isArray, arrayLevels) = self.check_for_array_declaration(word)
             if not isValid:
                 ferror_exit("invalid array declaration")

@@ -196,9 +196,19 @@ Pointers to templates/types are specified with '*'.  Ex:
     ...
     0xf1f23 **buffer bx  ; pointer to pointer
 
+If both pointer and array declarations are used the result will be an array of
+pointers.  Ex:
+
+    0xab922 *int[128] elements  ; elements[n] == *int
+
 Template and member names can't contain spaces or start with a digit, '+', or
-'-'.  Template names can't match basic type names or 'void'.  Basic types are:
-byte, char, uchar, short, ushort, int, uint, and float.  Note that messages
-regarding dereferencing use '.' and '->' notation.  Pointer and array
-declaractions can't contain spaces.  Template opening and closing braces need
-to be the first and single character in a line.
+'-'.  Template names can't match basic type names or 'void'.
+
+Basic types are:
+
+      byte, char, uchar, short, ushort, int, uint, float
+
+Note that messages regarding dereferencing use '.' and '->' notation appended
+to the symbol name.  Pointer and array declaractions can't contain spaces.
+Template opening and closing braces need to be the first and single character
+in a line.
