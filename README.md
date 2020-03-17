@@ -199,7 +199,7 @@ Pointers to templates/types are specified with '*'.  Ex:
 If both pointer and array declarations are used the result will be an array of
 pointers.  Ex:
 
-    0xab922 *int[128] elements  ; elements[n] == pointer to intger
+    0xab922 *int[128] elements  ; elements[n] == pointer to integer
 
 Template and member names can't contain spaces or start with a digit, '+', or
 '-'.  Template names can't match basic type names or 'void'.
