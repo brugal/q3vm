@@ -262,7 +262,8 @@ OP_MULF,
 OP_CVIF,
 OP_CVFI ) = range(60)
 
-basicTypes = ("byte", "char", "int", "float")
+# in qvms double and long types are still only 4 bytes
+basicTypes = ("byte", "char", "uchar", "short", "ushort", "int", "uint", "float")
 
 SYMBOL_RANGE = 0  # size specified directly
 SYMBOL_TEMPLATE = 1
@@ -270,10 +271,14 @@ SYMBOL_POINTER_VOID = 2
 SYMBOL_POINTER_BASIC = 3  # pointer to basic type
 SYMBOL_POINTER_TEMPLATE = 4
 # basic types
-SYMBOL_BYTE = 5
+SYMBOL_BYTE = 5  # unsigned char
 SYMBOL_CHAR = 6
-SYMBOL_INT = 7
-SYMBOL_FLOAT = 8
+SYMBOL_UCHAR = 7
+SYMBOL_SHORT = 8
+SYMBOL_USHORT = 9
+SYMBOL_INT = 10
+SYMBOL_UINT = 11
+SYMBOL_FLOAT = 12
 
 class RangeException(Exception):
     pass
@@ -428,8 +433,20 @@ class TemplateManager:
                 elif w == "char":
                     symbolType = SYMBOL_CHAR
                     size = 0x1
+                elif w == "uchar":
+                    symbolType = SYMBOL_UCHAR
+                    size = 0x1
+                elif w == "short":
+                    symbolType = SYMBOL_SHORT
+                    size = 0x2
+                elif w == "ushort":
+                    symbolType = SYMBOL_USHORT
+                    size = 0x2
                 elif w == "int":
                     symbolType = SYMBOL_INT
+                    size = 0x4
+                elif w == "uint":
+                    symbolType = SYMBOL_UINT
                     size = 0x4
                 elif w == "float":
                     symbolType = SYMBOL_FLOAT

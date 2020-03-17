@@ -25,7 +25,8 @@ from Qvm import TemplateManager, TemplateMember, parse_int
 
 from Qvm import SYMBOL_RANGE, SYMBOL_TEMPLATE, SYMBOL_POINTER_VOID
 from Qvm import SYMBOL_POINTER_BASIC, SYMBOL_POINTER_TEMPLATE, SYMBOL_BYTE
-from Qvm import SYMBOL_CHAR, SYMBOL_INT, SYMBOL_FLOAT
+from Qvm import SYMBOL_CHAR, SYMBOL_UCHAR, SYMBOL_SHORT, SYMBOL_USHORT
+from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 
 import sys
 
@@ -57,8 +58,16 @@ def print_member_type (m):
         output("byte")
     elif m.symbolType == SYMBOL_CHAR:
         output("char")
+    elif m.symbolType == SYMBOL_UCHAR:
+        output("uchar")
+    elif m.symbolType == SYMBOL_SHORT:
+        output("short")
+    elif m.symbolType == SYMBOL_USHORT:
+        output("ushort")
     elif m.symbolType == SYMBOL_INT:
         output("int")
+    elif m.symbolType == SYMBOL_UINT:
+        output("uint")
     elif m.symbolType == SYMBOL_FLOAT:
         output("float")
 
