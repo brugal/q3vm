@@ -537,7 +537,7 @@ class TemplateManager:
                     except ValueError:
                         ferror_exit("couldn't parse array constant value")
 
-                    if cname in self.arrayConstants:
+                    if not allowOverride  and  cname in self.arrayConstants:
                         ferror_exit("array constant already exists")
 
                     self.arrayConstants[cname] = cvalue

@@ -217,3 +217,4 @@ in a line.
 
 Defines for array sizes can be declared with `%arrayConstant name value`.  The
 declaration can't be used while a template is currently being defined.
+Constant names can't start with a digit, '+', or '-'.
