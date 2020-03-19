@@ -337,8 +337,7 @@ class Template:
 
 class TemplateManager:
     def __init__ (self):
-        # name: str -> [ template:Template ]
-        self.symbolTemplates = {}
+        self.symbolTemplates = {}  # name:str -> template:Template
         self.arrayConstants = {}  # name:str -> value:int
 
     def check_for_array_declaration (self, typeString):
@@ -367,7 +366,7 @@ class TemplateManager:
                 break
 
             name = None
-            #if m == "HELLO":
+
             if m in self.arrayConstants:
                 name = m
                 size = self.arrayConstants[m]
