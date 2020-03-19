@@ -280,6 +280,11 @@ SYMBOL_INT = 10
 SYMBOL_UINT = 11
 SYMBOL_FLOAT = 12
 
+class ArraySize:
+    def __init__ (self, value, name=None):
+        self.value = value
+        self.name = name
+
 class RangeException(Exception):
     pass
 
@@ -298,7 +303,7 @@ class RangeElement:
         self.pointerDepth = pointerDepth
 
         self.isArray = isArray
-        self.arrayLevels = arrayLevels
+        self.arrayLevels = arrayLevels  # [size1:ArraySize, size2:ArraySize, ...]
         self.arrayTemplate = arrayTemplate  # '' if basic type or pointer
         self.arrayElementSize = arrayElementSize
 
@@ -317,7 +322,7 @@ class TemplateMember:
         self.pointerDepth = pointerDepth
 
         self.isArray = isArray
-        self.arrayLevels = arrayLevels
+        self.arrayLevels = arrayLevels  # [size1:ArraySize, size2:ArraySize, ...]
         self.arrayTemplate = arrayTemplate
         self.arrayElementSize = arrayElementSize
 
@@ -334,6 +339,7 @@ class TemplateManager:
     def __init__ (self):
         # name: str -> [ template:Template ]
         self.symbolTemplates = {}
+        self.arrayConstants = {}  # name:str -> value:int
 
     def check_for_array_declaration (self, typeString):
         isArray = False
@@ -342,10 +348,10 @@ class TemplateManager:
 
         name = typeString
 
-        # 'matrix[3][6]'  -> ['matrix', '3]', '6]']
+        # ex: 'matrix[3][6]'  -> ['matrix', '3]', '6]']
         match = typeString.split('[')
 
-        if len(match) == 1:  # ['float']
+        if len(match) == 1:  # ex: ['float']
             return (True, typeString, False, [])
 
         isArray = True
@@ -360,17 +366,23 @@ class TemplateManager:
                 isValid = False
                 break
 
-            try:
-                size = parse_int(m)
-            except ValueError:
-                isValid = False
-                break
+            name = None
+            #if m == "HELLO":
+            if m in self.arrayConstants:
+                name = m
+                size = self.arrayConstants[m]
+            else:
+                try:
+                    size = parse_int(m)
+                except ValueError:
+                    isValid = False
+                    break
 
             if size < 0:
                 isValid = False
                 break
 
-            arrayLevels.append(size)
+            arrayLevels.append(ArraySize(size, name=name))
 
         return (isValid, match[0], isArray, arrayLevels)
 
@@ -388,7 +400,7 @@ class TemplateManager:
         pointerType = ""
         pointerDepth = 0
         isArray = False
-        arrayLevels = []  # ex: [3, 3] for float[3][3]
+        arrayLevels = []  # ex: [ArraySize(3), ArraySize(3)] for float[3][3]
         arrayElementSize = 0
 
         word = words[0]
@@ -471,7 +483,7 @@ class TemplateManager:
         if isArray:
             arrayElementSize = size
             for a in arrayLevels:
-                size *= a
+                size *= a.value
 
         return (size, symbolType, template, isPointer, pointerType, pointerDepth, isArray, arrayLevels, arrayElementSize)
 
@@ -514,6 +526,25 @@ class TemplateManager:
                 continue
 
             if not haveTemplateInfo:
+                if words[0] == "%arrayConstant":
+                    if len(words) != 3:
+                        ferror_exit("invalid array constant declaration")
+                    cname = words[1]
+                    c = cname[0]
+                    if c.isdigit()  or  c == '+'  or  c == '-':
+                        ferror_exit("invalid array constant name")
+                    try:
+                        cvalue = parse_int(words[2])
+                    except ValueError:
+                        ferror_exit("couldn't parse array constant value")
+
+                    if cname in self.arrayConstants:
+                        ferror_exit("array constant already exists")
+
+                    self.arrayConstants[cname] = cvalue
+                    lineCount += 1
+                    continue
+
                 if len(words) != 2:
                     ferror_exit("couldn't parse template name and size")
 

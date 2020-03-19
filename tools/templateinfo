@@ -73,7 +73,10 @@ def print_member_type (m):
 
     if m.isArray:
         for a in m.arrayLevels:
-            output("[%d]" % a)
+            if a.name:
+                output("[%s:%d]" % (a.name, a.value))
+            else:
+                output("[%d]" % a.value)
 
 def main ():
     if len(sys.argv) < 2:

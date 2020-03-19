@@ -15,11 +15,13 @@
 ;        char            string[MAX_CVAR_VALUE_STRING];
 ; } vmCvar_t;
 
+%arrayConstant MAX_CVAR_VALUE_STRING 256
+
 vmCvar_t 0x110
 {
   0x0 0x4 handle
   0x4 int modificationCount
   0x8 float value
   0xc int integer
-  0x10 char[256] string  ; string[MAX_CVAR_VALUE_STRING]
+  0x10 char[MAX_CVAR_VALUE_STRING] string
 }

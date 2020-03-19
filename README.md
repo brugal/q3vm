@@ -174,13 +174,15 @@ treated as a comment and discarded.  Ex:
     ;        char            string[MAX_CVAR_VALUE_STRING];
     ; } vmCvar_t;
 
+    %arrayConstant MAX_CVAR_VALUE_STRING 256
+
     vmCvar_t 0x110
     {
       0x0 0x4 handle
       0x4 int modificationCount
       0x8 float value
       0xc 0x4 integer
-      0x10 char[256] string  ; string[MAX_CVAR_VALUE_STRING]
+      0x10 char[MAX_CVAR_VALUE_STRING] string
     }
 
 Templates allow the repeated specification of structures.  Default templates
@@ -212,3 +214,6 @@ Note that messages regarding dereferencing use '.' and '->' notation appended
 to the symbol name.  Pointer and array declaractions can't contain spaces.
 Template opening and closing braces need to be the first and single character
 in a line.
+
+Defines for array sizes can be declared with `%arrayConstant name value`.  The
+declaration can't be used while a template is currently being defined.
