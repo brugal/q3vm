@@ -175,10 +175,11 @@ treated as a comment and discarded.  Ex:
     ; } vmCvar_t;
 
     %arrayConstant MAX_CVAR_VALUE_STRING 256
+    %alias int cvarHandle_t
 
     vmCvar_t 0x110
     {
-      0x0 0x4 handle
+      0x0 cvarHandle_t handle
       0x4 int modificationCount
       0x8 float value
       0xc 0x4 integer
@@ -218,3 +219,6 @@ in a line.
 Defines for array sizes can be declared with `%arrayConstant name value`.  The
 declaration can't be used while a template is currently being defined.
 Constant names can't start with a digit, '+', or '-'.
+
+Template aliases are string substitutions similar to C typedefs.  They are
+declared as `%alias type aliasName`.  'type' can also be another alias.

@@ -339,6 +339,47 @@ class TemplateManager:
     def __init__ (self):
         self.symbolTemplates = {}  # name:str -> template:Template
         self.arrayConstants = {}  # name:str -> value:int
+        self.templateAliases = {}  # name:str -> sub:str
+
+    def check_for_template_alias (self, typeString):
+        s = typeString
+
+        pdEnd = 0
+        for c in s:
+            if c == '*':
+                pdEnd += 1
+            else:
+                break
+
+        if pdEnd > 0:
+            pointerDeclaration = s[:pdEnd]
+            s = s[pdEnd:]
+        else:
+            pointerDeclaration = ""
+
+        symEnd = 0
+        for c in s:
+            if c != '[':
+                symEnd += 1
+            else:
+                break
+
+        if symEnd > 0:
+            symbolDeclaration = s[:symEnd]
+            s = s[symEnd:]
+        else:
+            symbolDeclaration = ""
+
+        arrayDeclaration = s
+
+        if symbolDeclaration in self.templateAliases:
+            symbolDeclaration = self.templateAliases[symbolDeclaration]
+
+        s = pointerDeclaration + symbolDeclaration + arrayDeclaration
+
+        #print("xxxxxx   %s   ->   %s" % (s, symbolDeclaration))
+        return s
+
 
     def check_for_array_declaration (self, typeString):
         isArray = False
@@ -412,6 +453,9 @@ class TemplateManager:
             if size < 0:
                 ferror_exit("invalid size")
         else:  # template or basic type
+            # check for aliases
+            word = self.check_for_template_alias(word)
+
             # check for array
 
             # Note: pointer to array isn't supported, if both pointer and
@@ -525,6 +569,24 @@ class TemplateManager:
                 continue
 
             if not haveTemplateInfo:
+                if words[0] == "%alias":
+                    if len(words) != 3:
+                        ferror_exit("invalid alias declaration")
+                    aliasString = words[1]
+                    aliasName = words[2]
+                    if not valid_symbol_name(aliasName):
+                        ferror_exit("invalid alias name")
+
+                    if not allowOverride  and  aliasName in self.templateAliases:
+                        ferror_exit("alias already exists")
+
+                    # expand other possible alias reference
+                    aliasString = self.check_for_template_alias(aliasString)
+
+                    self.templateAliases[aliasName] = aliasString
+                    lineCount += 1
+                    continue
+
                 if words[0] == "%arrayConstant":
                     if len(words) != 3:
                         ferror_exit("invalid array constant declaration")

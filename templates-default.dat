@@ -16,10 +16,11 @@
 ; } vmCvar_t;
 
 %arrayConstant MAX_CVAR_VALUE_STRING 256
+%alias int cvarHandle_t
 
 vmCvar_t 0x110
 {
-  0x0 0x4 handle
+  0x0 cvarHandle_t handle
   0x4 int modificationCount
   0x8 float value
   0xc int integer
