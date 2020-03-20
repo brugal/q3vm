@@ -51,9 +51,11 @@ def print_member_type (m):
         else:
             output("FIXME SYMBOL_TEMPLATE")
     elif m.symbolType == SYMBOL_POINTER_VOID:
-        output("*void")
+        output("*" * m.pointerDepth)
+        output("void")
     elif m.symbolType == SYMBOL_POINTER_BASIC  or  m.symbolType == SYMBOL_POINTER_TEMPLATE:
-        output("*%s" % m.pointerType)
+        output("*" * m.pointerDepth)
+        output("%s" % m.pointerType)
     elif m.symbolType == SYMBOL_BYTE:
         output("byte")
     elif m.symbolType == SYMBOL_CHAR:
