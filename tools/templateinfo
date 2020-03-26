@@ -152,6 +152,9 @@ def main ():
                     output("  ; ")
                     print_member_type(m)
 
+            if m.aliasUsed:
+                output(" alias %s" % m.origName)
+
             output("\n")
     else:  # as types
         for m in members:
@@ -162,6 +165,8 @@ def main ():
             output("    0x%x " % m.offset)
             print_member_type(m)
             output(" %s" % m.name)
+            if m.aliasUsed:
+                output(" ; alias %s" % m.origName)
             output("\n")
 
     output("}\n")
