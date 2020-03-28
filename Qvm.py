@@ -433,7 +433,7 @@ class TemplateManager:
 
         return (isValid, match[0], isArray, arrayLevels)
 
-    def parse_symbol_or_size (self, words, lineCount, fname, line):
+    def parse_symbol_or_size (self, words, lineCount, fname, line, currentParsingTemplate=None):
         # currently only checks words[0] but could potentially allow spaces
         # for pointer or array declarations
 
@@ -492,7 +492,8 @@ class TemplateManager:
                 else:
                     if not valid_symbol_name(pointerType):
                         ferror_exit("invalid pointer name")
-                    if pointerType not in self.symbolTemplates:
+                    # check that it exists or is the current template being parsed
+                    if pointerType not in self.symbolTemplates  and  pointerType != currentParsingTemplate:
                         ferror_exit("unknown pointer type")
                     symbolType = SYMBOL_POINTER_TEMPLATE
                 size = 0x4
@@ -666,7 +667,7 @@ class TemplateManager:
             if memberOffset < 0:
                 ferror_exit("invalid offset")
 
-            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels, memberArrayElementSize, memberAliasUsed) = self.parse_symbol_or_size(words[1:], lineCount, fname, line)
+            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels, memberArrayElementSize, memberAliasUsed) = self.parse_symbol_or_size(words[1:], lineCount, fname, line, currentParsingTemplate=templateName)
 
             memberName = words[2]
             if not valid_symbol_name(memberName):
