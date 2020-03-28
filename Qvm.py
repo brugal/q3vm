@@ -584,6 +584,9 @@ class TemplateManager:
                     if not valid_symbol_name(aliasName):
                         ferror_exit("invalid alias name")
 
+                    if aliasName in self.symbolTemplates:
+                        ferror_exit("template exists with same name")
+
                     if not allowOverride  and  aliasName in self.templateAliases:
                         ferror_exit("alias already exists")
 
@@ -613,12 +616,16 @@ class TemplateManager:
                     lineCount += 1
                     continue
 
+                # getting template info
                 if len(words) != 2:
                     ferror_exit("couldn't parse template name and size")
 
                 templateName = words[0]
                 if not valid_symbol_name(templateName):
                     ferror_exit("invalid template name")
+
+                if templateName in self.templateAliases:
+                    ferror_exit("alias exists with same name")
 
                 if not allowOverride  and  templateName in self.symbolTemplates:
                     ferror_exit("template already exists")
