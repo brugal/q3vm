@@ -299,6 +299,7 @@ class RangeElement:
 
         self.symbolType = symbolType
         self.isPointer = isPointer
+        # note this is the string name of the type, overriding that type will use the new setting even in previously defined templates
         self.pointerType = pointerType
         self.pointerDepth = pointerDepth
 

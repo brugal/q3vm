@@ -186,12 +186,16 @@ treated as a comment and discarded.  Ex:
       0x10 char[MAX_CVAR_VALUE_STRING] string
     }
 
-Templates allow the repeated specification of structures.  Default templates
-are loaded from the *templates-default.dat* file in the installation directory.
-To ignore those definitions, you can include an empty *templates-default.dat*
-in the current directory.  *templates.dat* is read after the default one and
-allows additional definitions and overriding of the default ones.  Template
-member declarations can use previously defined template types.
+Templates allow the repeated specification of structures.
+
+Default templates are loaded from the *templates-default.dat* file in the
+installation directory.  To ignore those definitions, you can include an empty
+*templates-default.dat* in the current directory.  *templates.dat* is read
+after the default one and allows additional definitions and overriding of the
+default ones.  Note that pointer references to templates use the string name so
+overriding a template will also affect previously declared templates.
+
+Template member declarations can use previously defined template types.
 
 Pointers to templates/types are specified with '*'.  Ex:
 
