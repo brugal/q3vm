@@ -334,6 +334,12 @@ class TemplateMember:
         # info with respect to parent templates
         self.parentTemplatesInfo = parentTemplatesInfo  # [ [parentTemplate1:str, name1:str, offset1:int, isTemplateRange1:bool, ourTemplate1:str], [parentTemplate2:str, name2:str, offset2:int, isTemplateRange2:bool, ourTemplate2:str], ... ]
 
+class AliasInfo:
+    def __init__ (self, name, declaration, expansion):
+        self.name = name
+        self.declaration = declaration
+        self.expansion = expansion
+
 class Template:
     def __init__ (self, size, members=[]):
         self.size = size
@@ -343,7 +349,7 @@ class TemplateManager:
     def __init__ (self):
         self.symbolTemplates = {}  # name:str -> template:Template
         self.arrayConstants = {}  # name:str -> value:int
-        self.templateAliases = {}  # name:str -> sub:str
+        self.templateAliases = {}  # name:str -> sub:AliasInfo
 
     def check_for_template_alias (self, typeString):
         s = typeString
@@ -377,7 +383,7 @@ class TemplateManager:
         arrayDeclaration = s
 
         if symbolDeclaration in self.templateAliases:
-            symbolDeclaration = self.templateAliases[symbolDeclaration]
+            symbolDeclaration = self.templateAliases[symbolDeclaration].expansion
             aliasUsed = True
         else:
             aliasUsed = False
@@ -595,7 +601,7 @@ class TemplateManager:
                     # expand other possible alias reference
                     (aliasUsed, aliasString) = self.check_for_template_alias(aliasString)
 
-                    self.templateAliases[aliasName] = aliasString
+                    self.templateAliases[aliasName] = AliasInfo(name=aliasName, declaration=aliasString, expansion=aliasString)
                     lineCount += 1
                     continue
 
