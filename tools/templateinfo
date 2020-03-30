@@ -123,8 +123,17 @@ def main ():
     templateManager = TemplateManager()
     templateManager.load_default_templates()
 
+    if name in templateManager.templateAliases:
+        ainfo = templateManager.templateAliases[name]
+        output("alias: %s\n" % ainfo.name)
+        if printRaw:
+            dumpObject(ainfo, 2)
+        else:
+            output("  %s  ->  %s\n" % (ainfo.declaration, ainfo.expansion))
+        sys.exit(0)
+
     if name not in templateManager.symbolTemplates:
-        sys.stderr.write("unknown template: %s\n" % name)
+        sys.stderr.write("unknown template or alias: %s\n" % name)
         sys.exit(1)
 
     tinfo = templateManager.symbolTemplates[name]

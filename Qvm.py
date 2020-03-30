@@ -601,7 +601,7 @@ class TemplateManager:
                     # expand other possible alias reference
                     (aliasUsed, aliasString) = self.check_for_template_alias(aliasString)
 
-                    self.templateAliases[aliasName] = AliasInfo(name=aliasName, declaration=aliasString, expansion=aliasString)
+                    self.templateAliases[aliasName] = AliasInfo(name=aliasName, declaration=words[1], expansion=aliasString)
                     lineCount += 1
                     continue
 
