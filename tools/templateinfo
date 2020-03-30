@@ -31,7 +31,7 @@ from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 import sys
 
 def usage ():
-    sys.stderr.write("%s <template name> [offset:int, 'range', 'type']\n" % sys.argv[0])
+    sys.stderr.write("%s <template name> [offset:int, 'range', 'type', 'raw']\n" % sys.argv[0])
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
 
@@ -80,6 +80,12 @@ def print_member_type (m):
             else:
                 output("[%d]" % a.value)
 
+def dumpObject (obj, indent=0):
+   for attr in dir(obj):
+       if hasattr(obj, attr):
+           output(" " * indent)
+           output("%s = %s\n" % (attr, getattr(obj, attr)))
+
 def main ():
     if len(sys.argv) < 2:
         usage()
@@ -89,15 +95,23 @@ def main ():
     printAsRange = True
     printAsTypes = False
     printOffset = False
+    printRaw = False
     offset = -1
 
     if len(sys.argv) > 2:
         arg = sys.argv[2]
         if arg == "range":
+            printAsTypes = False
             printAsRange = True
+            printRaw = False
         elif arg == "type":
             printAsTypes = True
             printAsRange = False
+            printRaw = False
+        elif arg == "raw":
+            printAsTypes = False
+            printAsRange = False
+            printRaw = True
         else:  # try as int to print offset
             try:
                 offset = parse_int(arg)
@@ -135,6 +149,23 @@ def main ():
             # didn't find anything
             sys.stderr.write("couldn't find offset member\n")
             sys.exit(1)
+
+    if printRaw:
+        output("%s 0x%x    ---->\n" % (name, size))
+        output("\n")
+        dumpObject(tinfo, 2)
+        output("\n")
+        output("{\n")
+
+        for m in members:
+            output("\n")
+            indent = 4 * len(m.parentTemplatesInfo)
+            output(" " * indent)
+            output("0x%x 0x%x %s    ---->\n" % (m.offset, m.size, m.name))
+            output("\n")
+            dumpObject(m, indent + 2)
+        output("}\n")
+        sys.exit(0)
 
     # print as range or types
     output("%s 0x%x\n" % (name, size))
