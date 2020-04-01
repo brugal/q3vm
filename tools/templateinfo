@@ -86,15 +86,18 @@ def dumpObject (obj, indent=0):
            output(" " * indent)
            output("%s = %s\n" % (attr, getattr(obj, attr)))
 
+class PrintType:
+    RANGE = 0
+    TYPE = 1
+    RAW = 2
+
 def main ():
     if len(sys.argv) < 2:
         usage()
 
     name = sys.argv[1]
 
-    printAsRange = True
-    printAsTypes = False
-    printRaw = False
+    printType = PrintType.RANGE
 
     printArrayConstant = False
     printOffset = False
@@ -103,17 +106,11 @@ def main ():
     if len(sys.argv) > 2:
         arg = sys.argv[2]
         if arg == "range":
-            printAsTypes = False
-            printAsRange = True
-            printRaw = False
+            printType = PrintType.RANGE
         elif arg == "type":
-            printAsTypes = True
-            printAsRange = False
-            printRaw = False
+            printType = PrintType.TYPE
         elif arg == "raw":
-            printAsTypes = False
-            printAsRange = False
-            printRaw = True
+            printType = PrintType.RAW
         elif arg == "aconst":
             printArrayConstant = True
         else:  # try as int to print offset
@@ -137,7 +134,7 @@ def main ():
     if name in templateManager.templateAliases:
         ainfo = templateManager.templateAliases[name]
         output("alias: %s\n" % ainfo.name)
-        if printRaw:
+        if printType == PrintType.RAW:
             dumpObject(ainfo, 2)
         else:
             if ainfo.declaration != ainfo.expansion:
@@ -173,7 +170,7 @@ def main ():
             sys.stderr.write("couldn't find offset member\n")
             sys.exit(1)
 
-    if printRaw:
+    if printType == PrintType.RAW:
         output("%s 0x%x    ---->\n" % (name, size))
         output("\n")
         dumpObject(tinfo, 2)
@@ -194,7 +191,7 @@ def main ():
     output("%s 0x%x\n" % (name, size))
     output("{\n")
 
-    if printAsRange:
+    if printType == PrintType.RANGE:
         for m in members:
             output("    " * len(m.parentTemplatesInfo))
             output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
