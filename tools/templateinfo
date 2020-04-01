@@ -31,7 +31,7 @@ from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 import sys
 
 def usage ():
-    sys.stderr.write("%s <template name> [offset:int, 'range', 'type', 'raw']\n" % sys.argv[0])
+    sys.stderr.write("%s <template name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % sys.argv[0])
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
 
@@ -94,8 +94,10 @@ def main ():
 
     printAsRange = True
     printAsTypes = False
-    printOffset = False
     printRaw = False
+
+    printArrayConstant = False
+    printOffset = False
     offset = -1
 
     if len(sys.argv) > 2:
@@ -112,16 +114,25 @@ def main ():
             printAsTypes = False
             printAsRange = False
             printRaw = True
+        elif arg == "aconst":
+            printArrayConstant = True
         else:  # try as int to print offset
             try:
                 offset = parse_int(arg)
                 printOffset = True
             except ValueError as ex:
-                sys.stderr.write("unknown option %s\n" % arg)
+                sys.stderr.write("unknown option: %s\n" % arg)
                 sys.exit(1)
 
     templateManager = TemplateManager()
     templateManager.load_default_templates()
+
+    if printArrayConstant:
+        if name not in templateManager.arrayConstants:
+            sys.stderr.write("unknown array constant: %s\n" % name)
+            sys.exit(1)
+        output("array constant %s : %d\n" % (name, templateManager.arrayConstants[name]))
+        sys.exit(0)
 
     if name in templateManager.templateAliases:
         ainfo = templateManager.templateAliases[name]
