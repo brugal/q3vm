@@ -129,7 +129,10 @@ def main ():
         if printRaw:
             dumpObject(ainfo, 2)
         else:
-            output("  %s  ->  %s\n" % (ainfo.declaration, ainfo.expansion))
+            if ainfo.declaration != ainfo.expansion:
+                output("  %s  ->  %s\n" % (ainfo.declaration, ainfo.expansion))
+            else:
+                output("  %s\n" % ainfo.declaration)
         sys.exit(0)
 
     if name not in templateManager.symbolTemplates:
