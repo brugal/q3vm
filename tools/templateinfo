@@ -28,10 +28,11 @@ from Qvm import SYMBOL_POINTER_BASIC, SYMBOL_POINTER_TEMPLATE, SYMBOL_BYTE
 from Qvm import SYMBOL_CHAR, SYMBOL_UCHAR, SYMBOL_SHORT, SYMBOL_USHORT
 from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 
-import sys
+import os, sys
 
 def usage ():
-    sys.stderr.write("%s <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % sys.argv[0])
+    sys.stderr.write("Usage: %s [--list-aconsts, --list-aliases, --list-templates] <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("\n")
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
 
@@ -95,7 +96,52 @@ def main ():
     if len(sys.argv) < 2:
         usage()
 
-    name = sys.argv[1]
+    # handle '--' options
+    args = []
+    args.append(sys.argv[0])
+    checkDashOptions = True
+    for a in sys.argv[1:]:
+        if checkDashOptions:
+            if a == "--":
+                # all done, pass the rest as is
+                checkDashOptions = False
+            elif a[0] != '-':
+                args.append(a)
+                checkDashOptions = False
+            elif a == "--list-aconsts":
+                templateManager = TemplateManager()
+                templateManager.load_default_templates()
+
+                keys = sorted(templateManager.arrayConstants.keys())
+                output("array constants:\n\n")
+                for k in keys:
+                    output("%s\n" % k)
+                sys.exit(0)
+            elif a == "--list-aliases":
+                templateManager = TemplateManager()
+                templateManager.load_default_templates()
+
+                keys = sorted(templateManager.templateAliases.keys())
+                output("aliases:\n\n")
+                for k in keys:
+                    output("%s\n" % k)
+                sys.exit(0)
+            elif a == "--list-templates":
+                templateManager = TemplateManager()
+                templateManager.load_default_templates()
+
+                keys = sorted(templateManager.symbolTemplates.keys())
+                output("templates:\n\n")
+                for k in keys:
+                    output("%s\n" % k)
+                sys.exit(0)
+            else:
+                sys.stderr.write("unknown option: %s\n" % a)
+                sys.exit(1)
+        else:
+            args.append(a)
+
+    name = args[1]
 
     printType = PrintType.RANGE
 
@@ -103,8 +149,8 @@ def main ():
     printOffset = False
     offset = -1
 
-    if len(sys.argv) > 2:
-        arg = sys.argv[2]
+    if len(args) > 2:
+        arg = args[2]
         if arg == "range":
             printType = PrintType.RANGE
         elif arg == "type":
