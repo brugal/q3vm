@@ -31,7 +31,7 @@ from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 import sys
 
 def usage ():
-    sys.stderr.write("%s <template name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % sys.argv[0])
+    sys.stderr.write("%s <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % sys.argv[0])
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
 
