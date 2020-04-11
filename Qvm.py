@@ -625,8 +625,14 @@ class TemplateManager:
                     continue
 
                 # getting template info
-                if len(words) != 2:
-                    ferror_exit("couldn't parse template name and size")
+                if len(words) < 2:
+                    ferror_exit("template name or size missing")
+                elif len(words) > 3:
+                    ferror_exit("too many words in template declaration")
+                else:
+                    # there are 2 or 3 words
+                    if len(words) > 2  and  words[-1] != "{":
+                        ferror_exit("invalid line ending in template declaration")
 
                 templateName = words[0]
                 if not valid_symbol_name(templateName):
@@ -647,7 +653,12 @@ class TemplateManager:
                     ferror_exit("invalid template size")
 
                 haveTemplateInfo = True
-                skipOpeningBrace = True
+
+                if words[-1] == "{":
+                    skipOpeningBrace = False
+                else:
+                    skipOpeningBrace = True
+
                 memberList = []
                 lineCount += 1
                 continue

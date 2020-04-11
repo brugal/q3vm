@@ -165,8 +165,7 @@ treated as a comment and discarded.  Ex:
     ; }
 
 
-    ; typedef struct
-    ; {
+    ; typedef struct {
     ;        cvarHandle_t    handle;
     ;        int             modificationCount;
     ;        float           value;
@@ -217,8 +216,9 @@ Basic types are:
 
 Note that messages regarding dereferencing use '.' and '->' notation appended
 to the symbol name.  Pointer and array declaractions can't contain spaces.
-Template opening and closing braces need to be the first and single character
-in a line.
+Template opening braces can be at the end of the same line as declarations or
+be the first and single character in the subsequent line.  Template closing
+braces need to be the first and single character in a line.
 
 Defines for array sizes can be declared with `%arrayConstant name value`.  The
 declaration can't be used while a template is currently being defined.
