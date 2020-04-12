@@ -195,6 +195,8 @@ def main ():
 
     tinfo = templateManager.symbolTemplates[name]
     size = tinfo.size
+    paddingSize = tinfo.paddingSize
+    paddingUsed = tinfo.paddingUsed
     members = tinfo.members
 
     if printOffset:
@@ -217,7 +219,7 @@ def main ():
             sys.exit(1)
 
     if printType == PrintType.RAW:
-        output("%s 0x%x    ---->\n" % (name, size))
+        output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)   ---->\n" % (name, size, paddingSize, paddingUsed))
         output("\n")
         dumpObject(tinfo, 2)
         output("\n")
@@ -234,7 +236,7 @@ def main ():
         sys.exit(0)
 
     # print as range or types
-    output("%s 0x%x\n" % (name, size))
+    output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)\n" % (name, size, paddingSize, paddingUsed))
     output("{\n")
 
     if printType == PrintType.RANGE:

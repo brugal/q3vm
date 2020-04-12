@@ -341,8 +341,10 @@ class AliasInfo:
         self.expansion = expansion
 
 class Template:
-    def __init__ (self, size, members=[]):
+    def __init__ (self, size, paddingSize, paddingUsed, members=[]):
         self.size = size
+        self.paddingSize = paddingSize
+        self.paddingUsed = paddingUsed
         self.members = members  # [ member1:TemplateMember, member2:TemplateMember, ... ]
 
 class TemplateManager:
@@ -350,6 +352,15 @@ class TemplateManager:
         self.symbolTemplates = {}  # name:str -> template:Template
         self.arrayConstants = {}  # name:str -> value:int
         self.templateAliases = {}  # name:str -> sub:AliasInfo
+
+    def pad_up (self, offset, paddingSize):
+        if paddingSize < 0:
+            error_exit("invalid padding size: %d" % paddingSize)
+        if paddingSize == 0:
+            return offset
+        if offset % paddingSize == 0:
+            return offset
+        return (offset + paddingSize) - (offset % paddingSize)
 
     def check_for_template_alias (self, typeString):
         s = typeString
@@ -625,14 +636,23 @@ class TemplateManager:
                     continue
 
                 # getting template info
-                if len(words) < 2:
-                    ferror_exit("template name or size missing")
-                elif len(words) > 3:
-                    ferror_exit("too many words in template declaration")
+
+                # size and closing brace optional, ex:  sx_t 0x100 {
+                haveTemplateSize = False
+                parseTemplateSize = False
+
+                if len(words) == 1:
+                    # just name
+                    pass
+                elif len(words) == 2:
+                    # name plus size or closing brace
+                    if words[1] != "{":
+                        parseTemplateSize = True
+                elif len(words) == 3:
+                    # name plus size plus closing brace
+                    parseTemplateSize = True
                 else:
-                    # there are 2 or 3 words
-                    if len(words) > 2  and  words[-1] != "{":
-                        ferror_exit("invalid line ending in template declaration")
+                    ferror_exit("invalid template declaration")
 
                 templateName = words[0]
                 if not valid_symbol_name(templateName):
@@ -644,13 +664,14 @@ class TemplateManager:
                 if not allowOverride  and  templateName in self.symbolTemplates:
                     ferror_exit("template already exists")
 
-                try:
-                    templateSize = parse_int(words[1])
-                except ValueError:
-                    ferror_exit("couldn't parse template size")
-
-                if templateSize < 0:
-                    ferror_exit("invalid template size")
+                if parseTemplateSize:
+                    try:
+                        templateSize = parse_int(words[1])
+                    except ValueError:
+                        ferror_exit("couldn't parse template size")
+                    if templateSize < 0:
+                        ferror_exit("invalid template size")
+                    haveTemplateSize = True
 
                 haveTemplateInfo = True
 
@@ -659,6 +680,8 @@ class TemplateManager:
                 else:
                     skipOpeningBrace = True
 
+                paddingSize = 0
+                currentOffset = 0
                 memberList = []
                 lineCount += 1
                 continue
@@ -668,25 +691,45 @@ class TemplateManager:
             if words[0] == "}":
                 if len(words) != 1:
                     ferror_exit("invalid closing brace")
-                self.symbolTemplates[templateName] = Template(size=templateSize, members=memberList)
+
+                paddingUsed = 0
+                if not haveTemplateSize:
+                    templateSize = 0
+                    if len(memberList) > 0:
+                        m = memberList[-1]
+                        ts = m.offset + m.size
+                        templateSize = self.pad_up(ts, paddingSize)
+                        paddingUsed = templateSize - ts
+
+                self.symbolTemplates[templateName] = Template(size=templateSize, paddingSize=paddingSize, paddingUsed=paddingUsed, members=memberList)
                 lineCount += 1
                 haveTemplateInfo = False
                 continue
 
-            # parsing members, ex:  0x0 0x4 handle
-            if len(words) != 3:
+            # parsing members (offset optional), ex:  '0x0 0x4 handle'  or  'int count'
+
+            if len(words) not in (2, 3):
                 ferror_exit("invalid member declaration")
 
-            try:
-                memberOffset = parse_int(words[0])
-            except ValueError:
-                ferror_exit("couldn't get member offset")
-            if memberOffset < 0:
-                ferror_exit("invalid offset")
+            haveOffset = False
+            symbolIndex = 1
 
-            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels, memberArrayElementSize, memberAliasUsed) = self.parse_symbol_or_size(words[1:], lineCount, fname, line, currentParsingTemplate=templateName)
+            if len(words) == 3:
+                try:
+                    memberOffset = parse_int(words[0])
+                except ValueError:
+                    ferror_exit("couldn't get member offset")
+                if memberOffset < 0:
+                    ferror_exit("invalid offset")
+                haveOffset = True
+                symbolIndex = 1
+            else:  # len(words) == 2
+                haveOffset = False
+                symbolIndex = 0
 
-            memberName = words[2]
+            (memberSize, memberSymbolType, memberTemplate, memberIsPointer, memberPointerType, memberPointerDepth, memberIsArray, memberArrayLevels, memberArrayElementSize, memberAliasUsed) = self.parse_symbol_or_size(words[symbolIndex:], lineCount, fname, line, currentParsingTemplate=templateName)
+
+            memberName = words[symbolIndex + 1]
             if not valid_symbol_name(memberName):
                 ferror_exit("invalid member name")
             # make sure name is unique
@@ -696,6 +739,12 @@ class TemplateManager:
 
             if memberTemplate  and  not memberIsArray:
                 memberTemplateSize = self.symbolTemplates[memberTemplate].size
+                if self.symbolTemplates[memberTemplate].paddingSize > paddingSize:
+                    paddingSize = self.symbolTemplates[memberTemplate].paddingSize
+                if not haveOffset:
+                    memberOffset = self.pad_up(currentOffset, self.symbolTemplates[memberTemplate].paddingSize)
+                    haveOffset = True
+
                 memberTemplateMembers = self.symbolTemplates[memberTemplate].members
                 # add member template itself
                 memberList.append(TemplateMember(offset=memberOffset, size=memberTemplateSize, name=memberName, parentTemplatesInfo=[[templateName, memberName, memberOffset, True, memberTemplate]], aliasUsed=memberAliasUsed, origName=words[1]))
@@ -717,7 +766,32 @@ class TemplateManager:
 
                     # don't need to check for override or order since this is a previously defined template
                     memberList.append(TemplateMember(offset=adjOffset, size=m.size, name="%s.%s" % (memberName, m.name), symbolType=m.symbolType, isPointer=m.isPointer, pointerType=m.pointerType, pointerDepth=m.pointerDepth, parentTemplatesInfo=ptinfo[:], isArray=m.isArray, arrayLevels=m.arrayLevels, arrayTemplate=m.arrayTemplate, arrayElementSize=m.arrayElementSize, aliasUsed=m.aliasUsed, origName=m.origName))
+
+                currentOffset += memberTemplateSize
             else:  # basic type, range, pointer, or array
+                # padding check
+                psize = 4
+                msymt = memberSymbolType
+
+                if msymt == SYMBOL_RANGE:
+                    psize = 0
+                elif msymt in (SYMBOL_BYTE, SYMBOL_CHAR, SYMBOL_UCHAR):
+                    psize = 1
+                elif msymt in (SYMBOL_SHORT, SYMBOL_USHORT):
+                    psize = 2
+                elif msymt == SYMBOL_TEMPLATE:  # array of templates, straight templates handled before
+                    psize = self.symbolTemplates[memberTemplate].paddingSize
+
+                if psize > paddingSize:
+                    paddingSize = psize
+
+                if not haveOffset:
+                    memberOffset = self.pad_up(currentOffset, psize)
+                    currentOffset = memberOffset
+                    haveOffset = True
+                else:
+                    currentOffset = memberOffset
+
                 memberList.append(TemplateMember(offset=memberOffset, size=memberSize, name=memberName, symbolType=memberSymbolType, isPointer=memberIsPointer, pointerType=memberPointerType, pointerDepth=memberPointerDepth, parentTemplatesInfo=[[templateName, memberName, memberOffset, False, ""]], isArray=memberIsArray, arrayLevels=memberArrayLevels, arrayTemplate=memberTemplate, arrayElementSize=memberArrayElementSize, aliasUsed=memberAliasUsed, origName=words[1]))
 
                 # check if it overrides, only need to check previous member if
@@ -729,6 +803,7 @@ class TemplateManager:
                     elif memberOffset < (prevMember.offset + prevMember.size):
                         fwarning_msg("member '%s' overrides previous member" % memberName)
 
+                currentOffset += memberSize
             lineCount += 1
 
         if haveTemplateInfo:

@@ -158,9 +158,9 @@ treated as a comment and discarded.  Ex:
 
 ### *templates.dat* ###
 
-    ; template size
+    ; template [size]
     ; {
-    ;    offset <size or type> name
+    ;    [offset] <size or type> name
     ;    ...
     ; }
 
@@ -176,14 +176,24 @@ treated as a comment and discarded.  Ex:
     %arrayConstant MAX_CVAR_VALUE_STRING 256
     %alias int cvarHandle_t
 
-    vmCvar_t 0x110
-    {
-      0x0 cvarHandle_t handle
-      0x4 int modificationCount
-      0x8 float value
-      0xc 0x4 integer
-      0x10 char[MAX_CVAR_VALUE_STRING] string
+    vmCvar_t {
+      cvarHandle_t handle
+      int modificationCount
+      float value
+      int integer
+      char[MAX_CVAR_VALUE_STRING] string
     }
+
+    ; using explicit sizes and offsets:
+    ;
+    ; vmCvar_t 0x110
+    ; {
+    ;   0x0 cvarHandle_t handle
+    ;   0x4 int modificationCount
+    ;   0x8 float value
+    ;   0xc int integer
+    ;   0x10 char[MAX_CVAR_VALUE_STRING] string
+    ; }
 
 Templates allow the repeated specification of structures.
 
@@ -213,6 +223,11 @@ Template and member names can't contain spaces or start with a digit, '+', or
 Basic types are:
 
       byte, char, uchar, short, ushort, int, uint, float
+
+Template sizes and member offsets are optional.  If they are not specified
+C style padding is applied.  Members will begin at offsets that are a multiple
+of their basic type size.  Range types are not padded.  Template size is
+padded based on the largest member padding.
 
 Note that messages regarding dereferencing use '.' and '->' notation appended
 to the symbol name.  Pointer and array declaractions can't contain spaces.

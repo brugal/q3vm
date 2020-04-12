@@ -1,9 +1,10 @@
 
-; template size
+; template [size]
 ; {
-;    offset <size or type> name
+;    [offset] <size or type> name
 ;    ...
 ; }
+;
 
 
 ; typedef struct {
@@ -17,8 +18,7 @@
 %arrayConstant MAX_CVAR_VALUE_STRING 256
 %alias int cvarHandle_t
 
-vmCvar_t 0x110
-{
+vmCvar_t 0x110 {
   0x0 cvarHandle_t handle
   0x4 int modificationCount
   0x8 float value
