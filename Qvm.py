@@ -637,7 +637,7 @@ class TemplateManager:
 
                 # getting template info
 
-                # size and closing brace optional, ex:  sx_t 0x100 {
+                # size and opening brace optional, ex:  sx_t 0x100 {
                 haveTemplateSize = False
                 parseTemplateSize = False
 
@@ -645,14 +645,14 @@ class TemplateManager:
                     # just name
                     pass
                 elif len(words) == 2:
-                    # name plus size or closing brace
+                    # name plus size or opening brace
                     if words[1] != "{":
                         parseTemplateSize = True
                 elif len(words) == 3:
-                    # name plus size plus closing brace
+                    # name plus size plus opening brace
                     parseTemplateSize = True
                 else:
-                    ferror_exit("invalid template declaration")
+                    ferror_exit("invalid word count in template declaration")
 
                 templateName = words[0]
                 if not valid_symbol_name(templateName):
@@ -709,7 +709,7 @@ class TemplateManager:
             # parsing members (offset optional), ex:  '0x0 0x4 handle'  or  'int count'
 
             if len(words) not in (2, 3):
-                ferror_exit("invalid member declaration")
+                ferror_exit("invalid word count in member declaration")
 
             haveOffset = False
             symbolIndex = 1
