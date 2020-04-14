@@ -31,7 +31,7 @@ from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 import os, sys
 
 def usage ():
-    sys.stderr.write("Usage: %s [--list-aconsts, --list-aliases, --list-templates] <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("Usage: %s [--list-aconsts, --list-aliases, --list-templates, --print-all] <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % os.path.basename(sys.argv[0]))
     sys.stderr.write("\n")
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
@@ -96,6 +96,8 @@ def main ():
     if len(sys.argv) < 2:
         usage()
 
+    printAll = False
+
     # handle '--' options
     args = []
     args.append(sys.argv[0])
@@ -135,13 +137,16 @@ def main ():
                 for k in keys:
                     output("%s\n" % k)
                 sys.exit(0)
+            elif a == "--print-all":
+                printAll = True
             else:
                 sys.stderr.write("unknown option: %s\n" % a)
                 sys.exit(1)
         else:
             args.append(a)
 
-    name = args[1]
+    if not printAll:
+        commandLineName = args[1]
 
     printType = PrintType.RANGE
 
@@ -170,105 +175,134 @@ def main ():
     templateManager = TemplateManager()
     templateManager.load_default_templates()
 
-    if printArrayConstant:
-        if name not in templateManager.arrayConstants:
-            sys.stderr.write("unknown array constant: %s\n" % name)
-            sys.exit(1)
-        output("array constant %s : %d\n" % (name, templateManager.arrayConstants[name]))
-        sys.exit(0)
+    # constants
 
-    if name in templateManager.templateAliases:
-        ainfo = templateManager.templateAliases[name]
-        output("alias: %s\n" % ainfo.name)
-        if printType == PrintType.RAW:
-            dumpObject(ainfo, 2)
-        else:
-            if ainfo.declaration != ainfo.expansion:
-                output("  %s  ->  %s\n" % (ainfo.declaration, ainfo.expansion))
+    if printAll:
+        names = sorted(templateManager.arrayConstants.keys())
+    else:
+        names = [commandLineName]
+
+    if printAll  or  printArrayConstant:
+        for name in names:
+            if name not in templateManager.arrayConstants:
+                sys.stderr.write("unknown array constant: %s\n" % name)
+                sys.exit(1)
+            output("array constant %s : %d\n" % (name, templateManager.arrayConstants[name]))
+            if not printAll:
+                sys.exit(0)
+
+    # aliases
+
+    if printAll:
+        names = sorted(templateManager.templateAliases.keys())
+    else:
+        names = [commandLineName]
+
+    for name in names:
+        if name in templateManager.templateAliases:
+            ainfo = templateManager.templateAliases[name]
+            output("alias: %s\n" % ainfo.name)
+            if printType == PrintType.RAW:
+                dumpObject(ainfo, 2)
             else:
-                output("  %s\n" % ainfo.declaration)
-        sys.exit(0)
-
-    if name not in templateManager.symbolTemplates:
-        sys.stderr.write("unknown template or alias: %s\n" % name)
-        sys.exit(1)
-
-    tinfo = templateManager.symbolTemplates[name]
-    size = tinfo.size
-    paddingSize = tinfo.paddingSize
-    paddingUsed = tinfo.paddingUsed
-    members = tinfo.members
-
-    if printOffset:
-        # find best match
-        match = None
-        for m in members:
-            if offset >= m.offset  and  offset < (m.offset + m.size):
-                if match == None:
-                    match = m
+                if ainfo.declaration != ainfo.expansion:
+                    output("  %s  ->  %s\n" % (ainfo.declaration, ainfo.expansion))
                 else:
-                    if m.size < match.size:
-                        match = m
+                    output("  %s\n" % ainfo.declaration)
+            if not printAll:
+                sys.exit(0)
 
-        if match:
-            output("0x%x 0x%x %s (+0x%x)\n" % (match.offset, match.size, match.name, offset - match.offset))
-            sys.exit(0)
-        else:
-            # didn't find anything
-            sys.stderr.write("couldn't find offset member\n")
+    # templates
+
+    if printAll:
+        names = sorted(templateManager.symbolTemplates.keys())
+    else:
+        names = [commandLineName]
+
+    for name in names:
+        if name not in templateManager.symbolTemplates:
+            sys.stderr.write("unknown template or alias: %s\n" % name)
             sys.exit(1)
 
-    if printType == PrintType.RAW:
-        output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)   ---->\n" % (name, size, paddingSize, paddingUsed))
-        output("\n")
-        dumpObject(tinfo, 2)
-        output("\n")
+        tinfo = templateManager.symbolTemplates[name]
+        size = tinfo.size
+        paddingSize = tinfo.paddingSize
+        paddingUsed = tinfo.paddingUsed
+        members = tinfo.members
+
+        if printOffset:
+            # find best match
+            match = None
+            for m in members:
+                if offset >= m.offset  and  offset < (m.offset + m.size):
+                    if match == None:
+                        match = m
+                    else:
+                        if m.size < match.size:
+                            match = m
+
+            if match:
+                output("0x%x 0x%x %s (+0x%x)\n" % (match.offset, match.size, match.name, offset - match.offset))
+                if not printAll:
+                    sys.exit(0)
+            else:
+                # didn't find anything
+                sys.stderr.write("couldn't find offset member\n")
+                if not printAll:
+                    sys.exit(1)
+            continue
+
+        if printType == PrintType.RAW:
+            output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)   ---->\n" % (name, size, paddingSize, paddingUsed))
+            output("\n")
+            dumpObject(tinfo, 2)
+            output("\n")
+            output("{\n")
+
+            for m in members:
+                output("\n")
+                indent = 4 * len(m.parentTemplatesInfo)
+                output(" " * indent)
+                output("0x%x 0x%x %s    ---->\n" % (m.offset, m.size, m.name))
+                output("\n")
+                dumpObject(m, indent + 2)
+            output("}\n")
+            continue
+
+        # print as range or types
+        output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)\n" % (name, size, paddingSize, paddingUsed))
         output("{\n")
 
-        for m in members:
-            output("\n")
-            indent = 4 * len(m.parentTemplatesInfo)
-            output(" " * indent)
-            output("0x%x 0x%x %s    ---->\n" % (m.offset, m.size, m.name))
-            output("\n")
-            dumpObject(m, indent + 2)
+        if printType == PrintType.RANGE:
+            for m in members:
+                output("    " * len(m.parentTemplatesInfo))
+                output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
+
+                if m.parentTemplatesInfo[-1][3]:  # isTemplateRange
+                    output("  ; template %s" % m.parentTemplatesInfo[0][4])
+                else:
+                    if m.symbolType != SYMBOL_RANGE:
+                        output("  ; ")
+                        print_member_type(m)
+
+                if m.aliasUsed:
+                    output(" alias %s" % m.origName)
+
+                output("\n")
+        else:  # as types
+            for m in members:
+                # skip sub template members
+                if len(m.parentTemplatesInfo) > 1:
+                    continue
+
+                output("    0x%x " % m.offset)
+                print_member_type(m)
+                output(" %s" % m.name)
+                if m.aliasUsed:
+                    output(" ; alias %s" % m.origName)
+                output("\n")
+
         output("}\n")
-        sys.exit(0)
-
-    # print as range or types
-    output("%s 0x%x (paddingSize 0x%x, paddingUsed 0x%x)\n" % (name, size, paddingSize, paddingUsed))
-    output("{\n")
-
-    if printType == PrintType.RANGE:
-        for m in members:
-            output("    " * len(m.parentTemplatesInfo))
-            output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
-
-            if m.parentTemplatesInfo[-1][3]:  # isTemplateRange
-                output("  ; template %s" % m.parentTemplatesInfo[0][4])
-            else:
-                if m.symbolType != SYMBOL_RANGE:
-                    output("  ; ")
-                    print_member_type(m)
-
-            if m.aliasUsed:
-                output(" alias %s" % m.origName)
-
-            output("\n")
-    else:  # as types
-        for m in members:
-            # skip sub template members
-            if len(m.parentTemplatesInfo) > 1:
-                continue
-
-            output("    0x%x " % m.offset)
-            print_member_type(m)
-            output(" %s" % m.name)
-            if m.aliasUsed:
-                output(" ; alias %s" % m.origName)
-            output("\n")
-
-    output("}\n")
 
 if __name__ == "__main__":
     main()
