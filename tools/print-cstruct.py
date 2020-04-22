@@ -5,7 +5,7 @@ from pycparser import parse_file, c_ast
 # gcc -nostdinc -m32 -I /usr/share/python-pycparser/fake_libc_include -E q_shared.h  > /share/tmp/q_shared-E-3.h
 
 def usage ():
-    sys.stderr.write("%s [--debug, --print-all] <c file> [name]\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("%s [--debug, --debug-node, --print-all] <c file> [name]\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 def output (msg):
