@@ -73,7 +73,7 @@ def parse_binaryop (exprnode, partial_length_ok=False):
     #
     ##raise FFIError(":%d: unsupported expression: expected aw "
     ##               "simple numeric constant" % exprnode.coord.line)
-    error_exit(":%d: unsupported expression: expected aw simple numeric constant" % exprnode.coord.line)
+    error_exit(":%d: unsupported expression: expected a simple numeric constant" % exprnode.coord.line)
 
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
