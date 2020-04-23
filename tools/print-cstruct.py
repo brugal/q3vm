@@ -4,6 +4,9 @@ from pycparser import parse_file, c_ast
 
 # gcc -nostdinc -m32 -I /usr/share/python-pycparser/fake_libc_include -E q_shared.h  > /share/tmp/q_shared-E-3.h
 
+# pycparser fake typedef struct from: /usr/share/python[3]-pycparser/fake_libc_include/_fake_typedefs.h
+fakeStructs = [ "MirConnection", "MirSurface", "MirSurfaceSpec", "MirScreencast", "MirPromptSession", "MirBufferStream", "MirPersistentId", "MirBlob", "MirDisplayConfig", "xcb_connection_t" ]
+
 def usage ():
     sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset] <c file> [name]\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
@@ -94,6 +97,9 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
             if not printAll  and  node.name not in structNames:
                 continue
 
+            if node.name in fakeStructs:
+                continue
+
             structName = node.type.type.name
 
             if debugLevel > 0:
@@ -146,6 +152,9 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
         #if type(node) == c_ast.Typedef  and  node.type == c_ast.TypeDecl  and  type(node.type) == c_ast.Struct:
         if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:
             if not printAll  and  node.name not in structNames:
+                continue
+
+            if node.name in fakeStructs:
                 continue
 
             structName = node.type.type.name
