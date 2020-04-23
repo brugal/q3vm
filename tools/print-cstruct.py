@@ -80,10 +80,7 @@ def parse_binaryop (exprnode, partial_length_ok=False):
 
 def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
     # use gcc to print offset info
-    #print("offset...")
     codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
-
-    #print(codeFile.name)
 
     codeFile.write("#include <stdio.h>\n")
     codeFile.write("#include <stddef.h>\n")
@@ -107,8 +104,6 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
                 output("%s\n" % node.type.type.decls)
                 output("\n")
 
-            #output("%s {\n" % node.name)
-
             codeFile.write("  {\n")
             codeFile.write("    %s st;\n" % node.name)
             codeFile.write("\n")
@@ -116,13 +111,7 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
 
             # struct members
             for m in node.type.type:
-                #output(" %s : %s " % (m.name, type(m.type)))
-                #output("%s" % m.type)
-                #output("    %s\n" % m.name)
-                #output("\n")
-
                 codeFile.write("    printf(\"  0x%%x 0x%%x %s\\n\", offsetof(%s, %s), sizeof(%s));\n" % (m.name, node.name, m.name, "st." + m.name))
-                pass
 
             codeFile.write("    printf(\"}\\n\\n\");\n")
             codeFile.write("  }\n")
@@ -132,10 +121,13 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
     codeFile.write("}\n")
 
     codeFile.close()
-    #f = open(codeFile.name)
-    #data = f.read()
-    #f.close()
-    #print(data)
+    if debugLevel > 0:
+        output("%s :\n" % codeFile.name)
+        f = open(codeFile.name)
+        data = f.read()
+        f.close()
+        output(data)
+        output("\n")
 
     binFileName = codeFile.name + ".bin"
     os.system("gcc -Wall -m32 %s -o %s" % (codeFile.name, binFileName))
