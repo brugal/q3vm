@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-import os, sys
+import os, sys, tempfile
 from pycparser import parse_file, c_ast
 
 # gcc -nostdinc -m32 -I /usr/share/python-pycparser/fake_libc_include -E q_shared.h  > /share/tmp/q_shared-E-3.h
 
 def usage ():
-    sys.stderr.write("%s [--debug, --debug-node, --print-all] <c file> [name]\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset] <c file> [name]\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 def output (msg):
@@ -74,6 +74,75 @@ def parse_binaryop (exprnode, partial_length_ok=False):
     ##raise FFIError(":%d: unsupported expression: expected aw "
     ##               "simple numeric constant" % exprnode.coord.line)
     error_exit(":%d: unsupported expression: expected a simple numeric constant" % exprnode.coord.line)
+
+# structNames: [ name1:str, name2:str, ... ]
+# arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
+
+def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
+    # use gcc to print offset info
+    #print("offset...")
+    codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
+
+    #print(codeFile.name)
+
+    codeFile.write("#include <stdio.h>\n")
+    codeFile.write("#include <stddef.h>\n")
+    codeFile.write("#include \"%s\"\n" % cFileName)
+    codeFile.write("\n")
+    codeFile.write("int main (int argc, char *argv[]) {\n")
+
+    for node in ast.ext:
+        # typedef struct [name] { ... } tname;
+        if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:
+            if not printAll  and  node.name not in structNames:
+                continue
+
+            structName = node.type.type.name
+
+            if debugLevel > 0:
+                if debugLevel > 1:
+                    output("%s : \n" % node.name)
+                    output("%s\n\n" % node)
+                output("%s (members) : \n" % node.name)
+                output("%s\n" % node.type.type.decls)
+                output("\n")
+
+            #output("%s {\n" % node.name)
+
+            codeFile.write("  {\n")
+            codeFile.write("    %s st;\n" % node.name)
+            codeFile.write("\n")
+            codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(%s));\n" % (node.name, node.name))
+
+            # struct members
+            for m in node.type.type:
+                #output(" %s : %s " % (m.name, type(m.type)))
+                #output("%s" % m.type)
+                #output("    %s\n" % m.name)
+                #output("\n")
+
+                codeFile.write("    printf(\"  0x%%x 0x%%x %s\\n\", offsetof(%s, %s), sizeof(%s));\n" % (m.name, node.name, m.name, "st." + m.name))
+                pass
+
+            codeFile.write("    printf(\"}\\n\\n\");\n")
+            codeFile.write("  }\n")
+            codeFile.write("\n")
+
+    codeFile.write("    return 0;\n")
+    codeFile.write("}\n")
+
+    codeFile.close()
+    #f = open(codeFile.name)
+    #data = f.read()
+    #f.close()
+    #print(data)
+
+    binFileName = codeFile.name + ".bin"
+    os.system("gcc -Wall -m32 %s -o %s" % (codeFile.name, binFileName))
+    os.system(binFileName)
+
+    os.unlink(codeFile.name)
+    os.unlink(binFileName)
 
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
@@ -195,6 +264,7 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
 if __name__ == "__main__":
     debugLevel = 0
     printAll = False
+    useOffset = False
 
     args = []
     args.append(sys.argv[0])
@@ -213,6 +283,8 @@ if __name__ == "__main__":
                 debugLevel = 2
             elif a == "--print-all":
                 printAll = True
+            elif a == "--offset":
+                useOffset = True
             else:
                 sys.stderr.write("unknown option: %s\n" % a)
                 sys.exit(1)
@@ -244,4 +316,7 @@ if __name__ == "__main__":
     ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='gcc', cpp_args=['-nostdinc', '-m32', '-I', '/usr/share/python-pycparser/fake_libc_include', '-S', '-E'])
     #ast.show()
 
-    print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+    if useOffset:
+        print_struct_offset(ast, cFileName=cFileName, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+    else:
+        print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
