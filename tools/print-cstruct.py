@@ -2,7 +2,22 @@
 import os, sys, tempfile
 from pycparser import parse_file, c_ast
 
-# gcc -nostdinc -m32 -I /usr/share/python-pycparser/fake_libc_include -E q_shared.h  > /share/tmp/q_shared-E-3.h
+
+# if cpp or gcc not used to load ast, it can be preprocessed before hand:
+#     gcc -nostdinc -m32 -I /usr/share/python-pycparser/fake_libc_include -E q_shared.h  > /share/tmp/q_shared-E-3.h
+
+
+# to debug automatic size and offset calculations:
+#     add common aliases to default template file (ex:  %alias int qboolean)
+#
+#     print-cstruct.py --print-all --offset ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
+#     templateinfo --no-comments --print-all > /tmp/all-offset.txt
+#
+#     print-cstruct.py --print-all ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
+#     templateinfo --no-comments --print-all > /tmp/all-c-no-type.txt
+#
+#     diff -Naurbd /tmp/all-offset.txt /tmp/all-c-no-type.txt
+
 
 # pycparser fake typedef struct from: /usr/share/python[3]-pycparser/fake_libc_include/_fake_typedefs.h
 fakeStructs = [ "MirConnection", "MirSurface", "MirSurfaceSpec", "MirScreencast", "MirPromptSession", "MirBufferStream", "MirPersistentId", "MirBlob", "MirDisplayConfig", "xcb_connection_t" ]
