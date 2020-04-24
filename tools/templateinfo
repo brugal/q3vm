@@ -31,7 +31,7 @@ from Qvm import SYMBOL_INT, SYMBOL_UINT, SYMBOL_FLOAT
 import os, sys
 
 def usage ():
-    sys.stderr.write("Usage: %s [--list-aconsts, --list-aliases, --list-templates, --print-all] <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("Usage: %s [--list-aconsts, --list-aliases, --list-templates, --print-all, --no-comments] <template or alias name> [offset:int, 'range', 'type', 'raw', 'aconst']\n" % os.path.basename(sys.argv[0]))
     sys.stderr.write("\n")
     sys.stderr.write("  default is to print as 'range'\n")
     sys.exit(1)
@@ -97,6 +97,7 @@ def main ():
         usage()
 
     printAll = False
+    addComments = True
 
     # handle '--' options
     args = []
@@ -139,6 +140,8 @@ def main ():
                 sys.exit(0)
             elif a == "--print-all":
                 printAll = True
+            elif a == "--no-comments":
+                addComments = False
             else:
                 sys.stderr.write("unknown option: %s\n" % a)
                 sys.exit(1)
@@ -279,14 +282,16 @@ def main ():
                 output("0x%x 0x%x %s" % (m.offset, m.size, m.name))
 
                 if m.parentTemplatesInfo[-1][3]:  # isTemplateRange
-                    output("  ; template %s" % m.parentTemplatesInfo[0][4])
+                    if addComments:
+                        output("  ; template %s" % m.parentTemplatesInfo[0][4])
                 else:
                     if m.symbolType != SYMBOL_RANGE:
-                        output("  ; ")
-                        print_member_type(m)
-
+                        if addComments:
+                            output("  ; ")
+                            print_member_type(m)
                 if m.aliasUsed:
-                    output(" alias %s" % m.origName)
+                    if addComments:
+                        output(" alias %s" % m.origName)
 
                 output("\n")
         else:  # as types
@@ -299,7 +304,8 @@ def main ():
                 print_member_type(m)
                 output(" %s" % m.name)
                 if m.aliasUsed:
-                    output(" ; alias %s" % m.origName)
+                    if addComments:
+                        output(" ; alias %s" % m.origName)
                 output("\n")
 
         output("}\n")
