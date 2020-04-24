@@ -78,6 +78,43 @@ def parse_binaryop (exprnode, partial_length_ok=False):
     ##               "simple numeric constant" % exprnode.coord.line)
     error_exit(":%d: unsupported expression: expected a simple numeric constant" % exprnode.coord.line)
 
+# t: c_ast.IdentifierType
+def convert_identifier_type (t):
+    if type(t) != c_ast.IdentifierType:
+        error_exit("convert_identifier_type() unknown type: %s" % type(t))
+    if len(t.names) < 1:
+        error_exit("convert_identifier_type() empty names array")
+
+    #print("convert_identifier_type()  names: %s" % t.names)
+
+    if len(t.names) == 1:
+        return t.names[0]
+
+    if len(t.names) > 1:
+        if t.names[1] == "char":
+            if t.names[0] == "signed":
+                return "char"
+            elif t.names[0] == "unsigned":
+                return "uchar"
+            else:
+                error_exit("convert_identifier_type() unknown char type: %s" % t.names[0])
+        elif t.names[1] == "short":
+            if t.names[0] == "signed":
+                return "short"
+            elif t.names[0] == "unsigned":
+                return "ushort"
+            else:
+                error_exit("convert_identifier_type() unknown short type: %s" % t.names[0])
+        elif t.names[1] == "int":
+            if t.names[0] == "signed":
+                return "int"
+            elif t.names[0] == "unsigned":
+                return "uint"
+            else:
+                error_exit("convert_identifier_type() unknown int type: %s" % t.names[0])
+        else:
+            error_exit("convert_identifier_type() unknown type: %s" % t.names)
+
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
 
@@ -179,14 +216,14 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                 # straight declaration, ex: int count
                 if mType == c_ast.TypeDecl:
                     if type(m.type.type) == c_ast.IdentifierType:
-                        output("    %s %s\n" % (m.type.type.names[0], m.name))
+                        output("    %s %s\n" % (convert_identifier_type(m.type.type), m.name))
                     else:
                         error_exit("not IdentifierType for %s: %s" % (m.name, type(m.type.type)))
                 # pointer (straight declaration or function), ex: float *range, int (*func)(int a, int b)
                 elif mType == c_ast.PtrDecl:
                     if type(m.type.type) == c_ast.TypeDecl:
                         if type(m.type.type.type) == c_ast.IdentifierType:
-                            output("    *%s %s\n" % (m.type.type.type.names[0], m.name))
+                            output("    *%s %s\n" % (convert_identifier_type(m.type.type.type), m.name))
                         elif type(m.type.type.type) == c_ast.Struct:
                             # check if this is pointer to self
                             if m.type.type.type.name == structName:
@@ -235,7 +272,7 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                             isPointer = False
 
                         if type(subType.type) == c_ast.IdentifierType:
-                            arrayTypeName = subType.type.names[0]
+                            arrayTypeName = convert_identifier_type(subType.type)
                         elif isPointer  and  type(subType) == c_ast.FuncDecl:
                             # ex:  int (*func[36])(int a, int b)
                             error_exit("array of function pointers not supported: %s" % m.name)
