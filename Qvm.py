@@ -542,12 +542,12 @@ class TemplateManager:
                     size = 0x4
                 else:
                     symbolType = SYMBOL_TEMPLATE
-                    size = 0x4
                     template = w
                     if not valid_symbol_name(template):
                         ferror_exit("invalid template name")
                     if template not in self.symbolTemplates:
                         ferror_exit("parsed unknown template")
+                    size = self.symbolTemplates[template].size
 
         if isArray:
             arrayElementSize = size
@@ -779,7 +779,7 @@ class TemplateManager:
                     psize = 1
                 elif msymt in (SYMBOL_SHORT, SYMBOL_USHORT):
                     psize = 2
-                elif msymt == SYMBOL_TEMPLATE:  # array of templates, straight templates handled before
+                elif msymt == SYMBOL_TEMPLATE:  # it is array of templates, straight templates handled before
                     psize = self.symbolTemplates[memberTemplate].paddingSize
 
                 if psize > paddingSize:
