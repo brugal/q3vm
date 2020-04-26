@@ -10,10 +10,10 @@ from pycparser import parse_file, c_ast
 # to debug automatic size and offset calculations:
 #     add common aliases to default template file (ex:  %alias int qboolean)
 #
-#     print-cstruct.py --print-all --offset ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
+#     printcstruct.py --print-all --offset ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
 #     templateinfo --no-comments --print-all > /tmp/all-offset.txt
 #
-#     print-cstruct.py --print-all ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
+#     printcstruct.py --print-all ~/tmp/sdk1/mod-sdk-1.32/code/game/q_shared.h > templates.dat
 #     templateinfo --no-comments --print-all > /tmp/all-c-no-type.txt
 #
 #     diff -Naurbd /tmp/all-offset.txt /tmp/all-c-no-type.txt
