@@ -264,6 +264,9 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         error_exit("flexible array member not supported: %s" % m.name)
                     elif type(m.type.dim) == c_ast.BinaryOp:
                         arrayLengths.append(parse_binaryop(m.type.dim))
+                    elif type(m.type.dim) == c_ast.ID:
+                        # one example is Enum as array length
+                        arrayLengths.append(m.type.dim.name[0])
                     else:
                         error_exit("unknown array dim type for %s: %s" % (m.name, type(m.type.dim)))
                     subType = m.type.type
