@@ -88,10 +88,19 @@ def parse_binaryop (exprnode, partial_length_ok=False):
             exprnode.op == '-'):
         return (parse_binaryop(exprnode.left) -
                 parse_binaryop(exprnode.right))
+    if (isinstance(exprnode, c_ast.BinaryOp) and
+	    exprnode.op == '*'):
+        return (parse_binaryop(exprnode.left) *
+                parse_binaryop(exprnode.right))
+    if (isinstance(exprnode, c_ast.BinaryOp) and
+            exprnode.op == '/'):
+        return (parse_binaryop(exprnode.left) /
+                parse_binaryop(exprnode.right))
+
     #
     ##raise FFIError(":%d: unsupported expression: expected aw "
     ##               "simple numeric constant" % exprnode.coord.line)
-    error_exit(":%d: unsupported expression: expected a simple numeric constant" % exprnode.coord.line)
+    error_exit(":%d: unsupported expression: expected a simple numeric constant: %s" % (exprnode.coord.line, exprnode))
 
 # t: c_ast.IdentifierType
 def convert_identifier_type (t):
