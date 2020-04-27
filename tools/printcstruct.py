@@ -266,7 +266,8 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         arrayLengths.append(parse_binaryop(m.type.dim))
                     elif type(m.type.dim) == c_ast.ID:
                         # one example is Enum as array length
-                        arrayLengths.append(m.type.dim.name[0])
+                        #FIXME ID used with math expression: arr[MAX_VAL + 2]
+                        arrayLengths.append(m.type.dim.name)
                     else:
                         error_exit("unknown array dim type for %s: %s" % (m.name, type(m.type.dim)))
                     subType = m.type.type
@@ -278,6 +279,11 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         elif type(subType.dim) == type(None):
                             # ex:  char[200[]
                             error_exit("flexible sub array member not supported: %s" % m.name)
+                        elif type(subType.dim) == c_ast.BinaryOp:
+                            arrayLengths.append(parse_binaryop(subType.dim))
+                        elif type(subType.dim) == c_ast.ID:
+                            # one example is Enum as array length
+                            arrayLengths.append(subType.dim.name)
                         else:
                             error_exit("unknown sub array dim type for %s: %s" % (m.name, type(subType.dim)))
                         subType = subType.type
