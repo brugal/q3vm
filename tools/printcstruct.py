@@ -153,32 +153,53 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
     codeFile.write("int main (int argc, char *argv[]) {\n")
 
     for node in ast.ext:
+
         # typedef struct [name] { ... } tname;
-        if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:
-            if not printAll  and  node.name not in structNames:
+        # struct name { ... };
+
+        if (type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct)  or  (type(node) == c_ast.Decl  and  type(node.type) == c_ast.Struct):
+
+            if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:  # typedef ...
+                isTypedef = True
+                structNode = node.type.type
+                structName = node.name
+            else:  # struct ...
+                isTypedef = False
+                structNode = node.type
+                structName = structNode.name
+
+            if not printAll  and  structName not in structNames:
                 continue
 
-            if node.name in fakeStructs:
+            if structName in fakeStructs:
                 continue
-
-            structName = node.type.type.name
 
             if debugLevel > 0:
                 if debugLevel > 1:
                     output("%s : \n" % node.name)
                     output("%s\n\n" % node)
-                output("%s (members) : \n" % node.name)
-                output("%s\n" % node.type.type.decls)
+                output("%s (members) : \n" % structName)
+                output("%s\n" % structNode.decls)
                 output("\n")
 
             codeFile.write("  {\n")
-            codeFile.write("    %s st;\n" % node.name)
+            if isTypedef:
+                codeFile.write("    %s st;\n" % structName)
+            else:
+                codeFile.write("    struct %s st;\n" % structName)
             codeFile.write("\n")
-            codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(%s));\n" % (node.name, node.name))
+
+            if isTypedef:
+                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(%s));\n" % (structName, structName))
+            else:
+                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(struct %s));\n" % (structName, structName))
 
             # struct members
-            for m in node.type.type:
-                codeFile.write("    printf(\"  0x%%x 0x%%x %s\\n\", offsetof(%s, %s), sizeof(%s));\n" % (m.name, node.name, m.name, "st." + m.name))
+            for m in structNode:
+                if isTypedef:
+                    codeFile.write("    printf(\"  0x%%x 0x%%x %s\\n\", offsetof(%s, %s), sizeof(%s));\n" % (m.name, structName, m.name, "st." + m.name))
+                else:
+                    codeFile.write("    printf(\"  0x%%x 0x%%x %s\\n\", offsetof(struct %s, %s), sizeof(%s));\n" % (m.name, structName, m.name, "st." + m.name))
 
             codeFile.write("    printf(\"}\\n\\n\");\n")
             codeFile.write("  }\n")
@@ -209,32 +230,37 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
 def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
 
     for node in ast.ext:
+
         # typedef struct [name] { ... } tname;
-        #if type(node) == c_ast.Typedef  and  node.type == c_ast.TypeDecl  and  type(node.type) == c_ast.Struct:
-        if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:
-            if not printAll  and  node.name not in structNames:
+        # struct name { ... };
+
+        if (type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct)  or  (type(node) == c_ast.Decl  and  type(node.type) == c_ast.Struct):
+
+            if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:  # typedef ...
+                structNode = node.type.type
+                structName = node.name
+            else:  # struct ...
+                structNode = node.type
+                structName = structNode.name
+
+            if not printAll  and  structName not in structNames:
                 continue
 
-            if node.name in fakeStructs:
+            if structName in fakeStructs:
                 continue
-
-            structName = node.type.type.name
 
             if debugLevel > 0:
                 if debugLevel > 1:
                     output("%s : \n" % node.name)
                     output("%s\n\n" % node)
-                output("%s (members) : \n" % node.name)
-                output("%s\n" % node.type.type.decls)
+                output("%s (members) : \n" % structName)
+                output("%s\n" % structNode.decls)
                 output("\n")
 
-            output("%s {\n" % node.name)
-            # struct members
-            for m in node.type.type:
-                #output(" %s : %s " % (m.name, type(m.type)))
-                #output("%s" % m.type)
-                #output("    %s\n" % m.name)
+            output("%s {\n" % structName)
 
+            # struct members
+            for m in structNode:
                 mType = type(m.type)
 
                 # straight declaration, ex: int count
