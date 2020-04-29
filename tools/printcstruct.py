@@ -267,6 +267,9 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                 if mType == c_ast.TypeDecl:
                     if type(m.type.type) == c_ast.IdentifierType:
                         output("    %s %s\n" % (convert_identifier_type(m.type.type), m.name))
+                    elif type(m.type.type) == c_ast.Struct:
+                        # ex:  struct data_s ms
+                        output("    %s %s\n" % (m.type.type.name, m.name))
                     else:
                         error_exit("not IdentifierType for %s: %s" % (m.name, type(m.type.type)))
                 # pointer (straight declaration or function), ex: float *range, int (*func)(int a, int b)
@@ -332,6 +335,9 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
 
                         if type(subType.type) == c_ast.IdentifierType:
                             arrayTypeName = convert_identifier_type(subType.type)
+                        elif type(subType.type) == c_ast.Struct:
+                            # ex:  struct data_s ds[10]
+                            arrayTypeName = subType.type.name
                         elif isPointer  and  type(subType) == c_ast.FuncDecl:
                             # ex:  int (*func[36])(int a, int b)
                             error_exit("array of function pointers not supported: %s" % m.name)
