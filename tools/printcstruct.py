@@ -174,6 +174,10 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
             if structName in fakeStructs:
                 continue
 
+            # ignore empty typedef, ex:  typedef struct data_s data_t;
+            if isTypedef  and  structNode.decls == None:
+                continue
+
             if debugLevel > 0:
                 if debugLevel > 1:
                     output("%s : \n" % node.name)
@@ -249,6 +253,10 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                 continue
 
             if structName in fakeStructs:
+                continue
+
+            # ignore empty typedef, ex:  typedef struct data_s data_t;
+            if isTypedef  and  structNode.decls == None:
                 continue
 
             if debugLevel > 0:
