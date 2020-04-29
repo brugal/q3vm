@@ -237,9 +237,11 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
         if (type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct)  or  (type(node) == c_ast.Decl  and  type(node.type) == c_ast.Struct):
 
             if type(node) == c_ast.Typedef  and  type(node.type) == c_ast.TypeDecl  and  type(node.type.type) == c_ast.Struct:  # typedef ...
+                isTypedef = True
                 structNode = node.type.type
                 structName = node.name
             else:  # struct ...
+                isTypedef = False
                 structNode = node.type
                 structName = structNode.name
 
@@ -279,8 +281,8 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                             output("    *%s %s\n" % (convert_identifier_type(m.type.type.type), m.name))
                         elif type(m.type.type.type) == c_ast.Struct:
                             # check if this is pointer to self
-                            if m.type.type.type.name == structName:
-                                output("    *%s %s\n" % (node.name, m.name))
+                            if isTypedef  and  m.type.type.type.name == node.type.type.name:
+                                output("    *%s %s\n" % (structName, m.name))
                             else:
                                 output("    *%s %s\n" % (m.type.type.type.name, m.name))
                         else:
@@ -349,7 +351,7 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         else:
                             output("    %s" % arrayTypeName)
 
-                        dotName = node.name + "." + m.name
+                        dotName = structName + "." + m.name
                         if dotName in arrayConstants:
                             ac = arrayConstants[dotName]
                             for a in ac:
