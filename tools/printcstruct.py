@@ -280,7 +280,8 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         if type(m.type.type.type) == c_ast.IdentifierType:
                             output("    *%s %s\n" % (convert_identifier_type(m.type.type.type), m.name))
                         elif type(m.type.type.type) == c_ast.Struct:
-                            # check if this is pointer to self
+                            # check if this is pointer to self, ex:
+                            #   typedef struct this_s { ... struct this_s *s }
                             if isTypedef  and  m.type.type.type.name == node.type.type.name:
                                 output("    *%s %s\n" % (structName, m.name))
                             else:
