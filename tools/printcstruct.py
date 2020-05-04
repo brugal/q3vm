@@ -140,9 +140,8 @@ def convert_identifier_type (t):
             error_exit("convert_identifier_type() unknown type: %s" % t.names)
 
 # structNames: [ name1:str, name2:str, ... ]
-# arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
 # returns found: [ structName1:str, structName2:str, ... ]
-def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
+def print_struct_offset (ast, cFileName, printAll=False, structNames=[], debugLevel=0):
     # use gcc to print offset info
     codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
 
@@ -437,7 +436,7 @@ if __name__ == "__main__":
 
     arrayConstants = {}
     # testing
-    arrayConstants["pc_token_t.string"] = ["MAX_TOKENLENGTH"]
+    #arrayConstants["pc_token_t.string"] = ["MAX_TOKENLENGTH"]
 
     #ast = parse_file(filename=cFileName)
     #ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='cpp', cpp_args=r'-Iutils/fake_libc_include')
@@ -445,7 +444,7 @@ if __name__ == "__main__":
     #ast.show()
 
     if useOffset:
-        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, printAll=printAll, debugLevel=debugLevel)
     else:
         found, arrayConstantsUsed = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
 
