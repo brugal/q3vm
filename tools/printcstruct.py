@@ -141,7 +141,7 @@ def convert_identifier_type (t):
 
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
-
+# returns found: [ structName1:str, structName2:str, ... ]
 def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
     # use gcc to print offset info
     codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
@@ -236,10 +236,11 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
 
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
-
+# returns found: [ structName1:str, structName2:str, ... ], arrayConstantsUsed: [ const1:str, const2:str, ... ]
 def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
 
     found = []  # [ structName1:str, structName2:str, ... ]
+    arrayConstantsUsed = []  # [ const1:str, const2:str, ... ]
 
     for node in ast.ext:
 
@@ -372,6 +373,7 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
 
                         dotName = structName + "." + m.name
                         if dotName in arrayConstants:
+                            arrayConstantsUsed.append(dotName)
                             ac = arrayConstants[dotName]
                             for a in ac:
                                 output("[%s]" % a)
@@ -385,7 +387,7 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                     error_exit("unhandled type for %s: %s\n" % (m.name, mType))
             output("}\n\n")
 
-    return found
+    return found, arrayConstantsUsed
 
 if __name__ == "__main__":
     debugLevel = 0
@@ -435,7 +437,7 @@ if __name__ == "__main__":
 
     arrayConstants = {}
     # testing
-    #arrayConstants["pc_token_t.string"] = ["MAX_TOKENLENGTH"]
+    arrayConstants["pc_token_t.string"] = ["MAX_TOKENLENGTH"]
 
     #ast = parse_file(filename=cFileName)
     #ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='cpp', cpp_args=r'-Iutils/fake_libc_include')
@@ -445,7 +447,7 @@ if __name__ == "__main__":
     if useOffset:
         found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
     else:
-        found = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+        found, arrayConstantsUsed = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
 
     if not printAll:
         if structNames[0] not in found:
