@@ -152,6 +152,8 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
     codeFile.write("\n")
     codeFile.write("int main (int argc, char *argv[]) {\n")
 
+    found = []  # [ structName1:str, structName2:str, ... ]
+
     for node in ast.ext:
 
         # typedef struct [name] { ... } tname;
@@ -177,6 +179,8 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
             # ignore empty typedef, ex:  typedef struct data_s data_t;
             if isTypedef  and  structNode.decls == None:
                 continue
+
+            found.append(structName)
 
             if debugLevel > 0:
                 if debugLevel > 1:
@@ -228,10 +232,14 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], arrayCo
     os.unlink(codeFile.name)
     os.unlink(binFileName)
 
+    return found
+
 # structNames: [ name1:str, name2:str, ... ]
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
 
 def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
+
+    found = []  # [ structName1:str, structName2:str, ... ]
 
     for node in ast.ext:
 
@@ -258,6 +266,8 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
             # ignore empty typedef, ex:  typedef struct data_s data_t;
             if isTypedef  and  structNode.decls == None:
                 continue
+
+            found.append(structName)
 
             if debugLevel > 0:
                 if debugLevel > 1:
@@ -375,6 +385,8 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                     error_exit("unhandled type for %s: %s\n" % (m.name, mType))
             output("}\n\n")
 
+    return found
+
 if __name__ == "__main__":
     debugLevel = 0
     printAll = False
@@ -431,6 +443,10 @@ if __name__ == "__main__":
     #ast.show()
 
     if useOffset:
-        print_struct_offset(ast, cFileName=cFileName, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
     else:
-        print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+        found = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+
+    if not printAll:
+        if structNames[0] not in found:
+            error_exit("couldn't find structure")
