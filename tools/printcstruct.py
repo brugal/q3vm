@@ -294,22 +294,35 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                         error_exit("not IdentifierType for %s: %s" % (m.name, type(m.type.type)))
                 # pointer (straight declaration or function), ex: float *range, int (*func)(int a, int b)
                 elif mType == c_ast.PtrDecl:
-                    if type(m.type.type) == c_ast.TypeDecl:
-                        if type(m.type.type.type) == c_ast.IdentifierType:
-                            output("    *%s %s\n" % (convert_identifier_type(m.type.type.type), m.name))
-                        elif type(m.type.type.type) == c_ast.Struct:
+                    pointerDepth = 1
+                    subType = m.type.type
+                    while type(subType) == c_ast.PtrDecl:
+                        pointerDepth += 1
+                        subType = subType.type
+
+                    if type(subType) == c_ast.TypeDecl:
+                        output("    ")
+                        for i in range(pointerDepth):
+                            output("*")
+
+                        if type(subType.type) == c_ast.IdentifierType:
+                            output("%s %s\n" % (convert_identifier_type(subType.type), m.name))
+                        elif type(subType.type) == c_ast.Struct:
                             # check if this is pointer to self, ex:
                             #   typedef struct this_s { ... struct this_s *s }
-                            if isTypedef  and  m.type.type.type.name == node.type.type.name:
-                                output("    *%s %s\n" % (structName, m.name))
+                            if isTypedef  and  subType.type.name == node.type.type.name:
+                                output("%s %s\n" % (structName, m.name))
                             else:
-                                output("    *%s %s\n" % (m.type.type.type.name, m.name))
+                                output("%s %s\n" % (subType.type.name, m.name))
                         else:
                             error_exit("not IdentifierType for pointer %s: %s" % (m.name, type(m.type.type.type)))
                     elif type(m.type.type) == c_ast.FuncDecl:
                         # just a straight pointer in qvmdis
                         #FIXME what would 'int (*func)(int a, int b)[100]' be considered as?
-                        output("    *void %s\n" % m.name)
+                        output("    ")
+                        for i in range(pointerDepth):
+                            output("*")
+                        output("void %s\n" % m.name)
                     else:
                         error_exit("not TypeDecl for pointer %s: %s" % (m.name, type(m.type.type)))
                 # arrays, ex: char word[256]...  or  char *strings[256]...
