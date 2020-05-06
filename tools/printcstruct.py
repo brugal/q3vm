@@ -43,7 +43,7 @@ from pycparser import parse_file, c_ast
 fakeStructs = [ "MirConnection", "MirSurface", "MirSurfaceSpec", "MirScreencast", "MirPromptSession", "MirBufferStream", "MirPersistentId", "MirBlob", "MirDisplayConfig", "xcb_connection_t" ]
 
 def usage ():
-    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset] <c file> [name]\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset, --link <additional object file>] <c file> [name]\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 def output (msg):
@@ -160,8 +160,9 @@ def convert_identifier_type (t):
             error_exit("convert_identifier_type() unknown type: %s" % t.names)
 
 # structNames: [ name1:str, name2:str, ... ]
+# linkObjects: [ fileName1:str, fileName2:str, ... ]
 # returns found: [ structName1:str, structName2:str, ... ]
-def print_struct_offset (ast, cFileName, printAll=False, structNames=[], debugLevel=0):
+def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObjects=[], debugLevel=0):
     # use gcc to print offset info
     codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
 
@@ -245,7 +246,11 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], debugLe
         output("\n")
 
     binFileName = codeFile.name + ".bin"
-    os.system("gcc -Wall -m32 %s -o %s" % (codeFile.name, binFileName))
+    cmd = "gcc -Wall -m32 -o %s" % binFileName
+    for obj in linkObjects:
+        cmd += " " + obj
+    cmd += " %s" % codeFile.name
+    os.system(cmd)
     os.system(binFileName)
 
     os.unlink(codeFile.name)
@@ -426,12 +431,17 @@ if __name__ == "__main__":
     printAll = False
     useOffset = False
 
+    linkObjects = []
     args = []
     args.append(sys.argv[0])
     checkDashOptions = True
+    getLinkObject = False
     for a in sys.argv[1:]:
         if checkDashOptions:
-            if a == "--":
+            if getLinkObject:
+                linkObjects.append(a)
+                getLinkObject = False
+            elif a == "--":
                 # all done, pass the rest as is
                 checkDashOptions = False
             elif a[0] != '-':
@@ -445,11 +455,18 @@ if __name__ == "__main__":
                 printAll = True
             elif a == "--offset":
                 useOffset = True
+            elif a == "--link":
+                # --offset options uses gcc to create a small program to print the structures so stubs for undefined references might need to be linked in
+                getLinkObject = True
             else:
                 sys.stderr.write("unknown option: %s\n" % a)
                 sys.exit(1)
         else:
             args.append(a)
+
+    if getLinkObject:
+        sys.stderr.write("missing link object\n")
+        sys.exit(1)
 
     # c file required
     if len(args) < 2:
@@ -477,7 +494,7 @@ if __name__ == "__main__":
     #ast.show()
 
     if useOffset:
-        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, printAll=printAll, debugLevel=debugLevel)
+        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, linkObjects=linkObjects, printAll=printAll, debugLevel=debugLevel)
     else:
         found, arrayConstantsUsed = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
 
