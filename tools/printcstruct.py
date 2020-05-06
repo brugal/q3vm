@@ -494,9 +494,9 @@ if __name__ == "__main__":
     #ast.show()
 
     if useOffset:
-        found = print_struct_offset(ast, cFileName=cFileName, structNames=structNames, linkObjects=linkObjects, printAll=printAll, debugLevel=debugLevel)
+        found = print_struct_offset(ast, cFileName=cFileName, printAll=printAll, structNames=structNames, linkObjects=linkObjects, debugLevel=debugLevel)
     else:
-        found, arrayConstantsUsed = print_struct(ast, structNames=structNames, arrayConstants=arrayConstants, printAll=printAll, debugLevel=debugLevel)
+        found, arrayConstantsUsed = print_struct(ast, printAll=printAll, structNames=structNames, arrayConstants=arrayConstants, debugLevel=debugLevel)
 
     if not printAll:
         if structNames[0] not in found:
