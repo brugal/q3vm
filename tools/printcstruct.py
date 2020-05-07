@@ -361,6 +361,12 @@ def print_struct (ast, printAll=False, structNames=[], structNewNames={}, arrayC
                                     output("%s %s\n" % (structNewName, m.name))
                                 else:
                                     output("%s %s\n" % (structName, m.name))
+                            #  struct this_s { ... struct this_s *s }
+                            elif not isTypedef  and  subType.type.name == node.type.name:
+                                if structNewName != None:
+                                    output("%s %s\n" % (structNewName, m.name))
+                                else:
+                                    output("%s %s\n" % (structName, m.name))
                             else:
                                 output("%s %s\n" % (subType.type.name, m.name))
                         else:
