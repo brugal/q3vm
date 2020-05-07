@@ -43,7 +43,7 @@ from pycparser import parse_file, c_ast
 fakeStructs = [ "MirConnection", "MirSurface", "MirSurfaceSpec", "MirScreencast", "MirPromptSession", "MirBufferStream", "MirPersistentId", "MirBlob", "MirDisplayConfig", "xcb_connection_t" ]
 
 def usage ():
-    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset, --link <additional object file>] <c file> [name]\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset, --link <additional object file>] <c file> [structure name] [new structure name]\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 def output (msg):
@@ -456,10 +456,12 @@ if __name__ == "__main__":
     useOffset = False
 
     linkObjects = []
+
     args = []
     args.append(sys.argv[0])
     checkDashOptions = True
     getLinkObject = False
+
     for a in sys.argv[1:]:
         if checkDashOptions:
             if getLinkObject:
@@ -508,6 +510,11 @@ if __name__ == "__main__":
     else:
         structNames = []
 
+    if len(args) > 3:
+        structNewNames = { args[2] : args[3] }
+    else:
+        structNewNames = {}
+
     arrayConstants = {}
     # testing
     #arrayConstants["pc_token_t.string"] = ["MAX_TOKENLENGTH"]
@@ -516,10 +523,6 @@ if __name__ == "__main__":
     #ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='cpp', cpp_args=r'-Iutils/fake_libc_include')
     ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='gcc', cpp_args=['-nostdinc', '-m32', '-I', '/usr/share/python-pycparser/fake_libc_include', '-S', '-E'])
     #ast.show()
-
-    structNewNames = {}
-    # testing
-    #structNewNames = { "hello_t" : "newh_t" }
 
     if useOffset:
         found = print_struct_offset(ast, cFileName=cFileName, printAll=printAll, structNames=structNames, structNewNames=structNewNames, linkObjects=linkObjects, debugLevel=debugLevel)
