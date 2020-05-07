@@ -160,9 +160,10 @@ def convert_identifier_type (t):
             error_exit("convert_identifier_type() unknown type: %s" % t.names)
 
 # structNames: [ name1:str, name2:str, ... ]
+# structNewNames:  structName:str -> structNewName:str
 # linkObjects: [ fileName1:str, fileName2:str, ... ]
 # returns found: [ structName1:str, structName2:str, ... ]
-def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObjects=[], debugLevel=0):
+def print_struct_offset (ast, cFileName, printAll=False, structNames=[], structNewNames={}, linkObjects=[], debugLevel=0):
     # use gcc to print offset info
     codeFile = tempfile.NamedTemporaryFile(prefix="qvmdis-struct-", suffix=".c", delete=False)
 
@@ -201,6 +202,10 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObj
                 continue
 
             found.append(structName)
+            if structName in structNewNames:
+                structNewName = structNewNames[structName]
+            else:
+                structNewName = None
 
             if debugLevel > 0:
                 if debugLevel > 1:
@@ -209,6 +214,8 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObj
                 output("%s (members) : \n" % structName)
                 output("%s\n" % structNode.decls)
                 output("\n")
+                if structNewName != None:
+                    output("%s renamed to %s\n" % (structName, structNewName))
 
             codeFile.write("  {\n")
             if isTypedef:
@@ -217,10 +224,14 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObj
                 codeFile.write("    struct %s st;\n" % structName)
             codeFile.write("\n")
 
+            sname = structName
+            if structNewName != None:
+                sname = structNewName
+
             if isTypedef:
-                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(%s));\n" % (structName, structName))
+                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(%s));\n" % (sname, structName))
             else:
-                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(struct %s));\n" % (structName, structName))
+                codeFile.write("    printf(\"%s 0x%%x {\\n\", sizeof(struct %s));\n" % (sname, structName))
 
             # struct members
             for m in structNode:
@@ -259,9 +270,10 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], linkObj
     return found
 
 # structNames: [ name1:str, name2:str, ... ]
+# structNewNames:  structName:str -> structNewName:str
 # arrayConstants: dotname:str -> [ level1:str, level2:str, ... ]
 # returns found: [ structName1:str, structName2:str, ... ], arrayConstantsUsed: [ const1:str, const2:str, ... ]
-def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugLevel=0):
+def print_struct (ast, printAll=False, structNames=[], structNewNames={}, arrayConstants={}, debugLevel=0):
 
     found = []  # [ structName1:str, structName2:str, ... ]
     arrayConstantsUsed = []  # [ const1:str, const2:str, ... ]
@@ -293,6 +305,10 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                 continue
 
             found.append(structName)
+            if structName in structNewNames:
+                structNewName = structNewNames[structName]
+            else:
+                structNewName = None
 
             if debugLevel > 0:
                 if debugLevel > 1:
@@ -301,8 +317,13 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                 output("%s (members) : \n" % structName)
                 output("%s\n" % structNode.decls)
                 output("\n")
+                if structNewName != None:
+                    output("%s renamed to %s\n" % (structName, structNewName))
 
-            output("%s {\n" % structName)
+            if structNewName:
+                output("%s {\n" % structNewName)
+            else:
+                output("%s {\n" % structName)
 
             # struct members
             for m in structNode:
@@ -336,7 +357,10 @@ def print_struct (ast, printAll=False, structNames=[], arrayConstants={}, debugL
                             # check if this is pointer to self, ex:
                             #   typedef struct this_s { ... struct this_s *s }
                             if isTypedef  and  subType.type.name == node.type.type.name:
-                                output("%s %s\n" % (structName, m.name))
+                                if structNewName != None:
+                                    output("%s %s\n" % (structNewName, m.name))
+                                else:
+                                    output("%s %s\n" % (structName, m.name))
                             else:
                                 output("%s %s\n" % (subType.type.name, m.name))
                         else:
@@ -493,10 +517,14 @@ if __name__ == "__main__":
     ast = parse_file(filename=cFileName, use_cpp=True, cpp_path='gcc', cpp_args=['-nostdinc', '-m32', '-I', '/usr/share/python-pycparser/fake_libc_include', '-S', '-E'])
     #ast.show()
 
+    structNewNames = {}
+    # testing
+    #structNewNames = { "hello_t" : "newh_t" }
+
     if useOffset:
-        found = print_struct_offset(ast, cFileName=cFileName, printAll=printAll, structNames=structNames, linkObjects=linkObjects, debugLevel=debugLevel)
+        found = print_struct_offset(ast, cFileName=cFileName, printAll=printAll, structNames=structNames, structNewNames=structNewNames, linkObjects=linkObjects, debugLevel=debugLevel)
     else:
-        found, arrayConstantsUsed = print_struct(ast, printAll=printAll, structNames=structNames, arrayConstants=arrayConstants, debugLevel=debugLevel)
+        found, arrayConstantsUsed = print_struct(ast, printAll=printAll, structNames=structNames, structNewNames=structNewNames, arrayConstants=arrayConstants, debugLevel=debugLevel)
 
     if not printAll:
         if structNames[0] not in found:
