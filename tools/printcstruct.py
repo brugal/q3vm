@@ -418,9 +418,13 @@ def print_struct (ast, printAll=False, structNames=[], structNewNames={}, arrayC
                     if type(subType) == c_ast.TypeDecl  or  type(subType) == c_ast.PtrDecl:
                         if type(subType) == c_ast.PtrDecl:
                             isPointer = True
-                            subType = subType.type
+                            pointerDepth = 0
+                            while type(subType) == c_ast.PtrDecl:
+                                pointerDepth += 1
+                                subType = subType.type
                         else:
                             isPointer = False
+                            pointerDepth = 0
 
                         if type(subType.type) == c_ast.IdentifierType:
                             arrayTypeName = convert_identifier_type(subType.type)
@@ -434,7 +438,10 @@ def print_struct (ast, printAll=False, structNames=[], structNewNames={}, arrayC
                             error_exit("unknown array typedecl identifier for %s: %s" % (m.name, type(subType.type)))
 
                         if isPointer:
-                            output("    *%s" % arrayTypeName)
+                            output("    ")
+                            for i in range(pointerDepth):
+                                output("*")
+                            output("%s" % arrayTypeName)
                         else:
                             output("    %s" % arrayTypeName)
 
