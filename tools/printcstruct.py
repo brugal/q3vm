@@ -431,6 +431,20 @@ def print_struct (ast, printAll=False, structNames=[], structNewNames={}, arrayC
                         elif type(subType.type) == c_ast.Struct:
                             # ex:  struct data_s ds[10]
                             arrayTypeName = subType.type.name
+
+                            # check if this is a pointer to self, ex:
+                            #  typedef struct this_s { ... struct this_s a[10]; struct this_s **b[20]; }
+                            if isTypedef  and subType.type.name == node.type.type.name:
+                                if structNewName != None:
+                                    arrayTypeName = structNewName
+                                else:
+                                    arrayTypeName = structName
+                            # struct this_s { ... struct this_s s[10]; struct this_s ***g[30]; }
+                            elif not isTypedef  and  subType.type.name == node.type.name:
+                                if structNewName != None:
+                                    arrayTypeName = structNewName
+                                else:
+                                    arrayTypeName = structName
                         elif isPointer  and  type(subType) == c_ast.FuncDecl:
                             # ex:  int (*func[36])(int a, int b)
                             error_exit("array of function pointers not supported: %s" % m.name)
