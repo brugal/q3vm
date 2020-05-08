@@ -43,7 +43,7 @@ from pycparser import parse_file, c_ast
 fakeStructs = [ "MirConnection", "MirSurface", "MirSurfaceSpec", "MirScreencast", "MirPromptSession", "MirBufferStream", "MirPersistentId", "MirBlob", "MirDisplayConfig", "xcb_connection_t" ]
 
 def usage ():
-    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset, --link <additional object file>] <c file> [structure name] [new structure name]\n" % os.path.basename(sys.argv[0]))
+    sys.stderr.write("%s [--debug, --debug-node, --print-all, --offset, --link <additional object file>] <c file> [structureName1[:newName1]] [structureName2[:newName2]] ...\n" % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 def output (msg):
@@ -532,15 +532,18 @@ if __name__ == "__main__":
         error_msg("missing structure name")
         usage()
 
-    if len(args) > 2:
-        structNames = [args[2]]
-    else:
-        structNames = []
+    structNames = []
+    structNewNames = {}
 
-    if len(args) > 3:
-        structNewNames = { args[2] : args[3] }
-    else:
-        structNewNames = {}
+    for a in args[2:]:
+        w = a.split(":")
+        if len(w[0]) < 1:
+            error_exit("empty name")
+        structNames.append(w[0])
+        if len(w) > 1:
+            if len(w[1]) < 1:
+                error_exit("empty alternate name")
+            structNewNames[w[0]] = w[1]
 
     arrayConstants = {}
     # testing
