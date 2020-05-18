@@ -257,7 +257,7 @@ def print_struct_offset (ast, cFileName, printAll=False, structNames=[], structN
         output("\n")
 
     binFileName = codeFile.name + ".bin"
-    cmd = "gcc -Wall -Wl,--allow-multiple-definition -m32 -o %s" % binFileName
+    cmd = "gcc -Wall -Wno-unused-but-set-variable -Wl,--allow-multiple-definition -m32 -o %s" % binFileName
     for obj in linkObjects:
         cmd += " " + obj
     cmd += " %s" % codeFile.name
