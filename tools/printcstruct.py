@@ -132,7 +132,12 @@ def convert_identifier_type (t):
     #print("convert_identifier_type()  names: %s" % t.names)
 
     if len(t.names) == 1:
-        return t.names[0]
+        if t.names[0] == "signed":
+            return "int"
+        elif t.names[0] == "unsigned":
+            return "uint"
+        else:
+            return t.names[0]
 
     if len(t.names) > 1:
         if t.names[1] == "char":
