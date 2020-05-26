@@ -1,3 +1,5 @@
 # .gitignore
 
 *.pyc
+
+tools/q3stubs/*.o

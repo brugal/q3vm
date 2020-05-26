@@ -45,6 +45,7 @@ def isPythonFile (fname):
 # use glob() so it includes "../" in the name
 allFiles = sorted(glob.glob("../*"))
 allFiles.extend(sorted(glob.glob("*")))
+allFiles.extend(sorted(glob.glob("q3stubs/*")))
 
 pythonFiles = []
 for f in allFiles:
