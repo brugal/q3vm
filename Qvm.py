@@ -340,6 +340,13 @@ class AliasInfo:
         self.declaration = declaration
         self.expansion = expansion
 
+class ForwardDeclaration:
+    def __init__ (self, symbolName, lineCount, fname, line):
+        self.symbolName = symbolName
+        self.lineCount = lineCount
+        self.fname = fname
+        self.line = line
+
 class Template:
     def __init__ (self, size, paddingSize, paddingUsed, members=[]):
         self.size = size
@@ -352,6 +359,7 @@ class TemplateManager:
         self.symbolTemplates = {}  # name:str -> template:Template
         self.arrayConstants = {}  # name:str -> value:int
         self.templateAliases = {}  # name:str -> sub:AliasInfo
+        self.forwardDeclarations = []  # [ declaration1:ForwardDeclaration ... ]
 
     def pad_up (self, offset, paddingSize):
         if paddingSize < 0:
@@ -511,7 +519,9 @@ class TemplateManager:
                         ferror_exit("invalid pointer name")
                     # check that it exists or is the current template being parsed
                     if pointerType not in self.symbolTemplates  and  pointerType != currentParsingTemplate:
-                        ferror_exit("unknown pointer type")
+                        #ferror_exit("unknown pointer type")
+                        # check later
+                        self.forwardDeclarations.append(ForwardDeclaration(pointerType, lineCount, fname, line))
                     symbolType = SYMBOL_POINTER_TEMPLATE
                 size = 0x4
             else:  # template or basic type
@@ -809,6 +819,11 @@ class TemplateManager:
         if haveTemplateInfo:
             # never finished parsing last template
            ferror_exit("last template not closed")
+
+        # check that forward declarations exist
+        for d in self.forwardDeclarations:
+            if d.symbolName not in self.symbolTemplates:
+                error_exit("undefined declaration %s in line %d of %s: %s" % (d.symbolName, d.lineCount + 1, d.fname, d.line))
 
     def load_default_templates (self):
         fname = TEMPLATES_DEFAULT_FILE
