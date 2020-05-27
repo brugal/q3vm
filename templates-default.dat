@@ -1,4 +1,6 @@
 
+; default templates file
+
 ; template [size]
 ; {
 ;    [offset] <size or type> name
@@ -6,22 +8,3024 @@
 ; }
 ;
 
+; All the BASEQ3 structures defined in cgame/, game/, ui/, and q3_ui/ are
+; included here.  This includes the structures defined in header files and
+; structures used in individual .c files.
+;
+; cvarTable_t in ui/ui_main.c is renamed to cvarTable_t_ui since it is also
+; defined in game/g_main.c.
+;
 
-; typedef struct {
-;        cvarHandle_t    handle;
-;        int             modificationCount;
-;        float           value;
-;        int             integer;
-;        char            string[MAX_CVAR_VALUE_STRING];
-; } vmCvar_t;
 
-%arrayConstant MAX_CVAR_VALUE_STRING 256
+;;; aliases
+; game/q_shared.h
+%alias int size_t
+%alias int qboolean
 %alias int cvarHandle_t
+%alias int qhandle_t
+%alias int sfxHandle_t
+%alias int fileHandle_t
+%alias int clipHandle_t
 
-vmCvar_t 0x110 {
-  0x0 cvarHandle_t handle
-  0x4 int modificationCount
-  0x8 float value
-  0xc int integer
-  0x10 char[MAX_CVAR_VALUE_STRING] string
+%alias float vec_t
+%alias vec_t[2] vec2_t
+%alias vec_t[3] vec3_t
+%alias vec_t[4] vec4_t
+%alias vec_t[5] vec5_t
+
+%alias int fixed4_t
+%alias int fixed8_t
+%alias int fixed16_t
+
+%alias int signed
+%alias int trType_t
+
+%alias int flagStatus_t  ; enum
+%alias int connstate_t  ; enum
+
+; game/bg_public.h
+%alias int gametype_t  ; enum
+%alias int gender_t  ; enum
+%alias int itemType_t  ; enum
+%alias int team_t  ; enum
+%alias int weapon_t  ; enum
+
+; cgame/tr_types.h
+%alias int glDriverType_t  ; enum
+%alias int glHardwareType_t  ; enum
+%alias int refEntityType_t  ; enum
+%alias int textureCompression_t  ; enum
+
+; cgame/cg_local.h
+%alias int footstep_t  ; enum
+%alias int leBounceSoundType_t  ; enum
+%alias int leMarkType_t  ; enum
+%alias int leType_t  ; enum
+
+; game/g_local.h
+%alias gentity_s gentity_t
+%alias gclient_s gclient_t
+%alias int playerTeamStateState_t  ; enum
+%alias int clientConnected_t  ; enum
+%alias int spectatorState_t  ; enum
+%alias int moverState_t  ; enum
+
+; game/g_spawn.c
+%alias int fieldtype_t  ; enum
+
+
+;;; array constants
+; game/q_shared.h
+
+%arrayConstant MAX_TOKENLENGTH 1024
+%arrayConstant MAX_CVAR_VALUE_STRING 256
+%arrayConstant MAX_CONFIGSTRINGS 1024
+%arrayConstant MAX_GAMESTATE_CHARS 16000
+%arrayConstant MAX_PS_EVENTS 2
+%arrayConstant MAX_STATS 16
+%arrayConstant MAX_PERSISTANT 16
+%arrayConstant MAX_POWERUPS 16
+%arrayConstant MAX_WEAPONS 16
+%arrayConstant GLYPHS_PER_FONT 256
+%arrayConstant MAX_QPATH 64
+
+%arrayConstant MAX_TEAMNAME 32
+
+%arrayConstant MAX_STRING_CHARS 1024
+%arrayConstant MAX_STRING_TOKENS 1024
+%arrayConstant MAX_CLIENTS 64
+%arrayConstant MAX_NAME_LENGTH 32
+%arrayConstant MAX_MODELS 256
+%arrayConstant MAX_SOUNDS 256
+%arrayConstant MAX_MAP_AREA_BYTES 32
+%arrayConstant BIG_INFO_STRING 8192
+
+%arrayConstant MAX_SAY_TEXT 150
+%arrayConstant MAX_INFO_STRING 1024
+
+; game/bg_public.h
+%arrayConstant MAX_TOTALANIMATIONS 37
+%arrayConstant MAX_ITEM_MODELS 4
+%arrayConstant TEAM_NUM_TEAMS 4
+%arrayConstant MAXTOUCH 32
+%arrayConstant MAX_ANIMATIONS 31
+%arrayConstant MAX_BOTS 1024
+
+; cgame/cg_local.h
+%arrayConstant MAX_VERTS_ON_POLY 10
+%arrayConstant MAX_CUSTOM_SOUNDS 32
+%arrayConstant MAX_SKULLTRAIL 10
+%arrayConstant MAX_PREDICTED_EVENTS 16
+%arrayConstant MAX_REWARDSTACK 10
+%arrayConstant MAX_SOUNDBUFFER 20
+%arrayConstant NUM_CROSSHAIRS 10
+%arrayConstant FOOTSTEP_TOTAL 7
+%arrayConstant TEAMCHAT_HEIGHT 8
+%arrayConstant TEAMCHAT_WIDTH 80
+%arrayConstant TEAMCHAT_WIDTH3_1 241  ;  TEAMCHAT_WIDTH * 3 + 1
+
+; cgame/cg_public.h
+%arrayConstant MAX_ENTITIES_IN_SNAPSHOT 256
+
+; cgame/tr_types.h
+%arrayConstant MAX_RENDER_STRINGS 8
+%arrayConstant MAX_RENDER_STRING_LENGTH 32
+
+; cgame/cg_draw.c
+%arrayConstant LAG_SAMPLES 128
+
+; cgame/cg_servercmds.c
+%arrayConstant MAX_VOICECHATS 64
+%arrayConstant MAX_VOICESOUNDS 64
+%arrayConstant MAX_CHATSIZE 64
+
+; game/g_local.h
+%arrayConstant MAX_NETNAME 36
+%arrayConstant MAX_SPAWN_VARS 64
+%arrayConstant MAX_SPAWN_VARS_CHARS 4096
+%arrayConstant BODY_QUEUE_SIZE 8
+%arrayConstant MAX_FILEPATH 144
+
+; game/ai_main.h
+%arrayConstant MAX_ACTIVATEAREAS 32
+%arrayConstant MAX_ITEMS 256
+%arrayConstant MAX_PROXMINES 64
+%arrayConstant MAX_ACTIVATESTACK 8
+
+; game/be_ai_chat.h
+%arrayConstant MAX_MESSAGE_SIZE 256
+%arrayConstant MAX_MATCHVARIABLES 8
+
+; game/be_aas.h
+%arrayConstant MAX_STRINGFIELD 80
+
+; q3_ui/ui_local.h
+%arrayConstant MAX_MENUITEMS 64
+%arrayConstant MAX_EDIT_LINE 256
+%arrayConstant MAX_MENUDEPTH 8
+
+; q3_ui/ui_demos2.c
+%arrayConstant MAX_DEMOS 128
+%arrayConstant NAMEBUFSIZE_DEMOS 2048  ; MAX_DEMOS * 16
+
+; q3_ui/ui_loadconfig.c
+%arrayConstant MAX_CONFIGS 128
+%arrayConstant NAMEBUFSIZE_CONFIGS 2048  ; MAX_CONFIGS * 16
+
+; q3_ui/ui_mods.c
+%arrayConstant MAX_MODS 64
+%arrayConstant NAMEBUFSIZE_MODS 3072  ; MAX_MODS * 48
+%arrayConstant GAMEBUFSIZE 1024  ; MAX_MODS * 16
+
+; q3_ui/ui_playermodel.c
+%arrayConstant MAX_MODELSPERPAGE 16  ; PLAYERGRID_ROWS * PLAYERGRID_COLS
+%arrayConstant MAX_PLAYERMODELS 256
+
+; q3_ui/ui_servers2.c
+%arrayConstant MAX_ADDRESSLENGTH 64
+%arrayConstant MAX_HOSTNAMELENGTH_3 25  ;  MAX_HOSTNAMELENGTH + 3
+%arrayConstant MAX_MAPNAMELENGTH 16
+%arrayConstant MAX_LISTBOXWIDTH_SERVERS 68
+
+; q3_ui/ui_sppostgame.c
+%arrayConstant MAX_SCOREBOARD_CLIENTS 8
+
+; q3_ui/ui_startserver.c
+%arrayConstant MAX_MAPSPERPAGE 4
+%arrayConstant MAX_SERVERMAPS 64
+%arrayConstant MAX_NAMELENGTH_START_SERVER 16
+%arrayConstant PLAYER_SLOTS 12
+
+;;; templates
+; game/q_shared.h
+
+pc_token_t {
+    int type
+    int subtype
+    int intvalue
+    float floatvalue
+    char[MAX_TOKENLENGTH] string
 }
+
+qint64 {
+    byte b0
+    byte b1
+    byte b2
+    byte b3
+    byte b4
+    byte b5
+    byte b6
+    byte b7
+}
+
+cvar_t {
+    *char name
+    *char string
+    *char resetString
+    *char latchedString
+    int flags
+    qboolean modified
+    int modificationCount
+    float value
+    int integer
+    *cvar_t next
+    *cvar_t hashNext
+}
+
+vmCvar_t {
+    cvarHandle_t handle
+    int modificationCount
+    float value
+    int integer
+    char[MAX_CVAR_VALUE_STRING] string
+}
+
+cplane_t {
+    vec3_t normal
+    float dist
+    byte type
+    byte signbits
+    byte[2] pad
+}
+
+trace_t {
+    qboolean allsolid
+    qboolean startsolid
+    float fraction
+    vec3_t endpos
+    cplane_t plane
+    int surfaceFlags
+    int contents
+    int entityNum
+}
+
+markFragment_t {
+    int firstPoint
+    int numPoints
+}
+
+orientation_t {
+    vec3_t origin
+    vec3_t[3] axis
+}
+
+gameState_t {
+    int[MAX_CONFIGSTRINGS] stringOffsets
+    char[MAX_GAMESTATE_CHARS] stringData
+    int dataCount
+}
+
+playerState_t {
+    int commandTime
+    int pm_type
+    int bobCycle
+    int pm_flags
+    int pm_time
+    vec3_t origin
+    vec3_t velocity
+    int weaponTime
+    int gravity
+    int speed
+    int[3] delta_angles
+    int groundEntityNum
+    int legsTimer
+    int legsAnim
+    int torsoTimer
+    int torsoAnim
+    int movementDir
+    vec3_t grapplePoint
+    int eFlags
+    int eventSequence
+    int[MAX_PS_EVENTS] events
+    int[MAX_PS_EVENTS] eventParms
+    int externalEvent
+    int externalEventParm
+    int externalEventTime
+    int clientNum
+    int weapon
+    int weaponstate
+    vec3_t viewangles
+    int viewheight
+    int damageEvent
+    int damageYaw
+    int damagePitch
+    int damageCount
+    int[MAX_STATS] stats
+    int[MAX_PERSISTANT] persistant
+    int[MAX_POWERUPS] powerups
+    int[MAX_WEAPONS] ammo
+    int generic1
+    int loopSound
+    int jumppad_ent
+    int ping
+    int pmove_framecount
+    int jumppad_frame
+    int entityEventSequence
+}
+
+usercmd_t {
+    int serverTime
+    int[3] angles
+    int buttons
+    byte weapon
+    char forwardmove
+    char rightmove
+    char upmove
+}
+
+trajectory_t {
+    trType_t trType
+    int trTime
+    int trDuration
+    vec3_t trBase
+    vec3_t trDelta
+}
+
+entityState_t {
+    int number
+    int eType
+    int eFlags
+    trajectory_t pos
+    trajectory_t apos
+    int time
+    int time2
+    vec3_t origin
+    vec3_t origin2
+    vec3_t angles
+    vec3_t angles2
+    int otherEntityNum
+    int otherEntityNum2
+    int groundEntityNum
+    int constantLight
+    int loopSound
+    int modelindex
+    int modelindex2
+    int clientNum
+    int frame
+    int solid
+    int event
+    int eventParm
+    int powerups
+    int weapon
+    int legsAnim
+    int torsoAnim
+    int generic1
+}
+
+glyphInfo_t {
+    int height
+    int top
+    int bottom
+    int pitch
+    int xSkip
+    int imageWidth
+    int imageHeight
+    float s
+    float t
+    float s2
+    float t2
+    qhandle_t glyph
+    char[32] shaderName
+}
+
+fontInfo_t {
+    glyphInfo_t[GLYPHS_PER_FONT] glyphs
+    float glyphScale
+    char[MAX_QPATH] name
+}
+
+qtime_t {
+    int tm_sec
+    int tm_min
+    int tm_hour
+    int tm_mday
+    int tm_mon
+    int tm_year
+    int tm_wday
+    int tm_yday
+    int tm_isdst
+}
+
+; game/bg_local.h
+
+pmove_t {
+    *playerState_t ps
+    usercmd_t cmd
+    int tracemask
+    int debugLevel
+    qboolean noFootsteps
+    qboolean gauntletHit
+    int framecount
+    int numtouch
+    int[MAXTOUCH] touchents
+    vec3_t mins
+    vec3_t maxs
+    int watertype
+    int waterlevel
+    float xyspeed
+    int pmove_fixed
+    int pmove_msec
+    *void trace
+    *void pointcontents
+}
+
+animation_t {
+    int firstFrame
+    int numFrames
+    int loopFrames
+    int frameLerp
+    int initialLerp
+    int reversed
+    int flipflop
+}
+
+gitem_t {
+    *char classname
+    *char pickup_sound
+    *char[MAX_ITEM_MODELS] world_model
+    *char icon
+    *char pickup_name
+    int quantity
+    itemType_t giType
+    int giTag
+    *char precaches
+    *char sounds
+}
+
+pml_t {
+    vec3_t forward
+    vec3_t right
+    vec3_t up
+    float frametime
+    int msec
+    qboolean walking
+    qboolean groundPlane
+    trace_t groundTrace
+    float impactSpeed
+    vec3_t previous_origin
+    vec3_t previous_velocity
+    int previous_waterlevel
+}
+
+; cgame/tr_types.h
+
+polyVert_t {
+    vec3_t xyz
+    float[2] st
+    byte[4] modulate
+}
+
+poly_t {
+    qhandle_t hShader
+    int numVerts
+    *polyVert_t verts
+}
+
+refEntity_t {
+    refEntityType_t reType
+    int renderfx
+    qhandle_t hModel
+    vec3_t lightingOrigin
+    float shadowPlane
+    vec3_t[3] axis
+    qboolean nonNormalizedAxes
+    float[3] origin
+    int frame
+    float[3] oldorigin
+    int oldframe
+    float backlerp
+    int skinNum
+    qhandle_t customSkin
+    qhandle_t customShader
+    byte[4] shaderRGBA
+    float[2] shaderTexCoord
+    float shaderTime
+    float radius
+    float rotation
+}
+
+refdef_t {
+    int x
+    int y
+    int width
+    int height
+    float fov_x
+    float fov_y
+    vec3_t vieworg
+    vec3_t[3] viewaxis
+    int time
+    int rdflags
+    byte[MAX_MAP_AREA_BYTES] areamask
+    char[MAX_RENDER_STRINGS][MAX_RENDER_STRING_LENGTH] text
+}
+
+glconfig_t {
+    char[MAX_STRING_CHARS] renderer_string
+    char[MAX_STRING_CHARS] vendor_string
+    char[MAX_STRING_CHARS] version_string
+    char[BIG_INFO_STRING] extensions_string
+    int maxTextureSize
+    int maxActiveTextures
+    int colorBits
+    int depthBits
+    int stencilBits
+    glDriverType_t driverType
+    glHardwareType_t hardwareType
+    qboolean deviceSupportsGamma
+    textureCompression_t textureCompression
+    qboolean textureEnvAddAvailable
+    int vidWidth
+    int vidHeight
+    float windowAspect
+    int displayFrequency
+    qboolean isFullscreen
+    qboolean stereoEnabled
+    qboolean smpActive
+}
+
+; cgame/cg_public.h
+
+snapshot_t {
+    int snapFlags
+    int ping
+    int serverTime
+    byte[MAX_MAP_AREA_BYTES] areamask
+    playerState_t ps
+    int numEntities
+    entityState_t[MAX_ENTITIES_IN_SNAPSHOT] entities
+    int numServerCommands
+    int serverCommandSequence
+}
+
+; cgame/cg_local.h
+
+lerpFrame_t {
+    int oldFrame
+    int oldFrameTime
+    int frame
+    int frameTime
+    float backlerp
+    float yawAngle
+    qboolean yawing
+    float pitchAngle
+    qboolean pitching
+    int animationNumber
+    *animation_t animation
+    int animationTime
+}
+
+playerEntity_t {
+    lerpFrame_t legs
+    lerpFrame_t torso
+    lerpFrame_t flag
+    int painTime
+    int painDirection
+    int lightningFiring
+    vec3_t railgunImpact
+    qboolean railgunFlash
+    float barrelAngle
+    int barrelTime
+    qboolean barrelSpinning
+}
+
+centity_t {
+    entityState_t currentState
+    entityState_t nextState
+    qboolean interpolate
+    qboolean currentValid
+    int muzzleFlashTime
+    int previousEvent
+    int teleportFlag
+    int trailTime
+    int dustTrailTime
+    int miscTime
+    int snapShotTime
+    playerEntity_t pe
+    int errorTime
+    vec3_t errorOrigin
+    vec3_t errorAngles
+    qboolean extrapolated
+    vec3_t rawOrigin
+    vec3_t rawAngles
+    vec3_t beamEnd
+    vec3_t lerpOrigin
+    vec3_t lerpAngles
+}
+
+markPoly_t {
+    *markPoly_t prevMark
+    *markPoly_t nextMark
+    int time
+    qhandle_t markShader
+    qboolean alphaFade
+    float[4] color
+    poly_t poly
+    polyVert_t[MAX_VERTS_ON_POLY] verts
+}
+
+localEntity_t {
+    *localEntity_t prev
+    *localEntity_t next
+    leType_t leType
+    int leFlags
+    int startTime
+    int endTime
+    int fadeInTime
+    float lifeRate
+    trajectory_t pos
+    trajectory_t angles
+    float bounceFactor
+    float[4] color
+    float radius
+    float light
+    vec3_t lightColor
+    leMarkType_t leMarkType
+    leBounceSoundType_t leBounceSoundType
+    refEntity_t refEntity
+}
+
+score_t {
+    int client
+    int score
+    int ping
+    int time
+    int scoreFlags
+    int powerUps
+    int accuracy
+    int impressiveCount
+    int excellentCount
+    int guantletCount
+    int defendCount
+    int assistCount
+    int captures
+    qboolean perfect
+    int team
+}
+
+clientInfo_t {
+    qboolean infoValid
+    char[MAX_QPATH] name
+    team_t team
+    int botSkill
+    vec3_t color1
+    vec3_t color2
+    int score
+    int location
+    int health
+    int armor
+    int curWeapon
+    int handicap
+    int wins
+    int losses
+    int teamTask
+    qboolean teamLeader
+    int powerups
+    int medkitUsageTime
+    int invulnerabilityStartTime
+    int invulnerabilityStopTime
+    int breathPuffTime
+    char[MAX_QPATH] modelName
+    char[MAX_QPATH] skinName
+    char[MAX_QPATH] headModelName
+    char[MAX_QPATH] headSkinName
+    char[MAX_TEAMNAME] redTeam
+    char[MAX_TEAMNAME] blueTeam
+    qboolean deferred
+    qboolean newAnims
+    qboolean fixedlegs
+    qboolean fixedtorso
+    vec3_t headOffset
+    footstep_t footsteps
+    gender_t gender
+    qhandle_t legsModel
+    qhandle_t legsSkin
+    qhandle_t torsoModel
+    qhandle_t torsoSkin
+    qhandle_t headModel
+    qhandle_t headSkin
+    qhandle_t modelIcon
+    animation_t[MAX_TOTALANIMATIONS] animations
+    sfxHandle_t[MAX_CUSTOM_SOUNDS] sounds
+}
+
+weaponInfo_t {
+    qboolean registered
+    *gitem_t item
+    qhandle_t handsModel
+    qhandle_t weaponModel
+    qhandle_t barrelModel
+    qhandle_t flashModel
+    vec3_t weaponMidpoint
+    float flashDlight
+    vec3_t flashDlightColor
+    sfxHandle_t[4] flashSound
+    qhandle_t weaponIcon
+    qhandle_t ammoIcon
+    qhandle_t ammoModel
+    qhandle_t missileModel
+    sfxHandle_t missileSound
+    *void missileTrailFunc
+    float missileDlight
+    vec3_t missileDlightColor
+    int missileRenderfx
+    *void ejectBrassFunc
+    float trailRadius
+    float wiTrailTime
+    sfxHandle_t readySound
+    sfxHandle_t firingSound
+    qboolean loopFireSound
+}
+
+itemInfo_t {
+    qboolean registered
+    qhandle_t[MAX_ITEM_MODELS] models
+    qhandle_t icon
+}
+
+powerupInfo_t {
+    int itemNum
+}
+
+skulltrail_t {
+    vec3_t[MAX_SKULLTRAIL] positions
+    int numpositions
+}
+
+cg_t {
+    int clientFrame
+    int clientNum
+    qboolean demoPlayback
+    qboolean levelShot
+    int deferredPlayerLoading
+    qboolean loading
+    qboolean intermissionStarted
+    int latestSnapshotNum
+    int latestSnapshotTime
+    *snapshot_t snap
+    *snapshot_t nextSnap
+    snapshot_t[2] activeSnapshots
+    float frameInterpolation
+    qboolean thisFrameTeleport
+    qboolean nextFrameTeleport
+    int frametime
+    int time
+    int oldTime
+    int physicsTime
+    int timelimitWarnings
+    int fraglimitWarnings
+    qboolean mapRestart
+    qboolean renderingThirdPerson
+    qboolean hyperspace
+    playerState_t predictedPlayerState
+    centity_t predictedPlayerEntity
+    qboolean validPPS
+    int predictedErrorTime
+    vec3_t predictedError
+    int eventSequence
+    int[MAX_PREDICTED_EVENTS] predictableEvents
+    float stepChange
+    int stepTime
+    float duckChange
+    int duckTime
+    float landChange
+    int landTime
+    int weaponSelect
+    vec3_t autoAngles
+    vec3_t[3] autoAxis
+    vec3_t autoAnglesFast
+    vec3_t[3] autoAxisFast
+    refdef_t refdef
+    vec3_t refdefViewAngles
+    qboolean zoomed
+    int zoomTime
+    float zoomSensitivity
+    char[MAX_STRING_CHARS] infoScreenText
+    int scoresRequestTime
+    int numScores
+    int selectedScore
+    int[2] teamScores
+    score_t[MAX_CLIENTS] scores
+    qboolean showScores
+    qboolean scoreBoardShowing
+    int scoreFadeTime
+    char[MAX_NAME_LENGTH] killerName
+    char[MAX_STRING_CHARS] spectatorList
+    int spectatorLen
+    float spectatorWidth
+    int spectatorTime
+    int spectatorPaintX
+    int spectatorPaintX2
+    int spectatorOffset
+    int spectatorPaintLen
+    skulltrail_t[MAX_CLIENTS] skulltrails
+    int centerPrintTime
+    int centerPrintCharWidth
+    int centerPrintY
+    char[1024] centerPrint
+    int centerPrintLines
+    int lowAmmoWarning
+    int lastKillTime
+    int crosshairClientNum
+    int crosshairClientTime
+    int powerupActive
+    int powerupTime
+    int attackerTime
+    int voiceTime
+    int rewardStack
+    int rewardTime
+    int[MAX_REWARDSTACK] rewardCount
+    qhandle_t[MAX_REWARDSTACK] rewardShader
+    qhandle_t[MAX_REWARDSTACK] rewardSound
+    int soundBufferIn
+    int soundBufferOut
+    int soundTime
+    qhandle_t[MAX_SOUNDBUFFER] soundBuffer
+    int voiceChatTime
+    int voiceChatBufferIn
+    int voiceChatBufferOut
+    int warmup
+    int warmupCount
+    int itemPickup
+    int itemPickupTime
+    int itemPickupBlendTime
+    int weaponSelectTime
+    int weaponAnimation
+    int weaponAnimationTime
+    float damageTime
+    float damageX
+    float damageY
+    float damageValue
+    float headYaw
+    float headEndPitch
+    float headEndYaw
+    int headEndTime
+    float headStartPitch
+    float headStartYaw
+    int headStartTime
+    float v_dmg_time
+    float v_dmg_pitch
+    float v_dmg_roll
+    vec3_t kick_angles
+    vec3_t kick_origin
+    float bobfracsin
+    int bobcycle
+    float xyspeed
+    int nextOrbitTime
+    refEntity_t testModelEntity
+    char[MAX_QPATH] testModelName
+    qboolean testGun
+}
+
+cgMedia_t {
+    qhandle_t charsetShader
+    qhandle_t charsetProp
+    qhandle_t charsetPropGlow
+    qhandle_t charsetPropB
+    qhandle_t whiteShader
+    qhandle_t redCubeModel
+    qhandle_t blueCubeModel
+    qhandle_t redCubeIcon
+    qhandle_t blueCubeIcon
+    qhandle_t redFlagModel
+    qhandle_t blueFlagModel
+    qhandle_t neutralFlagModel
+    qhandle_t[3] redFlagShader
+    qhandle_t[3] blueFlagShader
+    qhandle_t[4] flagShader
+    qhandle_t flagPoleModel
+    qhandle_t flagFlapModel
+    qhandle_t redFlagFlapSkin
+    qhandle_t blueFlagFlapSkin
+    qhandle_t neutralFlagFlapSkin
+    qhandle_t redFlagBaseModel
+    qhandle_t blueFlagBaseModel
+    qhandle_t neutralFlagBaseModel
+    qhandle_t armorModel
+    qhandle_t armorIcon
+    qhandle_t teamStatusBar
+    qhandle_t deferShader
+    qhandle_t gibAbdomen
+    qhandle_t gibArm
+    qhandle_t gibChest
+    qhandle_t gibFist
+    qhandle_t gibFoot
+    qhandle_t gibForearm
+    qhandle_t gibIntestine
+    qhandle_t gibLeg
+    qhandle_t gibSkull
+    qhandle_t gibBrain
+    qhandle_t smoke2
+    qhandle_t machinegunBrassModel
+    qhandle_t shotgunBrassModel
+    qhandle_t railRingsShader
+    qhandle_t railCoreShader
+    qhandle_t lightningShader
+    qhandle_t friendShader
+    qhandle_t balloonShader
+    qhandle_t connectionShader
+    qhandle_t selectShader
+    qhandle_t viewBloodShader
+    qhandle_t tracerShader
+    qhandle_t[NUM_CROSSHAIRS] crosshairShader
+    qhandle_t lagometerShader
+    qhandle_t backTileShader
+    qhandle_t noammoShader
+    qhandle_t smokePuffShader
+    qhandle_t smokePuffRageProShader
+    qhandle_t shotgunSmokePuffShader
+    qhandle_t plasmaBallShader
+    qhandle_t waterBubbleShader
+    qhandle_t bloodTrailShader
+    qhandle_t[11] numberShaders
+    qhandle_t shadowMarkShader
+    qhandle_t[5] botSkillShaders
+    qhandle_t wakeMarkShader
+    qhandle_t bloodMarkShader
+    qhandle_t bulletMarkShader
+    qhandle_t burnMarkShader
+    qhandle_t holeMarkShader
+    qhandle_t energyMarkShader
+    qhandle_t quadShader
+    qhandle_t redQuadShader
+    qhandle_t quadWeaponShader
+    qhandle_t invisShader
+    qhandle_t regenShader
+    qhandle_t battleSuitShader
+    qhandle_t battleWeaponShader
+    qhandle_t hastePuffShader
+    qhandle_t redKamikazeShader
+    qhandle_t blueKamikazeShader
+    qhandle_t bulletFlashModel
+    qhandle_t ringFlashModel
+    qhandle_t dishFlashModel
+    qhandle_t lightningExplosionModel
+    qhandle_t railExplosionShader
+    qhandle_t plasmaExplosionShader
+    qhandle_t bulletExplosionShader
+    qhandle_t rocketExplosionShader
+    qhandle_t grenadeExplosionShader
+    qhandle_t bfgExplosionShader
+    qhandle_t bloodExplosionShader
+    qhandle_t teleportEffectModel
+    qhandle_t teleportEffectShader
+    qhandle_t invulnerabilityPowerupModel
+    qhandle_t scoreboardName
+    qhandle_t scoreboardPing
+    qhandle_t scoreboardScore
+    qhandle_t scoreboardTime
+    qhandle_t medalImpressive
+    qhandle_t medalExcellent
+    qhandle_t medalGauntlet
+    qhandle_t medalDefend
+    qhandle_t medalAssist
+    qhandle_t medalCapture
+    sfxHandle_t quadSound
+    sfxHandle_t tracerSound
+    sfxHandle_t selectSound
+    sfxHandle_t useNothingSound
+    sfxHandle_t wearOffSound
+    sfxHandle_t[FOOTSTEP_TOTAL][4] footsteps
+    sfxHandle_t sfx_lghit1
+    sfxHandle_t sfx_lghit2
+    sfxHandle_t sfx_lghit3
+    sfxHandle_t sfx_ric1
+    sfxHandle_t sfx_ric2
+    sfxHandle_t sfx_ric3
+    sfxHandle_t sfx_railg
+    sfxHandle_t sfx_rockexp
+    sfxHandle_t sfx_plasmaexp
+    sfxHandle_t gibSound
+    sfxHandle_t gibBounce1Sound
+    sfxHandle_t gibBounce2Sound
+    sfxHandle_t gibBounce3Sound
+    sfxHandle_t teleInSound
+    sfxHandle_t teleOutSound
+    sfxHandle_t noAmmoSound
+    sfxHandle_t respawnSound
+    sfxHandle_t talkSound
+    sfxHandle_t landSound
+    sfxHandle_t fallSound
+    sfxHandle_t jumpPadSound
+    sfxHandle_t oneMinuteSound
+    sfxHandle_t fiveMinuteSound
+    sfxHandle_t suddenDeathSound
+    sfxHandle_t threeFragSound
+    sfxHandle_t twoFragSound
+    sfxHandle_t oneFragSound
+    sfxHandle_t hitSound
+    sfxHandle_t hitSoundHighArmor
+    sfxHandle_t hitSoundLowArmor
+    sfxHandle_t hitTeamSound
+    sfxHandle_t impressiveSound
+    sfxHandle_t excellentSound
+    sfxHandle_t deniedSound
+    sfxHandle_t humiliationSound
+    sfxHandle_t assistSound
+    sfxHandle_t defendSound
+    sfxHandle_t firstImpressiveSound
+    sfxHandle_t firstExcellentSound
+    sfxHandle_t firstHumiliationSound
+    sfxHandle_t takenLeadSound
+    sfxHandle_t tiedLeadSound
+    sfxHandle_t lostLeadSound
+    sfxHandle_t voteNow
+    sfxHandle_t votePassed
+    sfxHandle_t voteFailed
+    sfxHandle_t watrInSound
+    sfxHandle_t watrOutSound
+    sfxHandle_t watrUnSound
+    sfxHandle_t flightSound
+    sfxHandle_t medkitSound
+    sfxHandle_t weaponHoverSound
+    sfxHandle_t captureAwardSound
+    sfxHandle_t redScoredSound
+    sfxHandle_t blueScoredSound
+    sfxHandle_t redLeadsSound
+    sfxHandle_t blueLeadsSound
+    sfxHandle_t teamsTiedSound
+    sfxHandle_t captureYourTeamSound
+    sfxHandle_t captureOpponentSound
+    sfxHandle_t returnYourTeamSound
+    sfxHandle_t returnOpponentSound
+    sfxHandle_t takenYourTeamSound
+    sfxHandle_t takenOpponentSound
+    sfxHandle_t redFlagReturnedSound
+    sfxHandle_t blueFlagReturnedSound
+    sfxHandle_t neutralFlagReturnedSound
+    sfxHandle_t enemyTookYourFlagSound
+    sfxHandle_t enemyTookTheFlagSound
+    sfxHandle_t yourTeamTookEnemyFlagSound
+    sfxHandle_t yourTeamTookTheFlagSound
+    sfxHandle_t youHaveFlagSound
+    sfxHandle_t yourBaseIsUnderAttackSound
+    sfxHandle_t holyShitSound
+    sfxHandle_t count3Sound
+    sfxHandle_t count2Sound
+    sfxHandle_t count1Sound
+    sfxHandle_t countFightSound
+    sfxHandle_t countPrepareSound
+    qhandle_t cursor
+    qhandle_t selectCursor
+    qhandle_t sizeCursor
+    sfxHandle_t regenSound
+    sfxHandle_t protectSound
+    sfxHandle_t n_healthSound
+    sfxHandle_t hgrenb1aSound
+    sfxHandle_t hgrenb2aSound
+    sfxHandle_t wstbimplSound
+    sfxHandle_t wstbimpmSound
+    sfxHandle_t wstbimpdSound
+    sfxHandle_t wstbactvSound
+}
+
+cgs_t {
+    gameState_t gameState
+    glconfig_t glconfig
+    float screenXScale
+    float screenYScale
+    float screenXBias
+    int serverCommandSequence
+    int processedSnapshotNum
+    qboolean localServer
+    gametype_t gametype
+    int dmflags
+    int teamflags
+    int fraglimit
+    int capturelimit
+    int timelimit
+    int maxclients
+    char[MAX_QPATH] mapname
+    char[MAX_QPATH] redTeam
+    char[MAX_QPATH] blueTeam
+    int voteTime
+    int voteYes
+    int voteNo
+    qboolean voteModified
+    char[MAX_STRING_TOKENS] voteString
+    int[2] teamVoteTime
+    int[2] teamVoteYes
+    int[2] teamVoteNo
+    qboolean[2] teamVoteModified
+    char[2][MAX_STRING_TOKENS] teamVoteString
+    int levelStartTime
+    int scores1
+    int scores2
+    int redflag
+    int blueflag
+    int flagStatus
+    qboolean newHud
+    qhandle_t[MAX_MODELS] gameModels
+    sfxHandle_t[MAX_SOUNDS] gameSounds
+    int numInlineModels
+    qhandle_t[MAX_MODELS] inlineDrawModel
+    vec3_t[MAX_MODELS] inlineModelMidpoints
+    clientInfo_t[MAX_CLIENTS] clientinfo
+    char[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH3_1] teamChatMsgs
+    int[TEAMCHAT_HEIGHT] teamChatMsgTimes
+    int teamChatPos
+    int teamLastChatPos
+    int cursorX
+    int cursorY
+    qboolean eventHandling
+    qboolean mouseCaptured
+    qboolean sizingHud
+    *void capturedItem
+    qhandle_t activeCursor
+    int currentOrder
+    qboolean orderPending
+    int orderTime
+    int currentVoiceClient
+    int acceptOrderTime
+    int acceptTask
+    int acceptLeader
+    char[MAX_NAME_LENGTH] acceptVoice
+    cgMedia_t media
+}
+
+; cgame/cg_consolecmds.c
+
+consoleCommand_t {
+    *char cmd
+    *void function
+}
+
+; cgame/cg_draw.c
+
+lagometer_t {
+    int[LAG_SAMPLES] frameSamples
+    int frameCount
+    int[LAG_SAMPLES] snapshotFlags
+    int[LAG_SAMPLES] snapshotSamples
+    int snapshotCount
+}
+
+; cgame/cg_marks.c
+
+cparticle_t {
+    *cparticle_t next
+    float time
+    float endtime
+    vec3_t org
+    vec3_t vel
+    vec3_t accel
+    int color
+    float colorvel
+    float alpha
+    float alphavel
+    int type
+    qhandle_t pshader
+    float height
+    float width
+    float endheight
+    float endwidth
+    float start
+    float end
+    float startfade
+    qboolean rotate
+    int snum
+    qboolean link
+    int shaderAnim
+    int roll
+    int accumroll
+}
+
+; cgame/cg_servercmds.c
+
+orderTask_t {
+    *char order
+    int taskNum
+}
+
+voiceChat_t {
+    char[64] id
+    int numSounds
+    sfxHandle_t[MAX_VOICESOUNDS] sounds
+    char[MAX_VOICESOUNDS][MAX_CHATSIZE] chats
+}
+
+voiceChatList_t {
+    char[64] name
+    int gender
+    int numVoiceChats
+    voiceChat_t[MAX_VOICECHATS] voiceChats
+}
+
+headModelVoiceChat_t {
+    char[64] headmodel
+    int voiceChatNum
+}
+
+bufferedVoiceChat_t {
+    int clientNum
+    sfxHandle_t snd
+    int voiceOnly
+    char[MAX_SAY_TEXT] cmd
+    char[MAX_SAY_TEXT] message
+}
+
+; game/g_public.h
+
+entityShared_t {
+    entityState_t s
+    qboolean linked
+    int linkcount
+    int svFlags
+    int singleClient
+    qboolean bmodel
+    vec3_t mins
+    vec3_t maxs
+    int contents
+    vec3_t absmin
+    vec3_t absmax
+    vec3_t currentOrigin
+    vec3_t currentAngles
+    int ownerNum
+}
+
+sharedEntity_t {
+    entityState_t s
+    entityShared_t r
+}
+
+; game/g_local.h
+
+gentity_s {
+    entityState_t s
+    entityShared_t r
+    *gclient_s client
+    qboolean inuse
+    *char classname
+    int spawnflags
+    qboolean neverFree
+    int flags
+    *char model
+    *char model2
+    int freetime
+    int eventTime
+    qboolean freeAfterEvent
+    qboolean unlinkAfterEvent
+    qboolean physicsObject
+    float physicsBounce
+    int clipmask
+    moverState_t moverState
+    int soundPos1
+    int sound1to2
+    int sound2to1
+    int soundPos2
+    int soundLoop
+    *gentity_t parent
+    *gentity_t nextTrain
+    *gentity_t prevTrain
+    vec3_t pos1
+    vec3_t pos2
+    *char message
+    int timestamp
+    float angle
+    *char target
+    *char targetname
+    *char team
+    *char targetShaderName
+    *char targetShaderNewName
+    *gentity_t target_ent
+    float speed
+    vec3_t movedir
+    int nextthink
+    *void think
+    *void reached
+    *void blocked
+    *void touch
+    *void use
+    *void pain
+    *void die
+    int pain_debounce_time
+    int fly_sound_debounce_time
+    int last_move_time
+    int health
+    qboolean takedamage
+    int damage
+    int splashDamage
+    int splashRadius
+    int methodOfDeath
+    int splashMethodOfDeath
+    int count
+    *gentity_t chain
+    *gentity_t enemy
+    *gentity_t activator
+    *gentity_t teamchain
+    *gentity_t teammaster
+    int watertype
+    int waterlevel
+    int noise_index
+    float wait
+    float random
+    *gitem_t item
+}
+
+playerTeamState_t {
+    playerTeamStateState_t state
+    int location
+    int captures
+    int basedefense
+    int carrierdefense
+    int flagrecovery
+    int fragcarrier
+    int assists
+    float lasthurtcarrier
+    float lastreturnedflag
+    float flagsince
+    float lastfraggedcarrier
+}
+
+clientSession_t {
+    team_t sessionTeam
+    int spectatorTime
+    spectatorState_t spectatorState
+    int spectatorClient
+    int wins
+    int losses
+    qboolean teamLeader
+}
+
+clientPersistant_t {
+    clientConnected_t connected
+    usercmd_t cmd
+    qboolean localClient
+    qboolean initialSpawn
+    qboolean predictItemPickup
+    qboolean pmoveFixed
+    char[MAX_NETNAME] netname
+    int maxHealth
+    int enterTime
+    playerTeamState_t teamState
+    int voteCount
+    int teamVoteCount
+    qboolean teamInfo
+}
+
+gclient_s {
+    playerState_t ps
+    clientPersistant_t pers
+    clientSession_t sess
+    qboolean readyToExit
+    qboolean noclip
+    int lastCmdTime
+    int buttons
+    int oldbuttons
+    int latched_buttons
+    vec3_t oldOrigin
+    int damage_armor
+    int damage_blood
+    int damage_knockback
+    vec3_t damage_from
+    qboolean damage_fromWorld
+    int accurateCount
+    int accuracy_shots
+    int accuracy_hits
+    int lastkilled_client
+    int lasthurt_client
+    int lasthurt_mod
+    int respawnTime
+    int inactivityTime
+    qboolean inactivityWarning
+    int rewardTime
+    int airOutTime
+    int lastKillTime
+    qboolean fireHeld
+    *gentity_t hook
+    int switchTeamTime
+    int timeResidual
+    *char areabits
+}
+
+level_locals_t {
+    *gclient_s clients
+    *gentity_s gentities
+    int gentitySize
+    int num_entities
+    int warmupTime
+    fileHandle_t logFile
+    int maxclients
+    int framenum
+    int time
+    int previousTime
+    int startTime
+    int[TEAM_NUM_TEAMS] teamScores
+    int lastTeamLocationTime
+    qboolean newSession
+    qboolean restarted
+    int numConnectedClients
+    int numNonSpectatorClients
+    int numPlayingClients
+    int[MAX_CLIENTS] sortedClients
+    int follow1
+    int follow2
+    int snd_fry
+    int warmupModificationCount
+    char[MAX_STRING_CHARS] voteString
+    char[MAX_STRING_CHARS] voteDisplayString
+    int voteTime
+    int voteExecuteTime
+    int voteYes
+    int voteNo
+    int numVotingClients
+    char[2][MAX_STRING_CHARS] teamVoteString
+    int[2] teamVoteTime
+    int[2] teamVoteYes
+    int[2] teamVoteNo
+    int[2] numteamVotingClients
+    qboolean spawning
+    int numSpawnVars
+    *char[MAX_SPAWN_VARS][2] spawnVars
+    int numSpawnVarChars
+    char[MAX_SPAWN_VARS_CHARS] spawnVarChars
+    int intermissionQueued
+    int intermissiontime
+    *char changemap
+    qboolean readyToExit
+    int exitTime
+    vec3_t intermission_origin
+    vec3_t intermission_angle
+    qboolean locationLinked
+    *gentity_t locationHead
+    int bodyQueIndex
+    *gentity_t[BODY_QUEUE_SIZE] bodyQue
+}
+
+bot_settings_t {
+    char[MAX_FILEPATH] characterfile
+    float skill
+    char[MAX_FILEPATH] team
+}
+
+; game/be_ai_goal.h
+
+bot_goal_t {
+    vec3_t origin
+    int areanum
+    vec3_t mins
+    vec3_t maxs
+    int entitynum
+    int number
+    int flags
+    int iteminfo
+}
+
+; game/ai_main.h
+
+bot_waypoint_t {
+    int inuse
+    char[32] name
+    bot_goal_t goal
+    *bot_waypoint_t next
+    *bot_waypoint_t prev
+}
+
+bot_activategoal_t {
+    int inuse
+    bot_goal_t goal
+    float time
+    float start_time
+    float justused_time
+    int shoot
+    int weapon
+    vec3_t target
+    vec3_t origin
+    int[MAX_ACTIVATEAREAS] areas
+    int numareas
+    int areasdisabled
+    *bot_activategoal_t next
+}
+
+bot_state_t {
+    int inuse
+    int botthink_residual
+    int client
+    int entitynum
+    playerState_t cur_ps
+    int last_eFlags
+    usercmd_t lastucmd
+    int[1024] entityeventTime
+    bot_settings_t settings
+    *void ainode
+    float thinktime
+    vec3_t origin
+    vec3_t velocity
+    int presencetype
+    vec3_t eye
+    int areanum
+    int[MAX_ITEMS] inventory
+    int tfl
+    int flags
+    int respawn_wait
+    int lasthealth
+    int lastkilledplayer
+    int lastkilledby
+    int botdeathtype
+    int enemydeathtype
+    int botsuicide
+    int enemysuicide
+    int setupcount
+    int map_restart
+    int entergamechat
+    int num_deaths
+    int num_kills
+    int revenge_enemy
+    int revenge_kills
+    int lastframe_health
+    int lasthitcount
+    int chatto
+    float walker
+    float ltime
+    float entergame_time
+    float ltg_time
+    float nbg_time
+    float respawn_time
+    float respawnchat_time
+    float chase_time
+    float enemyvisible_time
+    float check_time
+    float stand_time
+    float lastchat_time
+    float kamikaze_time
+    float invulnerability_time
+    float standfindenemy_time
+    float attackstrafe_time
+    float attackcrouch_time
+    float attackchase_time
+    float attackjump_time
+    float enemysight_time
+    float enemydeath_time
+    float enemyposition_time
+    float defendaway_time
+    float defendaway_range
+    float rushbaseaway_time
+    float attackaway_time
+    float harvestaway_time
+    float ctfroam_time
+    float killedenemy_time
+    float arrive_time
+    float lastair_time
+    float teleport_time
+    float camp_time
+    float camp_range
+    float weaponchange_time
+    float firethrottlewait_time
+    float firethrottleshoot_time
+    float notblocked_time
+    float blockedbyavoidspot_time
+    float predictobstacles_time
+    int predictobstacles_goalareanum
+    vec3_t aimtarget
+    vec3_t enemyvelocity
+    vec3_t enemyorigin
+    int kamikazebody
+    int[MAX_PROXMINES] proxmines
+    int numproxmines
+    int character
+    int ms
+    int gs
+    int cs
+    int ws
+    int enemy
+    int lastenemyareanum
+    vec3_t lastenemyorigin
+    int weaponnum
+    vec3_t viewangles
+    vec3_t ideal_viewangles
+    vec3_t viewanglespeed
+    int ltgtype
+    int teammate
+    int decisionmaker
+    int ordered
+    float order_time
+    int owndecision_time
+    bot_goal_t teamgoal
+    bot_goal_t altroutegoal
+    float reachedaltroutegoal_time
+    float teammessage_time
+    float teamgoal_time
+    float teammatevisible_time
+    int teamtaskpreference
+    int lastgoal_decisionmaker
+    int lastgoal_ltgtype
+    int lastgoal_teammate
+    bot_goal_t lastgoal_teamgoal
+    int lead_teammate
+    bot_goal_t lead_teamgoal
+    float lead_time
+    float leadvisible_time
+    float leadmessage_time
+    float leadbackup_time
+    char[32] teamleader
+    float askteamleader_time
+    float becometeamleader_time
+    float teamgiveorders_time
+    float lastflagcapture_time
+    int numteammates
+    int redflagstatus
+    int blueflagstatus
+    int neutralflagstatus
+    int flagstatuschanged
+    int forceorders
+    int flagcarrier
+    int ctfstrategy
+    char[32] subteam
+    float formation_dist
+    char[16] formation_teammate
+    float formation_angle
+    vec3_t formation_dir
+    vec3_t formation_origin
+    bot_goal_t formation_goal
+    *bot_activategoal_t activatestack
+    bot_activategoal_t[MAX_ACTIVATESTACK] activategoalheap
+    *bot_waypoint_t checkpoints
+    *bot_waypoint_t patrolpoints
+    *bot_waypoint_t curpatrolpoint
+    int patrolflags
+}
+
+; game/be_aas.h
+
+aas_trace_t {
+    qboolean startsolid
+    float fraction
+    vec3_t endpos
+    int ent
+    int lastarea
+    int area
+    int planenum
+}
+
+aas_entityinfo_t {
+    int valid
+    int type
+    int flags
+    float ltime
+    float update_time
+    int number
+    vec3_t origin
+    vec3_t angles
+    vec3_t old_origin
+    vec3_t lastvisorigin
+    vec3_t mins
+    vec3_t maxs
+    int groundent
+    int solid
+    int modelindex
+    int modelindex2
+    int frame
+    int event
+    int eventParm
+    int powerups
+    int weapon
+    int legsAnim
+    int torsoAnim
+}
+
+aas_areainfo_t {
+    int contents
+    int flags
+    int presencetype
+    int cluster
+    vec3_t mins
+    vec3_t maxs
+    vec3_t center
+}
+
+aas_clientmove_t {
+    vec3_t endpos
+    int endarea
+    vec3_t velocity
+    aas_trace_t trace
+    int presencetype
+    int stopevent
+    int endcontents
+    float time
+    int frames
+}
+
+aas_altroutegoal_t {
+    vec3_t origin
+    int areanum
+    ushort starttraveltime
+    ushort goaltraveltime
+    ushort extratraveltime
+}
+
+aas_predictroute_t {
+    vec3_t endpos
+    int endarea
+    int stopevent
+    int endcontents
+    int endtravelflags
+    int numareas
+    int time
+}
+
+; game/be_ai_chat.h
+
+bot_consolemessage_t {
+    int handle
+    float time
+    int type
+    char[MAX_MESSAGE_SIZE] message
+    *bot_consolemessage_t prev
+    *bot_consolemessage_t next
+}
+
+bot_matchvariable_t {
+    char offset
+    int length
+}
+
+bot_match_t {
+    char[MAX_MESSAGE_SIZE] string
+    int type
+    int subtype
+    bot_matchvariable_t[MAX_MATCHVARIABLES] variables
+}
+
+; game/be_ai_move.h
+
+bot_initmove_t {
+    vec3_t origin
+    vec3_t velocity
+    vec3_t viewoffset
+    int entitynum
+    int client
+    float thinktime
+    int presencetype
+    vec3_t viewangles
+    int or_moveflags
+}
+
+bot_moveresult_t {
+    int failure
+    int type
+    int blocked
+    int blockentity
+    int traveltype
+    int flags
+    int weapon
+    vec3_t movedir
+    vec3_t ideal_viewangles
+}
+
+bot_avoidspot_t {
+    vec3_t origin
+    float radius
+    int type
+}
+
+; game/be_ai_weap.h
+
+projectileinfo_t {
+    char[MAX_STRINGFIELD] name
+    char[MAX_STRINGFIELD] model
+    int flags
+    float gravity
+    int damage
+    float radius
+    int visdamage
+    int damagetype
+    int healthinc
+    float push
+    float detonation
+    float bounce
+    float bouncefric
+    float bouncestop
+}
+
+weaponinfo_t {
+    int valid
+    int number
+    char[MAX_STRINGFIELD] name
+    char[MAX_STRINGFIELD] model
+    int level
+    int weaponindex
+    int flags
+    char[80] projectile
+    int numprojectiles
+    float hspread
+    float vspread
+    float speed
+    float acceleration
+    vec3_t recoil
+    vec3_t offset
+    vec3_t angleoffset
+    float extrazvelocity
+    int ammoamount
+    int ammoindex
+    float activate
+    float reload
+    float spinup
+    float spindown
+    projectileinfo_t proj
+}
+
+; game/botlib.h
+
+bot_input_t {
+    float thinktime
+    vec3_t dir
+    float speed
+    vec3_t viewangles
+    int actionflags
+    int weapon
+}
+
+bsp_surface_t {
+    char[16] name
+    int flags
+    int value
+}
+
+bsp_trace_t {
+    qboolean allsolid
+    qboolean startsolid
+    float fraction
+    vec3_t endpos
+    cplane_t plane
+    float exp_dist
+    int sidenum
+    bsp_surface_t surface
+    int contents
+    int ent
+}
+
+bot_entitystate_t {
+    int type
+    int flags
+    vec3_t origin
+    vec3_t angles
+    vec3_t old_origin
+    vec3_t mins
+    vec3_t maxs
+    int groundent
+    int solid
+    int modelindex
+    int modelindex2
+    int frame
+    int event
+    int eventParm
+    int powerups
+    int weapon
+    int legsAnim
+    int torsoAnim
+}
+
+botlib_import_t {
+    *void Print
+    *void Trace
+    *void EntityTrace
+    *void PointContents
+    *void inPVS
+    *void BSPEntityData
+    *void BSPModelMinsMaxsOrigin
+    *void BotClientCommand
+    *void GetMemory
+    *void FreeMemory
+    *void AvailableMemory
+    *void HunkAlloc
+    *void FS_FOpenFile
+    *void FS_Read
+    *void FS_Write
+    *void FS_FCloseFile
+    *void FS_Seek
+    *void DebugLineCreate
+    *void DebugLineDelete
+    *void DebugLineShow
+    *void DebugPolygonCreate
+    *void DebugPolygonDelete
+}
+
+aas_export_t {
+    *void AAS_EntityInfo
+    *void AAS_Initialized
+    *void AAS_PresenceTypeBoundingBox
+    *void AAS_Time
+    *void AAS_PointAreaNum
+    *void AAS_PointReachabilityAreaIndex
+    *void AAS_TraceAreas
+    *void AAS_BBoxAreas
+    *void AAS_AreaInfo
+    *void AAS_PointContents
+    *void AAS_NextBSPEntity
+    *void AAS_ValueForBSPEpairKey
+    *void AAS_VectorForBSPEpairKey
+    *void AAS_FloatForBSPEpairKey
+    *void AAS_IntForBSPEpairKey
+    *void AAS_AreaReachability
+    *void AAS_AreaTravelTimeToGoalArea
+    *void AAS_EnableRoutingArea
+    *void AAS_PredictRoute
+    *void AAS_AlternativeRouteGoals
+    *void AAS_Swimming
+    *void AAS_PredictClientMovement
+}
+
+ea_export_t {
+    *void EA_Command
+    *void EA_Say
+    *void EA_SayTeam
+    *void EA_Action
+    *void EA_Gesture
+    *void EA_Talk
+    *void EA_Attack
+    *void EA_Use
+    *void EA_Respawn
+    *void EA_MoveUp
+    *void EA_MoveDown
+    *void EA_MoveForward
+    *void EA_MoveBack
+    *void EA_MoveLeft
+    *void EA_MoveRight
+    *void EA_Crouch
+    *void EA_SelectWeapon
+    *void EA_Jump
+    *void EA_DelayedJump
+    *void EA_Move
+    *void EA_View
+    *void EA_EndRegular
+    *void EA_GetInput
+    *void EA_ResetInput
+}
+
+ai_export_t {
+    *void BotLoadCharacter
+    *void BotFreeCharacter
+    *void Characteristic_Float
+    *void Characteristic_BFloat
+    *void Characteristic_Integer
+    *void Characteristic_BInteger
+    *void Characteristic_String
+    *void BotAllocChatState
+    *void BotFreeChatState
+    *void BotQueueConsoleMessage
+    *void BotRemoveConsoleMessage
+    *void BotNextConsoleMessage
+    *void BotNumConsoleMessages
+    *void BotInitialChat
+    *void BotNumInitialChats
+    *void BotReplyChat
+    *void BotChatLength
+    *void BotEnterChat
+    *void BotGetChatMessage
+    *void StringContains
+    *void BotFindMatch
+    *void BotMatchVariable
+    *void UnifyWhiteSpaces
+    *void BotReplaceSynonyms
+    *void BotLoadChatFile
+    *void BotSetChatGender
+    *void BotSetChatName
+    *void BotResetGoalState
+    *void BotResetAvoidGoals
+    *void BotRemoveFromAvoidGoals
+    *void BotPushGoal
+    *void BotPopGoal
+    *void BotEmptyGoalStack
+    *void BotDumpAvoidGoals
+    *void BotDumpGoalStack
+    *void BotGoalName
+    *void BotGetTopGoal
+    *void BotGetSecondGoal
+    *void BotChooseLTGItem
+    *void BotChooseNBGItem
+    *void BotTouchingGoal
+    *void BotItemGoalInVisButNotVisible
+    *void BotGetLevelItemGoal
+    *void BotGetNextCampSpotGoal
+    *void BotGetMapLocationGoal
+    *void BotAvoidGoalTime
+    *void BotSetAvoidGoalTime
+    *void BotInitLevelItems
+    *void BotUpdateEntityItems
+    *void BotLoadItemWeights
+    *void BotFreeItemWeights
+    *void BotInterbreedGoalFuzzyLogic
+    *void BotSaveGoalFuzzyLogic
+    *void BotMutateGoalFuzzyLogic
+    *void BotAllocGoalState
+    *void BotFreeGoalState
+    *void BotResetMoveState
+    *void BotMoveToGoal
+    *void BotMoveInDirection
+    *void BotResetAvoidReach
+    *void BotResetLastAvoidReach
+    *void BotReachabilityArea
+    *void BotMovementViewTarget
+    *void BotPredictVisiblePosition
+    *void BotAllocMoveState
+    *void BotFreeMoveState
+    *void BotInitMoveState
+    *void BotAddAvoidSpot
+    *void BotChooseBestFightWeapon
+    *void BotGetWeaponInfo
+    *void BotLoadWeaponWeights
+    *void BotAllocWeaponState
+    *void BotFreeWeaponState
+    *void BotResetWeaponState
+    *void GeneticParentsAndChildSelection
+}
+
+botlib_export_t {
+    aas_export_t aas
+    ea_export_t ea
+    ai_export_t ai
+    *void BotLibSetup
+    *void BotLibShutdown
+    *void BotLibVarSet
+    *void BotLibVarGet
+    *void PC_AddGlobalDefine
+    *void PC_LoadSourceHandle
+    *void PC_FreeSourceHandle
+    *void PC_ReadTokenHandle
+    *void PC_SourceFileAndLine
+    *void BotLibStartFrame
+    *void BotLibLoadMap
+    *void BotLibUpdateEntity
+    *void Test
+}
+
+; game/ai_team.c
+
+bot_ctftaskpreference_t {
+    char[36] name
+    int preference
+}
+
+; game/ai_vcmd.c
+
+voiceCommand_t {
+    *char cmd
+    *void func
+}
+
+; game/g_bot.c
+
+botSpawnQueue_t {
+    int clientNum
+    int spawnTime
+}
+
+; game/g_main.c
+
+cvarTable_t {
+    *vmCvar_t vmCvar
+    *char cvarName
+    *char defaultString
+    int cvarFlags
+    int modificationCount
+    qboolean trackChange
+    qboolean teamShader
+}
+
+; game/g_mover.c
+
+pushed_t {
+    *gentity_t ent
+    vec3_t origin
+    vec3_t angles
+    float deltayaw
+}
+
+; game/g_spawn.c
+
+field_t {
+    *char name
+    int ofs
+    fieldtype_t type
+    int flags
+}
+
+spawn_t {
+    *char name
+    *void spawn
+}
+
+; game/g_svcmds.c
+
+ipFilter_t {
+    uint mask
+    uint compare
+}
+
+; game/g_team.c
+
+teamgame_t {
+    float last_flag_capture
+    int last_capture_team
+    flagStatus_t redStatus
+    flagStatus_t blueStatus
+    flagStatus_t flagStatus
+    int redTakenTime
+    int blueTakenTime
+    int redObeliskAttackedTime
+    int blueObeliskAttackedTime
+}
+
+; game/g_utils.c
+
+shaderRemap_t {
+    char[MAX_QPATH] oldShader
+    char[MAX_QPATH] newShader
+    float timeOffset
+}
+
+; ui/ui_public.h
+
+uiClientState_t {
+    connstate_t connState
+    int connectPacketCount
+    int clientNum
+    char[MAX_STRING_CHARS] servername
+    char[MAX_STRING_CHARS] updateInfoString
+    char[MAX_STRING_CHARS] messageString
+}
+
+; q3_ui/ui_local.h
+
+menuframework_s {
+    int cursor
+    int cursor_prev
+    int nitems
+    *void[MAX_MENUITEMS] items
+    *void draw
+    *void key
+    qboolean wrapAround
+    qboolean fullscreen
+    qboolean showlogo
+}
+
+menucommon_s {
+    int type
+    *char name
+    int id
+    int x
+    int y
+    int left
+    int top
+    int right
+    int bottom
+    *menuframework_s parent
+    int menuPosition
+    uint flags
+    *void callback
+    *void statusbar
+    *void ownerdraw
+}
+
+mfield_t {
+    int cursor
+    int scroll
+    int widthInChars
+    char[MAX_EDIT_LINE] buffer
+    int maxchars
+}
+
+menufield_s {
+    menucommon_s generic
+    mfield_t field
+}
+
+menuslider_s {
+    menucommon_s generic
+    float minvalue
+    float maxvalue
+    float curvalue
+    float range
+}
+
+menulist_s {
+    menucommon_s generic
+    int oldvalue
+    int curvalue
+    int numitems
+    int top
+    **char itemnames
+    int width
+    int height
+    int columns
+    int seperation
+}
+
+menuaction_s {
+    menucommon_s generic
+}
+
+menuradiobutton_s {
+    menucommon_s generic
+    int curvalue
+}
+
+menubitmap_s {
+    menucommon_s generic
+    *char focuspic
+    *char errorpic
+    qhandle_t shader
+    qhandle_t focusshader
+    int width
+    int height
+    *float focuscolor
+}
+
+menutext_s {
+    menucommon_s generic
+    *char string
+    int style
+    *float color
+}
+
+playerInfo_t {
+    qhandle_t legsModel
+    qhandle_t legsSkin
+    lerpFrame_t legs
+    qhandle_t torsoModel
+    qhandle_t torsoSkin
+    lerpFrame_t torso
+    qhandle_t headModel
+    qhandle_t headSkin
+    animation_t[MAX_ANIMATIONS] animations
+    qhandle_t weaponModel
+    qhandle_t barrelModel
+    qhandle_t flashModel
+    vec3_t flashDlightColor
+    int muzzleFlashTime
+    vec3_t viewAngles
+    vec3_t moveAngles
+    weapon_t currentWeapon
+    int legsAnim
+    int torsoAnim
+    weapon_t weapon
+    weapon_t lastWeapon
+    weapon_t pendingWeapon
+    int weaponTimer
+    int pendingLegsAnim
+    int torsoAnimationTimer
+    int pendingTorsoAnim
+    int legsAnimationTimer
+    qboolean chat
+    qboolean newModel
+    qboolean barrelSpinning
+    float barrelAngle
+    int barrelTime
+    int realWeapon
+}
+
+uiStatic_t {
+    int frametime
+    int realtime
+    int cursorx
+    int cursory
+    int menusp
+    *menuframework_s activemenu
+    *menuframework_s[MAX_MENUDEPTH] stack
+    glconfig_t glconfig
+    qboolean debug
+    qhandle_t whiteShader
+    qhandle_t menuBackShader
+    qhandle_t menuBackNoLogoShader
+    qhandle_t charset
+    qhandle_t charsetProp
+    qhandle_t charsetPropGlow
+    qhandle_t charsetPropB
+    qhandle_t cursor
+    qhandle_t rb_on
+    qhandle_t rb_off
+    float scale
+    float bias
+    qboolean demoversion
+    qboolean firstdraw
+}
+
+; q3_ui/ui_addbots.c
+
+addBotsMenuInfo_t {
+    menuframework_s menu
+    menubitmap_s arrows
+    menubitmap_s up
+    menubitmap_s down
+    menutext_s[7] bots
+    menulist_s skill
+    menulist_s team
+    menubitmap_s go
+    menubitmap_s back
+    int numBots
+    int delay
+    int baseBotNum
+    int selectedBotNum
+    int[MAX_BOTS] sortedBotNums
+    char[7][32] botnames
+}
+
+; q3_ui/ui_cdkey.c
+
+cdkeyMenuInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s frame
+    menufield_s cdkey
+    menubitmap_s accept
+    menubitmap_s back
+}
+
+; q3_ui/ui_cinematics.c
+
+cinematicsMenuInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s cin_idlogo
+    menutext_s cin_intro
+    menutext_s cin_tier1
+    menutext_s cin_tier2
+    menutext_s cin_tier3
+    menutext_s cin_tier4
+    menutext_s cin_tier5
+    menutext_s cin_tier6
+    menutext_s cin_tier7
+    menutext_s cin_end
+    menubitmap_s back
+}
+
+; q3_ui/ui_confirm.c
+
+confirmMenu_t {
+    menuframework_s menu
+    menutext_s no
+    menutext_s yes
+    int slashX
+    *char question
+    *void draw
+    *void action
+    int style
+    **char lines
+}
+
+; q3_ui/ui_controls2.c
+
+bind_t {
+    *char command
+    *char label
+    int id
+    int anim
+    int defaultbind1
+    int defaultbind2
+    int bind1
+    int bind2
+}
+
+configcvar_t {
+    *char name
+    float defaultvalue
+    float value
+}
+
+controls_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menubitmap_s player
+    menutext_s movement
+    menutext_s looking
+    menutext_s weapons
+    menutext_s misc
+    menuaction_s walkforward
+    menuaction_s backpedal
+    menuaction_s stepleft
+    menuaction_s stepright
+    menuaction_s moveup
+    menuaction_s movedown
+    menuaction_s turnleft
+    menuaction_s turnright
+    menuaction_s sidestep
+    menuaction_s run
+    menuaction_s machinegun
+    menuaction_s chainsaw
+    menuaction_s shotgun
+    menuaction_s grenadelauncher
+    menuaction_s rocketlauncher
+    menuaction_s lightning
+    menuaction_s railgun
+    menuaction_s plasma
+    menuaction_s bfg
+    menuaction_s attack
+    menuaction_s prevweapon
+    menuaction_s nextweapon
+    menuaction_s lookup
+    menuaction_s lookdown
+    menuaction_s mouselook
+    menuradiobutton_s freelook
+    menuaction_s centerview
+    menuaction_s zoomview
+    menuaction_s gesture
+    menuradiobutton_s invertmouse
+    menuslider_s sensitivity
+    menuradiobutton_s smoothmouse
+    menuradiobutton_s alwaysrun
+    menuaction_s showscores
+    menuradiobutton_s autoswitch
+    menuaction_s useitem
+    playerInfo_t playerinfo
+    qboolean changesmade
+    menuaction_s chat
+    menuaction_s chat2
+    menuaction_s chat3
+    menuaction_s chat4
+    menuradiobutton_s joyenable
+    menuslider_s joythreshold
+    int section
+    qboolean waitingforkey
+    char[64] playerModel
+    vec3_t playerViewangles
+    vec3_t playerMoveangles
+    int playerLegs
+    int playerTorso
+    int playerWeapon
+    qboolean playerChat
+    menubitmap_s back
+    menutext_s name
+}
+
+; q3_ui/ui_credits.c
+
+creditsmenu_t {
+    menuframework_s menu
+}
+
+; q3_ui/ui_demo2.c
+
+demos_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menulist_s list
+    menubitmap_s arrows
+    menubitmap_s left
+    menubitmap_s right
+    menubitmap_s back
+    menubitmap_s go
+    int numDemos
+    char[NAMEBUFSIZE_DEMOS] names
+    *char[MAX_DEMOS] demolist
+}
+
+; q3_ui/ui_display.c
+
+displayOptionsInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s graphics
+    menutext_s display
+    menutext_s sound
+    menutext_s network
+    menuslider_s brightness
+    menuslider_s screensize
+    menubitmap_s back
+}
+
+; q3_ui/ui_ingame.c
+
+ingamemenu_t {
+    menuframework_s menu
+    menubitmap_s frame
+    menutext_s team
+    menutext_s setup
+    menutext_s server
+    menutext_s leave
+    menutext_s restart
+    menutext_s addbots
+    menutext_s removebots
+    menutext_s teamorders
+    menutext_s quit
+    menutext_s resume
+}
+
+; q3_ui/ui_loadconfig.c
+
+configs_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menulist_s list
+    menubitmap_s arrows
+    menubitmap_s left
+    menubitmap_s right
+    menubitmap_s back
+    menubitmap_s go
+    char[NAMEBUFSIZE_CONFIGS] names
+    *char[MAX_CONFIGS] configlist
+}
+
+; q3_ui/ui_main.c
+
+cvarTable_t_ui {
+    *vmCvar_t vmCvar
+    *char cvarName
+    *char defaultString
+    int cvarFlags
+}
+
+; q3_ui/ui_menu.c
+
+mainmenu_t {
+    menuframework_s menu
+    menutext_s singleplayer
+    menutext_s multiplayer
+    menutext_s setup
+    menutext_s demos
+    menutext_s cinematics
+    menutext_s teamArena
+    menutext_s mods
+    menutext_s exit
+    qhandle_t bannerModel
+}
+
+errorMessage_t {
+    menuframework_s menu
+    char[4096] errorMessage
+}
+
+; q3_ui/ui_mods.c
+
+mods_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menulist_s list
+    menubitmap_s back
+    menubitmap_s go
+    char[NAMEBUFSIZE_MODS] description
+    char[GAMEBUFSIZE] fs_game
+    *char descriptionPtr
+    *char fs_gamePtr
+    *char[MAX_MODS] descriptionList
+    *char[MAX_MODS] fs_gameList
+}
+
+; q3_ui/ui_network.c
+
+networkOptionsInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s graphics
+    menutext_s display
+    menutext_s sound
+    menutext_s network
+    menulist_s rate
+    menubitmap_s back
+}
+
+; q3_ui/ui_options.c
+
+optionsmenu_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s graphics
+    menutext_s display
+    menutext_s sound
+    menutext_s network
+    menubitmap_s back
+}
+
+; q3_ui/ui_playermodel.c
+
+playermodel_t {
+    menuframework_s menu
+    menubitmap_s[MAX_MODELSPERPAGE] pics
+    menubitmap_s[MAX_MODELSPERPAGE] picbuttons
+    menubitmap_s framel
+    menubitmap_s framer
+    menubitmap_s ports
+    menutext_s banner
+    menubitmap_s back
+    menubitmap_s player
+    menubitmap_s arrows
+    menubitmap_s left
+    menubitmap_s right
+    menutext_s modelname
+    menutext_s skinname
+    menutext_s playername
+    playerInfo_t playerinfo
+    int nummodels
+    char[MAX_PLAYERMODELS][128] modelnames
+    int modelpage
+    int numpages
+    char[64] modelskin
+    int selectedmodel
+}
+
+; q3_ui/ui_playersettings.c
+
+playersettings_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menubitmap_s player
+    menufield_s name
+    menulist_s handicap
+    menulist_s effects
+    menubitmap_s back
+    menubitmap_s model
+    menubitmap_s item_null
+    qhandle_t fxBasePic
+    qhandle_t[7] fxPic
+    playerInfo_t playerinfo
+    int current_fx
+    char[MAX_QPATH] playerModel
+}
+
+; q3_ui/ui_preferences.c
+
+preferences_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menulist_s crosshair
+    menuradiobutton_s simpleitems
+    menuradiobutton_s brass
+    menuradiobutton_s wallmarks
+    menuradiobutton_s dynamiclights
+    menuradiobutton_s identifytarget
+    menuradiobutton_s highqualitysky
+    menuradiobutton_s synceveryframe
+    menuradiobutton_s forcemodel
+    menulist_s drawteamoverlay
+    menuradiobutton_s allowdownload
+    menubitmap_s back
+    qhandle_t[NUM_CROSSHAIRS] crosshairShader
+}
+
+; q3_ui/ui_removebots.c
+
+removeBotsMenuInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s background
+    menubitmap_s arrows
+    menubitmap_s up
+    menubitmap_s down
+    menutext_s[7] bots
+    menubitmap_s delete
+    menubitmap_s back
+    int numBots
+    int baseBotNum
+    int selectedBotNum
+    char[7][32] botnames
+    int[MAX_BOTS] botClientNums
+}
+
+; q3_ui/ui_saveconfig.c
+
+saveConfig_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s background
+    menufield_s savename
+    menubitmap_s back
+    menubitmap_s save
+}
+
+; q3_ui/ui_serverinfo.c
+
+serverinfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menubitmap_s back
+    menutext_s add
+    char[MAX_INFO_STRING] info
+    int numlines
+}
+
+; q3_ui/ui_servers2.c
+
+pinglist_t {
+    char[MAX_ADDRESSLENGTH] adrstr
+    int start
+}
+
+servernode_t {
+    char[MAX_ADDRESSLENGTH] adrstr
+    char[MAX_HOSTNAMELENGTH_3] hostname
+    char[MAX_MAPNAMELENGTH] mapname
+    int numclients
+    int maxclients
+    int pingtime
+    int gametype
+    char[12] gamename
+    int nettype
+    int minPing
+    int maxPing
+    qboolean bPB
+}
+
+table_t {
+    char[MAX_LISTBOXWIDTH_SERVERS] buff
+    *servernode_t servernode
+}
+
+; q3_ui/ui_setup.c
+
+setupMenuInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s setupplayer
+    menutext_s setupcontrols
+    menutext_s setupsystem
+    menutext_s game
+    menutext_s cdkey
+    menutext_s defaults
+    menubitmap_s back
+}
+
+; q3_ui/ui_sound.c
+
+soundOptionsInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s graphics
+    menutext_s display
+    menutext_s sound
+    menutext_s network
+    menuslider_s sfxvolume
+    menuslider_s musicvolume
+    menulist_s quality
+    menubitmap_s back
+}
+
+; q3_ui/ui_specifyserver.c
+
+specifyserver_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menufield_s domain
+    menufield_s port
+    menubitmap_s go
+    menubitmap_s back
+}
+
+; q3_ui/ui_splevel.c
+
+levelMenuInfo_t {
+    menuframework_s menu
+    menutext_s item_banner
+    menubitmap_s item_leftarrow
+    menubitmap_s[4] item_maps
+    menubitmap_s item_rightarrow
+    menubitmap_s item_player
+    menubitmap_s[6] item_awards
+    menubitmap_s item_back
+    menubitmap_s item_reset
+    menubitmap_s item_custom
+    menubitmap_s item_next
+    menubitmap_s item_null
+    qboolean reinit
+    *char selectedArenaInfo
+    int numMaps
+    char[4][MAX_QPATH] levelPicNames
+    char[4][16] levelNames
+    int[4] levelScores
+    int[4] levelScoresSkill
+    qhandle_t levelSelectedPic
+    qhandle_t levelFocusPic
+    qhandle_t[5] levelCompletePic
+    char[MAX_QPATH] playerModel
+    char[MAX_QPATH] playerPicName
+    int[6] awardLevels
+    sfxHandle_t[6] awardSounds
+    int numBots
+    qhandle_t[7] botPics
+    char[7][10] botNames
+}
+
+; q3_ui/ui_sppostgame.c
+
+postgameMenuInfo_t {
+    menuframework_s menu
+    menubitmap_s item_again
+    menubitmap_s item_next
+    menubitmap_s item_menu
+    int phase
+    int ignoreKeysTime
+    int starttime
+    int scoreboardtime
+    int serverId
+    int[MAX_SCOREBOARD_CLIENTS] clientNums
+    int[MAX_SCOREBOARD_CLIENTS] ranks
+    int[MAX_SCOREBOARD_CLIENTS] scores
+    char[3][64] placeNames
+    int level
+    int numClients
+    int won
+    int numAwards
+    int[6] awardsEarned
+    int[6] awardsLevels
+    qboolean[6] playedSound
+    int lastTier
+    sfxHandle_t winnerSound
+}
+
+; q3_ui/ui_spreset.c
+
+resetMenu_t {
+    menuframework_s menu
+    menutext_s no
+    menutext_s yes
+    int slashX
+}
+
+; q3_ui/ui_spskill.c
+
+skillMenuInfo_t {
+    menuframework_s menu
+    menubitmap_s art_frame
+    menutext_s art_banner
+    menutext_s item_baby
+    menutext_s item_easy
+    menutext_s item_medium
+    menutext_s item_hard
+    menutext_s item_nightmare
+    menubitmap_s art_skillPic
+    menubitmap_s item_back
+    menubitmap_s item_fight
+    *char arenaInfo
+    qhandle_t[5] skillpics
+    sfxHandle_t nightmareSound
+    sfxHandle_t silenceSound
+}
+
+; q3_ui/ui_startserver.c
+
+startserver_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menulist_s gametype
+    menubitmap_s[MAX_MAPSPERPAGE] mappics
+    menubitmap_s[MAX_MAPSPERPAGE] mapbuttons
+    menubitmap_s arrows
+    menubitmap_s prevpage
+    menubitmap_s nextpage
+    menubitmap_s back
+    menubitmap_s next
+    menutext_s mapname
+    menubitmap_s item_null
+    qboolean multiplayer
+    int currentmap
+    int nummaps
+    int page
+    int maxpages
+    char[MAX_SERVERMAPS][MAX_NAMELENGTH_START_SERVER] maplist
+    int[MAX_SERVERMAPS] mapGamebits
+}
+
+serveroptions_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s mappic
+    menubitmap_s picframe
+    menulist_s dedicated
+    menufield_s timelimit
+    menufield_s fraglimit
+    menufield_s flaglimit
+    menuradiobutton_s friendlyfire
+    menufield_s hostname
+    menuradiobutton_s pure
+    menulist_s botSkill
+    menutext_s player0
+    menulist_s[PLAYER_SLOTS] playerType
+    menutext_s[PLAYER_SLOTS] playerName
+    menulist_s[PLAYER_SLOTS] playerTeam
+    menubitmap_s go
+    menubitmap_s next
+    menubitmap_s back
+    qboolean multiplayer
+    int gametype
+    char[32] mapnamebuffer
+    char[PLAYER_SLOTS][16] playerNameBuffers
+    qboolean newBot
+    int newBotIndex
+    char[16] newBotName
+    menulist_s punkbuster
+}
+
+botSelectInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s[MAX_MODELSPERPAGE] pics
+    menubitmap_s[MAX_MODELSPERPAGE] picbuttons
+    menutext_s[MAX_MODELSPERPAGE] picnames
+    menubitmap_s arrows
+    menubitmap_s left
+    menubitmap_s right
+    menubitmap_s go
+    menubitmap_s back
+    int numBots
+    int modelpage
+    int numpages
+    int selectedmodel
+    int[MAX_BOTS] sortedBotNums
+    char[MAX_MODELSPERPAGE][MAX_QPATH] boticons
+    char[MAX_MODELSPERPAGE][16] botnames
+}
+
+; q3_ui/ui_team.c
+
+teammain_t {
+    menuframework_s menu
+    menubitmap_s frame
+    menutext_s joinred
+    menutext_s joinblue
+    menutext_s joingame
+    menutext_s spectate
+}
+
+; q3_ui/ui_teamorders.c
+
+teamOrdersMenuInfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s frame
+    menulist_s list
+    menubitmap_s back
+    int gametype
+    int numBots
+    int selectedBot
+    *char[9] bots
+    char[9][16] botNames
+}
+
+; q3_ui/ui_video.c
+
+driverinfo_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s back
+    menubitmap_s framel
+    menubitmap_s framer
+    char[1024] stringbuff
+    *char[64] strings
+    int numstrings
+}
+
+graphicsoptions_t {
+    menuframework_s menu
+    menutext_s banner
+    menubitmap_s framel
+    menubitmap_s framer
+    menutext_s graphics
+    menutext_s display
+    menutext_s sound
+    menutext_s network
+    menulist_s list
+    menulist_s mode
+    menulist_s driver
+    menuslider_s tq
+    menulist_s fs
+    menulist_s lighting
+    menulist_s allow_extensions
+    menulist_s texturebits
+    menulist_s colordepth
+    menulist_s geometry
+    menulist_s filter
+    menutext_s driverinfo
+    menubitmap_s apply
+    menubitmap_s back
+}
+
+InitialVideoOptions_s {
+    int mode
+    qboolean fullscreen
+    int tq
+    int lighting
+    int colordepth
+    int texturebits
+    int geometry
+    int filter
+    int driver
+    qboolean extensions
+}
+
