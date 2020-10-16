@@ -74,6 +74,7 @@ def main ():
 
     # ./q3lcc -S  -Wf-target=bytecode /share/tmp/qsam.c -o what.asm
 
+    # in the ID sdk, q3lcc calls q3cpp in the same directory
     os.environ['PATH'] += os.pathsep + q3SdkTools
 
     asmFile = os.path.join(TempDir, "test.asm")
