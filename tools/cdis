@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+
+####
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+####
+
+# output disassembly of .c file
+
+import AddParentSysPath
+
+import Qvm
+import os, subprocess, sys, tempfile
+
+TempDir = None
+
+def usage ():
+    sys.stderr.write("%s <c file>\n" % sys.argv[0])
+    sys.exit(1)
+
+def delete_tempdir ():
+    global TempDir
+
+    if TempDir == None:
+        return
+    tmpFiles = os.listdir(TempDir)
+    for tf in tmpFiles:
+        f = os.path.join(TempDir, tf)
+        os.remove(f)
+
+    os.rmdir(TempDir)
+    TempDir = None
+
+def process_error (stdout="", stderr="", msg=""):
+    sys.stderr.write("ERROR:")
+    if len(msg) > 0:
+        sys.stderr.write(" " + msg)
+    sys.stderr.write("\n")
+
+    if len(stdout) > 0:
+        sys.stderr.write(" stdout: " + stdout)
+        sys.stderr.write("\n")
+
+    if len(stderr) > 0:
+        sys.stderr.write(" stderr: " + stderr)
+        sys.stderr.write("\n")
+
+    delete_tempdir()
+    sys.exit(1)
+
+def main ():
+    global TempDir
+
+    if len(sys.argv) < 2:
+        usage()
+
+    TempDir = tempfile.mkdtemp("cdis")
+    q3Sdk = os.path.join(os.sep, "home", "acano", "tmp", "sdk1", "mod-sdk-1.32")
+    q3SdkTools = os.path.join(q3Sdk, "code", "qvmtools")
+
+    # ./q3lcc -S  -Wf-target=bytecode /share/tmp/qsam.c -o what.asm
+
+    os.environ['PATH'] += os.pathsep + q3SdkTools
+
+    asmFile = os.path.join(TempDir, "test.asm")
+    cmd = "q3lcc -S -Wf-target=bytecode %s -o %s" % (sys.argv[1], asmFile)
+    p = subprocess.Popen([cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    # wait for subprocess to end
+    pout, perr = p.communicate()
+
+    if p.returncode != 0:
+        process_error(pout, perr, msg="q3lcc failed")
+
+    qvmFile = os.path.join(TempDir, "test.qvm")
+    cmd = "q3asm -o %s %s" % (qvmFile, asmFile)
+    p = subprocess.Popen([cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    # wait for subprocess to end
+    pout, perr = p.communicate()
+
+    if p.returncode != 0:
+        process_error(pout, perr, msg="q3asm failed")
+
+    q = Qvm.Qvm(qvmFile, None)
+    q.print_code_disassembly()
+    sys.stdout.write("\n")
+
+    delete_tempdir()
+
+if __name__ == "__main__":
+    main()
