@@ -46,6 +46,13 @@ def delete_tempdir ():
     TempDir = None
 
 def process_error (stdout="", stderr="", msg=""):
+    # they are bytes in python3
+    try:
+        stdout = stdout.decode()
+        stderr = stderr.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
     sys.stderr.write("ERROR:")
     if len(msg) > 0:
         sys.stderr.write(" " + msg)
