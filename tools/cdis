@@ -79,13 +79,13 @@ def main ():
     q3Sdk = os.path.join(os.sep, "home", "acano", "tmp", "sdk1", "mod-sdk-1.32")
     q3SdkTools = os.path.join(q3Sdk, "code", "qvmtools")
 
-    # ./q3lcc -S  -Wf-target=bytecode /share/tmp/qsam.c -o what.asm
+    # ./q3lcc -DQ3_VM -DCGAME -S -Wf-target=bytecode -Wf-g -Icgame -Igame -Iq3_ui -c /share/tmp/qsam.c -o what.asm
 
     # in the ID sdk, q3lcc calls q3cpp in the same directory
     os.environ['PATH'] += os.pathsep + q3SdkTools
 
     asmFile = os.path.join(TempDir, "test.asm")
-    cmd = "q3lcc -S -Wf-target=bytecode %s -o %s" % (sys.argv[1], asmFile)
+    cmd = "q3lcc -DQ3_VM -S -Wf-target=bytecode -Wf-g -c %s -o %s" % (sys.argv[1], asmFile)
     p = subprocess.Popen([cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     # wait for subprocess to end
     pout, perr = p.communicate()
