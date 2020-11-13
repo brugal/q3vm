@@ -1708,13 +1708,13 @@ class Qvm:
 
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
-                            # since there's more than one, don't replace decompile string
+                            # if there's more than one, just use the first oneg
+                            localDecStr = "&" + exactMatches[0]
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
                                 #FIXME 2020-11-13 double check if this is ok
                                 localDecStr = "(&" + comment + ")"
-                #FIXME symbol eval
                 decStack.push(localDecStr)
             elif opc == OP_CONST:
                 nextOp = xord(self.codeData[pos])
@@ -1744,9 +1744,8 @@ class Qvm:
                         (match, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(parm, self.symbolsRange)
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
-                            # if there's more than one, don't replace decompile string
-                            if len(exactMatches) == 1:
-                                localDecStr = "&" + exactMatches[0]
+                            # if there's more than one, just use the first
+                            localDecStr = "&" + exactMatches[0]
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
@@ -1803,7 +1802,8 @@ class Qvm:
                                             matchRangeSize = size
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
-                            # since there's more than one, don't replace decompile string
+                            # if there's more than one, just use the first
+                            localDecStr = "&" + exactMatches[0]
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
