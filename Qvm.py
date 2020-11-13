@@ -1687,27 +1687,35 @@ class Qvm:
                 if count in self.switchStartStatements:
                     output("; possible switch start\n")
 
+                localDecStr = "&local%x" % parm
                 argNum = parm - stackAdjust - 0x8
                 if argNum >= 0:
                     argstr = "arg%d" % (argNum / 4)
                     comment = argstr
+                    localDecStr = "&" + argstr
                     if currentFuncAddr in self.functionsArgRangeLabels:
                         if argstr in self.functionsArgRangeLabels[currentFuncAddr]:
-                            comment = comment + " : " + self.functionsArgRangeLabels[currentFuncAddr][argstr].symbolName
+                            sname = self.functionsArgRangeLabels[currentFuncAddr][argstr].symbolName
+                            comment = comment + " : " + sname
+                            localDecStr = "&" + sname
                 else:
                     if currentFuncAddr in self.functionsLocalLabels:
                         if parm in self.functionsLocalLabels[currentFuncAddr]:
                             comment = self.functionsLocalLabels[currentFuncAddr][parm]
+                            localDecStr = "&" + comment
                     elif currentFuncAddr in self.functionsLocalRangeLabels:
                         (match, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(parm, self.functionsLocalRangeLabels[currentFuncAddr])
 
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
+                            # since there's more than one, don't replace decompile string
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
+                                #FIXME 2020-11-13 double check if this is ok
+                                localDecStr = "&(" + comment + ")"
                 #FIXME symbol eval
-                decStack.push("&local%x" % parm)
+                decStack.push(localDecStr)
             elif opc == OP_CONST:
                 nextOp = xord(self.codeData[pos])
 
