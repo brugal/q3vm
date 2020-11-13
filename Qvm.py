@@ -1713,18 +1713,19 @@ class Qvm:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
                                 #FIXME 2020-11-13 double check if this is ok
-                                localDecStr = "&(" + comment + ")"
+                                localDecStr = "(&" + comment + ")"
                 #FIXME symbol eval
                 decStack.push(localDecStr)
             elif opc == OP_CONST:
                 nextOp = xord(self.codeData[pos])
 
+                localDecStr = "0x%x" % parm
                 if count in self.constants:
                     if parm != self.constants[count][1]:
                         comment = "FIXME constant val != to code val"
                     else:
                         comment = self.constants[count][0]
-
+                        localDecStr = comment
                 elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     output("\n  ; ")
                     self.print_lit_string(parm)
@@ -1736,17 +1737,20 @@ class Qvm:
                     b3 = xchr(self.dataData[parm + 3])
 
                     output("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
-
                     if parm in self.symbols:
                         comment = self.symbols[parm]
+                        localDecStr = "&" + comment
                     else:  # check symbol ranges
                         (match, matchSym, matchDiff, exactMatches) = self.find_in_symbol_range(parm, self.symbolsRange)
-
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
+                            # if there's more than one, don't replace decompile string
+                            if len(exactMatches) == 1:
+                                localDecStr = "&" + exactMatches[0]
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
+                                localDecStr = "(&" + comment + ")"
 
                 elif nextOp == OP_CALL:
                     if parm < 0  and  parm in self.syscalls:
@@ -1766,6 +1770,7 @@ class Qvm:
                     #FIXME check that it doesn't go past??
                     if parm in self.symbols:
                         comment = self.symbols[parm]
+                        localDecStr = "&" + comment
                     else:  # check symbol ranges
                         exactMatches = []  #FIXME sorted
                         match = None
@@ -1798,10 +1803,12 @@ class Qvm:
                                             matchRangeSize = size
                         if len(exactMatches) > 0:
                             comment =  ", ".join(exactMatches)
+                            # since there's more than one, don't replace decompile string
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
-                decStack.push("0x%x" % parm)
+                                localDecStr = "(&" + comment + ")"
+                decStack.push(localDecStr)
             elif opc == OP_JUMP:
                 if count in self.switchJumpStatements:
                     tmin = self.switchJumpStatements[count][0]
