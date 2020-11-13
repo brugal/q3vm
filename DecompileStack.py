@@ -81,7 +81,7 @@ class DecompileStack:
     #         store4
 
     # invalid:  enter, leave, call, arg
-    #           jump, eq, ne, lti, lei, gti, ltu, leu, gtu, geu, eqf, nef, ltf, lef, gtf, gef
+    #           jump, eq, ne, lti, lei, gti, gei, ltu, leu, gtu, geu, eqf, nef, ltf, lef, gtf, gef
 
     def op_load1 (self):
         v = self.pop()
