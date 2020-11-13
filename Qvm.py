@@ -18,6 +18,7 @@
 ####
 
 import os.path, re, struct, sys
+from DecompileStack import DecompileStack
 from LEBinFile import LEBinFile
 from PythonCompat import atoi, xord, xchr
 
@@ -1571,6 +1572,7 @@ class Qvm:
             output("; jump table length: 0x%x\n" % (self.jumpTableLength))
 
     def print_code_disassembly (self):
+        decStack = DecompileStack()
         pos = 0
 
         count = -1
@@ -1579,6 +1581,8 @@ class Qvm:
             count += 1
 
             comment = None
+            decStr = None
+
             opcStr = self.codeData[pos]
             opc = xord(opcStr)
             pos += 1
@@ -1617,6 +1621,7 @@ class Qvm:
                 for jp in self.jumpPoints[count]:
                     output(" 0x%x" % jp)
                 output("\n")
+                decStack.markInvalid()
             elif count in self.jumpTableTargets  and  count not in self.switchJumpPoints:
                 output("\n;----------------------------------- table jump\n")
 
@@ -1628,6 +1633,7 @@ class Qvm:
                 for jp in self.switchJumpPoints[count]:
                     output(" 0x%x(0x%x)" % (jp[0], jp[1]))
                 output("\n")
+                decStack.markInvalid()
 
             if opc == OP_ENTER:
                 addr = count
@@ -1644,7 +1650,6 @@ class Qvm:
                         else:
                             output(" 0x%x" % caller)
                     output("\n")
-
                 output("\n")
 
                 if addr in self.functions:
@@ -1677,7 +1682,7 @@ class Qvm:
                     if count in self.commentsBeforeSpacing:
                         for i in range(self.commentsBeforeSpacing[count][1]):
                             output("\n")
-
+                decStack.clear()
             elif opc == OP_LOCAL:
                 if count in self.switchStartStatements:
                     output("; possible switch start\n")
@@ -1701,6 +1706,8 @@ class Qvm:
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
+                #FIXME symbol eval
+                decStack.push("&local%x" % parm)
             elif opc == OP_CONST:
                 nextOp = xord(self.codeData[pos])
 
@@ -1786,12 +1793,14 @@ class Qvm:
                         else:
                             if match != None:
                                 comment = "%s + 0x%x" % (matchSym, matchDiff)
+                decStack.push("0x%x" % parm)
             elif opc == OP_JUMP:
                 if count in self.switchJumpStatements:
                     tmin = self.switchJumpStatements[count][0]
                     tmax = self.switchJumpStatements[count][1]
                     taddr = self.switchJumpStatements[count][2]
                     output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
+                decStack.markInvalid()
             elif (opc == OP_LOAD4  or  opc == OP_LOAD2  or  opc == OP_LOAD1):
                 if count in self.pointerDereference:
                     pdr = self.pointerDereference[count]
@@ -1861,6 +1870,87 @@ class Qvm:
                         output("; pointer dereference  (basic type: %s) *0x%x -> (0x%x)\n" % (btype, pdr[1], pdr[2]))
                     else:
                         output("; pointer dereference  (no template) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
+                # decompile
+                if opc == OP_LOAD1:
+                    decStack.op_load1()
+                elif opc == OP_LOAD2:
+                    decStack.op_load2()
+                elif opc == OP_LOAD4:
+                    decStack.op_load4()
+            # decompile
+            elif opc == OP_STORE1:
+                decStack.op_store1()
+                decStr = decStack.top()
+                decStack.clear()
+            elif opc == OP_STORE2:
+                decStack.op_store2()
+                decStr = decStack.top()
+                decStack.clear()
+            elif opc == OP_STORE4:
+                decStack.op_store4()
+                decStr = decStack.top()
+                decStack.clear()
+            elif opc == OP_ARG:
+                decStack.markInvalid()
+            elif opc == OP_LEAVE:
+                decStack.markInvalid()
+            elif opc == OP_CALL:
+                decStack.markInvalid()
+            elif opc == OP_BLOCK_COPY:
+                #FIXME  -- should be just like store*
+                decStack.markInvalid()
+            elif opc in (OP_EQ, OP_NE, OP_LTI, OP_LEI, OP_GTI, OP_LTU, OP_LEU, OP_GTU, OP_GEU, OP_EQF, OP_NEF, OP_LTF, OP_LEF, OP_GTF, OP_GEF):
+                decStack.markInvalid()
+            elif opc == OP_SEX8:
+                decStack.op_sex8()
+            elif opc == OP_SEX16:
+                decStack.op_sex16()
+            elif opc == OP_NEGI:
+                decStack.op_negi()
+            elif opc == OP_ADD:
+                decStack.op_add()
+            elif opc == OP_SUB:
+                decStack.op_sub()
+            elif opc == OP_DIVI:
+                decStack.op_divi()
+            elif opc == OP_DIVU:
+                decStack.op_divu()
+            elif opc == OP_MODI:
+                decStack.op_modi()
+            elif opc == OP_MODU:
+                decStack.op_modu()
+            elif opc == OP_MULI:
+                decStack.op_muli()
+            elif opc == OP_MULU:
+                decStack.op_mulu()
+            elif opc == OP_BAND:
+                decStack.op_band()
+            elif opc == OP_BOR:
+                decStack.op_bor()
+            elif opc == OP_BXOR:
+                decStack.op_bxor()
+            elif opc == OP_BCOM:
+                decStack.op_bcom()
+            elif opc == OP_LSH:
+                decStack.op_lsh()
+            elif opc == OP_RSHI:
+                decStack.op_rshi()
+            elif opc == OP_RSHU:
+                decStack.op_rshu()
+            elif opc == OP_NEGF:
+                decStack.op_negf()
+            elif opc == OP_ADDF:
+                decStack.op_addf()
+            elif opc == OP_SUBF:
+                decStack.op_subf()
+            elif opc == OP_DIVF:
+                decStack.op_divf()
+            elif opc == OP_MULF:
+                decStack.op_mulf()
+            elif opc == OP_CVIF:
+                decStack.op_cvif()
+            elif opc == OP_CVFI:
+                decStack.op_cvfi()
 
             sc = opcodes[opc][OPCODE_STACK_CHANGE]
             if sc != 0  or  parm != None:
@@ -1900,6 +1990,10 @@ class Qvm:
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][1]):
                         output("\n")
+
+            if decStr != None:
+                output("    ;; dec: " + decStr + "\n")
+                output("\n")
 
     def print_data_disassembly (self):
         count = 0

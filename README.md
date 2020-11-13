@@ -24,6 +24,7 @@ Sample:
 000009b7  const           1  -0x28   ; trap_R_RegisterShader()
 000009b8  call           -1
 000009b9  store4         -2
+    ;; dec: ----
 000009ba  const           1   0x1098f8
 ```
 
@@ -40,6 +41,7 @@ Features:
 * Adds comments for possible data reference values
 * Computes function hashes and compares to stock QVM to identify possible
 matches
+* decompile between store operations that don't have branching operations between them
 * Function names, arguments, and local variables can be labeled in separate
 *functions.dat* file
 * Symbol names can be labeled using separate *symbols.dat* file
