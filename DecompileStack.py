@@ -50,15 +50,14 @@ class DecompileStack:
             #FIXME warning?
             return "<invalid pop>"
 
-    def top (self):
+    def result (self):
+        # meant to be called after store*
+        # make sure it's the only thing left in the stack
         if self._valid:
-            if len(self.stack) > 1:
+            if len(self.stack) != 1:
                 return " -- size --"
             elif len(self.stack) == 1:
-                return self.stack[-1]
-            else:
-                #FIXME warning?
-                return ""
+                return self.stack[0]
         else:
             #FIXME warning?
             return "----"

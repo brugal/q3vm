@@ -1880,15 +1880,15 @@ class Qvm:
             # decompile
             elif opc == OP_STORE1:
                 decStack.op_store1()
-                decStr = decStack.top()
+                decStr = decStack.result()
                 decStack.clear()
             elif opc == OP_STORE2:
                 decStack.op_store2()
-                decStr = decStack.top()
+                decStr = decStack.result()
                 decStack.clear()
             elif opc == OP_STORE4:
                 decStack.op_store4()
-                decStr = decStack.top()
+                decStr = decStack.result()
                 decStack.clear()
             elif opc == OP_ARG:
                 decStack.markInvalid()
