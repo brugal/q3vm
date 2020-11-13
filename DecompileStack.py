@@ -52,7 +52,9 @@ class DecompileStack:
 
     def top (self):
         if self._valid:
-            if len(self.stack) > 0:
+            if len(self.stack) > 1:
+                return " -- size --"
+            elif len(self.stack) == 1:
                 return self.stack[-1]
             else:
                 #FIXME warning?
