@@ -1912,8 +1912,9 @@ class Qvm:
             elif opc == OP_CALL:
                 decStack.markInvalid()
             elif opc == OP_BLOCK_COPY:
-                #FIXME  -- should be just like store*
-                decStack.markInvalid()
+                decStack.op_block_copy("0x%x" % parm)
+                decStr = decStack.result()
+                decStack.clear()
             elif opc in (OP_EQ, OP_NE, OP_LTI, OP_LEI, OP_GTI, OP_GEI, OP_LTU, OP_LEU, OP_GTU, OP_GEU, OP_EQF, OP_NEF, OP_LTF, OP_LEF, OP_GTF, OP_GEF):
                 decStack.markInvalid()
             elif opc == OP_SEX8:
