@@ -1,0 +1,224 @@
+#!/usr/bin/env python
+
+####
+# Copyright (C) 2012, 2020 Angelo Cano
+#
+# This file is part of Qvmdis.
+#
+# Qvmdis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Qvmdis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Qvmdis.  If not, see <https://www.gnu.org/licenses/>.
+####
+
+# interactive decompiler
+#
+# you can cut and past from disassembly or enter opcodes directly:
+#    "00000002  local           1   0x30  ; arg0 : command"
+#         or
+#    "local 0x30"
+#
+# functions:
+#    ":print"  prints everything in the stack
+#    ":clear"  clears stack and marks it as valid
+
+import AddParentSysPath
+
+import Qvm
+from DecompileStack import DecompileStack
+import sys
+
+def error (msg):
+    sys.stderr.write("ERROR: " + msg)
+    sys.exit(1)
+
+def opcode_stack_change (opStr):
+    for op in Qvm.opcodes:
+        if opStr == op[Qvm.OPCODE_NAME]:
+            return op[Qvm.OPCODE_STACK_CHANGE]
+    error("couldn't get stack change for opcode '%s'\n" % opStr)
+    return 0
+
+def parse_opcode (line):
+    # Accepts direct opcode and parameter input.  Ex:
+    #    local 0xc
+    # or cut and paste from disassembly output.  Ex:
+    #    000024c5  local           1   0xc
+    s = line.strip()
+    if len(s) == 0  or s[0] == ';':
+        # comment, skip
+        return (None, None)
+
+    words = s.split()
+
+    # check for cut and paste:
+    #    000024c5  local           1   0xc
+    cutAndPaste = True
+    # check if it's a valid hex number
+    try:
+        v = int(words[0], 16)
+    except ValueError:
+        cutAndPaste = False
+
+    opcode = None
+    parm = None
+
+    if cutAndPaste:
+        opcode = words[1]
+        stackChange = opcode_stack_change(opcode)
+        #print("stack change: %d" % stackChange)
+        if stackChange != 0:
+            if len(words) > 3:
+                parm = words[3]
+        else:
+            if len(words) > 2:
+                parm = words[2]
+    else:
+        opcode = words[0]
+        if len(words) > 1:
+            parm = words[1]
+
+    return (opcode, parm)
+
+def main ():
+    decStack = DecompileStack()
+
+    sys.stdout.write("enter lines:\n")
+    sys.stdout.flush()
+
+    while 1:
+        line = sys.stdin.readline()
+        if len(line) == 0:
+            # all done
+            return
+
+        (opcode, parm) = parse_opcode(line)
+
+        #if opcode == None:
+        #    opcode = "<none>"
+        #if parm == None:
+        #    parm = "<none>"
+        #print("opcode: " + opcode)
+        #print("parm: " + parm)
+        #if opcode != None:
+        #    pass
+        #print("  " + s)
+
+        if opcode == ":clear":
+            decStack.clear()
+        elif opcode == ":print":
+            #print(decStack.stack)
+            for s in decStack.stack:
+                sys.stdout.write("  " + s + "\n")
+
+
+        decStr = None
+
+        # qvm opcodes
+
+        if opcode == "enter":
+            decStack.clear()
+        elif opcode == "local":
+            decStack.push(parm)
+        elif opcode == "const":
+            decStack.push(parm)
+        elif opcode == "jump":
+            decStack.markInvalid()
+        elif opcode == "load1":
+            decStack.op_load1()
+        elif opcode == "load2":
+            decStack.op_load2()
+        elif opcode == "load4":
+            decStack.op_load4()
+        elif opcode == "store1":
+            decStack.op_store1()
+            decStr = decStack.result()
+            decStack.clear()
+        elif opcode == "store2":
+            decStack.op_store2()
+            decStr = decStack.result()
+            decStack.clear()
+        elif opcode == "store4":
+            decStack.op_store4()
+            decStr = decStack.result()
+            decStack.clear()
+        elif opcode == "arg":
+            decStack.markInvalid()
+        elif opcode == "leave":
+            decStack.markInvalid()
+        elif opcode == "call":
+            decStack.markInvalid()
+        elif opcode == "block_copy":
+            decStack.op_block_copy(parm)
+            decStr = decStack.result()
+            decStack.clear()
+        elif opcode in ("eq", "ne", "lti", "lei", "gti", "gei", "ltu", "leu", "gtu", "geu", "eqf", "nef", "ltf", "lef", "gtf", "gef"):
+            decStack.markInvalid()
+        elif opcode == "sex8":
+            decStack.op_sex8()
+        elif opcode == "sex16":
+            decStack.op_sex16()
+        elif opcode == "negi":
+            decStack.op_negi()
+        elif opcode == "add":
+            decStack.op_add()
+        elif opcode == "sub":
+            decStack.op_sub()
+        elif opcode == "divi":
+            decStack.op_divi()
+        elif opcode == "divu":
+            decStack.op_divu()
+        elif opcode == "modi":
+            decStack.op_modi()
+        elif opcode == "modu":
+            decStack.op_modu()
+        elif opcode == "muli":
+            decStack.op_muli()
+        elif opcode == "mulu":
+            decStack.op_mulu()
+        elif opcode == "band":
+            decStack.op_band()
+        elif opcode == "bor":
+            decStack.op_bor()
+        elif opcode == "bxor":
+            decStack.op_bxor()
+        elif opcode == "bcom":
+            decStack.op_bcom()
+        elif opcode == "lsh":
+            decStack.op_lsh()
+        elif opcode == "rshi":
+            decStack.op_rshi()
+        elif opcode == "rshu":
+            decStack.op_rshu()
+        elif opcode == "negf":
+            decStack.op_negf()
+        elif opcode == "addf":
+            decStack.op_addf()
+        elif opcode == "subf":
+            decStack.op_subf()
+        elif opcode == "divf":
+            decStack.op_divf()
+        elif opcode == "mulf":
+            decStack.op_mulf()
+        elif opcode == "cvif":
+            decStack.op_cvif()
+        elif opcode == "cvfi":
+            decStack.op_cvfi()
+
+        if decStr != None:
+            sys.stdout.write("    ;; dec: " + decStr)
+            sys.stdout.write("\n")
+
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
+if __name__ == "__main__":
+    main()
