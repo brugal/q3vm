@@ -100,7 +100,7 @@ def main ():
             # all done
             return
 
-        (opcode, parm) = parse_opcode(line)
+        (opcode, parmStr) = parse_opcode(line)
 
         #if opcode == None:
         #    opcode = "<none>"
@@ -127,9 +127,9 @@ def main ():
         if opcode == "enter":
             decStack.clear()
         elif opcode == "local":
-            decStack.push(parm)
+            decStack.push(parmStr)
         elif opcode == "const":
-            decStack.push(parm)
+            decStack.push(parmStr)
         elif opcode == "jump":
             decStack.markInvalid()
         elif opcode == "load1":
@@ -151,7 +151,7 @@ def main ():
             decStr = decStack.result()
             decStack.clear()
         elif opcode == "arg":
-            decStack.op_arg(parm)
+            decStack.op_arg(parmStr)
             decStr = decStack.result()
             decStack.clear()
         elif opcode == "leave":
@@ -159,7 +159,7 @@ def main ():
         elif opcode == "call":
             decStack.markInvalid()
         elif opcode == "block_copy":
-            decStack.op_block_copy(parm)
+            decStack.op_block_copy(parmStr)
             decStr = decStack.result()
             decStack.clear()
         elif opcode in ("eq", "ne", "lti", "lei", "gti", "gei", "ltu", "leu", "gtu", "geu", "eqf", "nef", "ltf", "lef", "gtf", "gef"):
