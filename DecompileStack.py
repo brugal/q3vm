@@ -67,7 +67,7 @@ class DecompileStack:
         # don't delete const reference comment
         self.push(value)
 
-    # between:  store1, store2, store4, block_copy
+    # between:  store1, store2, store4, block_copy, arg
     #   assumes those wont be nested.  Ex:
     #         store4
     #         local 0x14
@@ -79,7 +79,7 @@ class DecompileStack:
     #         load4
     #         store4
 
-    # invalid:  enter, leave, call, arg
+    # invalid:  enter, leave, call
     #           jump, eq, ne, lti, lei, gti, gei, ltu, leu, gtu, geu, eqf, nef, ltf, lef, gtf, gef
 
     def op_load1 (self):
@@ -111,6 +111,10 @@ class DecompileStack:
         r0 = self.pop()
         r1 = self.pop()
         self.push("*(int *)" + "(" + r1 + ")" + " = " + r0)
+
+    def op_arg (self, parm):
+        r0 = self.pop()
+        self.push("arg[" + parm + "] = " + r0)
 
     def op_block_copy (self, parm):
         r0 = self.pop()

@@ -1906,7 +1906,9 @@ class Qvm:
                 decStr = decStack.result()
                 decStack.clear()
             elif opc == OP_ARG:
-                decStack.markInvalid()
+                decStack.op_arg("0x%x" % parm)
+                decStr = decStack.result()
+                decStack.clear()
             elif opc == OP_LEAVE:
                 decStack.markInvalid()
             elif opc == OP_CALL:

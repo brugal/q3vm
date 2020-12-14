@@ -41,7 +41,7 @@ Features:
 * Adds comments for possible data reference values
 * Computes function hashes and compares to stock QVM to identify possible
 matches
-* Decompile between store1, store2, store4, and block_copy  operations that don't have branching operations between them
+* Decompile between store1, store2, store4, block_copy, and arg operations that don't have branching operations between them
 * Function names, arguments, and local variables can be labeled in separate
 *functions.dat* file
 * Symbol names can be labeled using separate *symbols.dat* file
