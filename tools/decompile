@@ -151,7 +151,7 @@ def main ():
             decStr = decStack.result()
             decStack.clear()
         elif opcode == "arg":
-            decStack.op_arg("0x%x" % parm)
+            decStack.op_arg(parm)
             decStr = decStack.result()
             decStack.clear()
         elif opcode == "leave":
