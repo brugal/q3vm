@@ -114,7 +114,7 @@ class DecompileStack:
 
     def op_arg (self, parm):
         r0 = self.pop()
-        self.push("arg[" + parm + "] = " + r0)
+        self.push("Arg[" + parm + "] = " + r0)
 
     def op_block_copy (self, parm):
         r0 = self.pop()
