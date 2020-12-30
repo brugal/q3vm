@@ -93,6 +93,20 @@ QVM_MAGIC_VER2 = 0x12721445
 def output (msg):
     sys.stdout.write(msg)
 
+class OutputBuffer:
+    def __init__ (self):
+        self.clear()
+
+    def write (self, s):
+        self.stringList.append(s)
+
+    def flush (self):
+        output("".join(self.stringList))
+        self.clear()
+
+    def clear (self):
+        self.stringList = []
+
 SuppressWarnings = False
 
 def warning_msg (msg):
@@ -1573,6 +1587,11 @@ class Qvm:
 
     def print_code_disassembly (self):
         decStack = DecompileStack()
+        outputBuffer = OutputBuffer()
+        outputBufferDecompile = OutputBuffer()
+        def outputb (msg):
+            outputBuffer.write(msg)
+
         pos = 0
 
         count = -1
@@ -1592,12 +1611,12 @@ class Qvm:
             if opc != OP_ENTER  and  count in self.commentsBefore:
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][0]):
-                        output("\n")
+                        outputb("\n")
                 for line in self.commentsBefore[count]:
-                    output("; %s\n" % line)
+                    outputb("; %s\n" % line)
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][1]):
-                        output("\n")
+                        outputb("\n")
 
             if psize == 0:
                 parm = None
@@ -1614,25 +1633,25 @@ class Qvm:
 
             if count in self.jumpPoints:
                 if count in self.jumpTableTargets:
-                    output("\n;----------------------------------- *from ")
+                    outputb("\n;----------------------------------- *from ")
                 else:
-                    output("\n;----------------------------------- from ")
+                    outputb("\n;----------------------------------- from ")
 
                 for jp in self.jumpPoints[count]:
-                    output(" 0x%x" % jp)
-                output("\n")
+                    outputb(" 0x%x" % jp)
+                outputb("\n")
                 decStack.markInvalid()
             elif count in self.jumpTableTargets  and  count not in self.switchJumpPoints:
-                output("\n;----------------------------------- table jump\n")
+                outputb("\n;----------------------------------- table jump\n")
 
             if count in self.switchJumpPoints:
                 if count in self.jumpTableTargets:
-                    output("\n;----------------------------------- case *from ")
+                    outputb("\n;----------------------------------- case *from ")
                 else:
-                    output("\n;----------------------------------- case from ")
+                    outputb("\n;----------------------------------- case from ")
                 for jp in self.switchJumpPoints[count]:
-                    output(" 0x%x(0x%x)" % (jp[0], jp[1]))
-                output("\n")
+                    outputb(" 0x%x(0x%x)" % (jp[0], jp[1]))
+                outputb("\n")
                 decStack.markInvalid()
 
             if opc == OP_ENTER:
@@ -1640,52 +1659,52 @@ class Qvm:
                 currentFuncAddr = addr
                 stackAdjust = parm
                 if count in self.callPoints:
-                    output("\n; called from")
+                    outputb("\n; called from")
                     for caller in self.callPoints[count]:
                         if caller in self.functions:
-                            output(" %s()" % self.functions[caller])
+                            outputb(" %s()" % self.functions[caller])
                         elif self.functionHashes[caller] in self.baseQ3FunctionRevHashes:
                             for n in self.baseQ3FunctionRevHashes[self.functionHashes[caller]]:
-                                output(" ?%s()" % n)
+                                outputb(" ?%s()" % n)
                         else:
-                            output(" 0x%x" % caller)
-                    output("\n")
-                output("\n")
+                            outputb(" 0x%x" % caller)
+                    outputb("\n")
+                outputb("\n")
 
                 if addr in self.functions:
-                    output("; func %s()\n" % self.functions[count])
+                    outputb("; func %s()\n" % self.functions[count])
                 elif self.functionHashes[addr] in self.baseQ3FunctionRevHashes:
-                    output(";")
+                    outputb(";")
                     for n in self.baseQ3FunctionRevHashes[self.functionHashes[addr]]:
-                        output(" ?%s()" % n)
-                    output("\n")
+                        outputb(" ?%s()" % n)
+                    outputb("\n")
                 if addr in self.functionParmNum:
-                    output(";")
+                    outputb(";")
                     p = self.functionParmNum[addr]
                     if p == 0:
-                        output(" no")
+                        outputb(" no")
                     elif p == -1:
-                        output(" var")
+                        outputb(" var")
                     else:
-                        output(" 0x%x" % p)
-                    output(" args\n")
+                        outputb(" 0x%x" % p)
+                    outputb(" args\n")
 
-                output("; max local arg 0x%x\n" % self.functionMaxArgsCalled[addr])
-                output("; ========================\n")
+                outputb("; max local arg 0x%x\n" % self.functionMaxArgsCalled[addr])
+                outputb("; ========================\n")
 
                 if count in self.commentsBefore:
                     if count in self.commentsBeforeSpacing:
                         for i in range(self.commentsBeforeSpacing[count][0]):
-                            output("\n")
+                            outputb("\n")
                     for line in self.commentsBefore[count]:
-                        output("; %s\n" % line)
+                        outputb("; %s\n" % line)
                     if count in self.commentsBeforeSpacing:
                         for i in range(self.commentsBeforeSpacing[count][1]):
-                            output("\n")
+                            outputb("\n")
                 decStack.clear()
             elif opc == OP_LOCAL:
                 if count in self.switchStartStatements:
-                    output("; possible switch start\n")
+                    outputb("; possible switch start\n")
 
                 localDecStr = "&local%x" % parm
                 argNum = parm - stackAdjust - 0x8
@@ -1727,16 +1746,16 @@ class Qvm:
                         comment = self.constants[count][0]
                         localDecStr = comment
                 elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
-                    output("\n  ; ")
-                    self.print_lit_string(parm)
-                    output("\n");
+                    outputb("\n  ; ")
+                    outputb(self.get_lit_string(parm))
+                    outputb("\n");
                 elif parm >= 0  and  parm < self.dataSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     b0 = xchr(self.dataData[parm])
                     b1 = xchr(self.dataData[parm + 1])
                     b2 = xchr(self.dataData[parm + 2])
                     b3 = xchr(self.dataData[parm + 3])
 
-                    output("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
+                    outputb("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
                     if parm in self.symbols:
                         comment = self.symbols[parm]
                         localDecStr = "&" + comment
@@ -1814,7 +1833,7 @@ class Qvm:
                     tmin = self.switchJumpStatements[count][0]
                     tmax = self.switchJumpStatements[count][1]
                     taddr = self.switchJumpStatements[count][2]
-                    output("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
+                    outputb("; possible switch jump: 0x%x (0x%x -> 0x%x)\n" % (taddr, tmin, tmax))
                 decStack.markInvalid()
             elif (opc == OP_LOAD4  or  opc == OP_LOAD2  or  opc == OP_LOAD1):
                 if count in self.pointerDereference:
@@ -1878,13 +1897,13 @@ class Qvm:
                                 foundOffset = True
                                 break
                         if not foundOffset:
-                            output("; pointer dereference (couldn't match offset) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
+                            outputb("; pointer dereference (couldn't match offset) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
                         else:
-                            output("; pointer dereference %s->%s\n" % (sym, memberName))
+                            outputb("; pointer dereference %s->%s\n" % (sym, memberName))
                     elif foundBasicType:
-                        output("; pointer dereference  (basic type: %s) *0x%x -> (0x%x)\n" % (btype, pdr[1], pdr[2]))
+                        outputb("; pointer dereference  (basic type: %s) *0x%x -> (0x%x)\n" % (btype, pdr[1], pdr[2]))
                     else:
-                        output("; pointer dereference  (no template) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
+                        outputb("; pointer dereference  (no template) *0x%x -> (0x%x)\n" % (pdr[1], pdr[2]))
                 # decompile
                 if opc == OP_LOAD1:
                     decStack.op_load1()
@@ -1972,46 +1991,48 @@ class Qvm:
 
             sc = opcodes[opc][OPCODE_STACK_CHANGE]
             if sc != 0  or  parm != None:
-                output("%08x  %-13s" % (count, name))
+                outputb("%08x  %-13s" % (count, name))
             else:
-                output("%08x  %s" % (count, name))
+                outputb("%08x  %s" % (count, name))
 
             if sc < 0:
-                output("  %d" % sc)
+                outputb("  %d" % sc)
             elif sc > 0:
-                output("   %d" % sc)
+                outputb("   %d" % sc)
             else:
                 if parm != None  or  comment  or  count in self.commentsInline:
-                    output("    ")
+                    outputb("    ")
 
             if parm != None:
                 if parm < 0:
-                    output("  -0x%x" % abs(parm))  # -parm pylint warning
+                    outputb("  -0x%x" % abs(parm))  # -parm pylint warning
                 else:
-                    output("   0x%x" % parm)
+                    outputb("   0x%x" % parm)
 
             if comment:
-                output("  ; %s" % comment)
+                outputb("  ; %s" % comment)
 
             if count in self.commentsInline:
-                output("  ; %s" % self.commentsInline[count])
+                outputb("  ; %s" % self.commentsInline[count])
 
             # finish printing line
-            output("\n")
+            outputb("\n")
 
             if count in self.commentsAfter:
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][0]):
-                        output("\n")
+                        outputb("\n")
                 for line in self.commentsAfter[count]:
-                    output("; %s\n" % line)
+                    outputb("; %s\n" % line)
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][1]):
-                        output("\n")
+                        outputb("\n")
 
             if decStr != None:
-                output("    ;; dec: " + decStr + "\n")
-                output("\n")
+                outputb("    ;; dec: " + decStr + "\n")
+                outputb("\n")
+
+            outputBuffer.flush()
 
     def print_data_disassembly (self):
         count = 0
@@ -2072,7 +2093,7 @@ class Qvm:
                         output("\n")
 
             output("0x%08x  " % (offset + pos))
-            self.print_lit_string(offset + self.dataSegLength)
+            output(self.get_lit_string(offset + self.dataSegLength))
 
             if count in self.dataCommentsInline:
                 output("  ; %s" % self.dataCommentsInline[count])
@@ -2414,7 +2435,8 @@ class Qvm:
 
         return b"".join(code)
 
-    def print_lit_string (self, addr):
+    def get_lit_string (self, addr):
+        stringList = []
         offset = addr - self.dataSegLength
         i = 0
         lastCharPrintable = False
@@ -2427,36 +2449,38 @@ class Qvm:
             if c > 31  and  c < 127:
                 if not lastCharPrintable:
                     if i != 0:  # no space if this starts everything
-                        output(" ")
-                    output("\"")
+                        stringList.append(" ")
+                    stringList.append("\"")
                 lastCharPrintable = True
             else:  # not printable
                 if lastCharPrintable:
-                    output("\" ")
+                    stringList.append("\" ")
                 lastCharPrintable = False
 
             if c > 31  and  c < 127:
-                output(xchr(c))
+                stringList.append(xchr(c))
             elif c == xord(b'\a'):
-                output("\\a")
+                stringList.append("\\a")
             elif c == xord(b'\b'):
-                output("\\b")
+                stringList.append("\\b")
             elif c == xord(b'\t'):
-                output("\\t")
+                stringList.append("\\t")
             elif c == xord(b'\n'):
-                output("\\n")
+                stringList.append("\\n")
             elif c == xord(b'\v'):
-                output("\\v")
+                stringList.append("\\v")
             elif c == xord(b'\f'):
-                output("\\f")
+                stringList.append("\\f")
             elif c == xord(b'\r'):
-                output("\\r")
+                stringList.append("\\r")
             else:
-                output("\\x%02x" % c)
+                stringList.append("\\x%02x" % c)
 
             i += 1
 
         if i == 0:
-            output("\"\"")  # empty string
+            stringList.append("\"\"")  # empty string
         elif lastCharPrintable:
-            output("\"")  # close quote
+            stringList.append("\"")  # close quote
+
+        return "".join(stringList)
