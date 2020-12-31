@@ -858,6 +858,8 @@ class TemplateManager:
 class InvalidQvm(Exception):
     pass
 
+ReplaceDecompiled = False
+
 class Qvm:
 
     # qvmType:("cgame", "game", "ui", None)
@@ -1586,11 +1588,15 @@ class Qvm:
             output("; jump table length: 0x%x\n" % (self.jumpTableLength))
 
     def print_code_disassembly (self):
+        global ReplaceDecompiled
         decStack = DecompileStack()
         outputBuffer = OutputBuffer()
         outputBufferDecompile = OutputBuffer()
+
         def outputb (msg):
             outputBuffer.write(msg)
+        def outputdb (msg):
+            outputBufferDecompile.write(msg)
 
         pos = 0
 
@@ -1612,11 +1618,15 @@ class Qvm:
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][0]):
                         outputb("\n")
+                        outputdb("\n")
                 for line in self.commentsBefore[count]:
                     outputb("; %s\n" % line)
+                    outputdb("; %s\n" % line)
+                    outputdb("; %08x [\n" % count)
                 if count in self.commentsBeforeSpacing:
                     for i in range(self.commentsBeforeSpacing[count][1]):
                         outputb("\n")
+                        outputdb("\n")
 
             if psize == 0:
                 parm = None
@@ -1747,8 +1757,12 @@ class Qvm:
                         localDecStr = comment
                 elif parm >= self.dataSegLength  and  parm < self.dataSegLength + self.litSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     outputb("\n  ; ")
-                    outputb(self.get_lit_string(parm))
-                    outputb("\n");
+                    outputdb("\n    ;  lit 0x%x : " % parm)
+                    litStr = self.get_lit_string(parm)
+                    outputb(litStr)
+                    outputdb(litStr)
+                    outputb("\n")
+                    outputdb("\n")
                 elif parm >= 0  and  parm < self.dataSegLength  and  nextOp not in (OP_CALL, OP_JUMP):
                     b0 = xchr(self.dataData[parm])
                     b1 = xchr(self.dataData[parm + 1])
@@ -1911,7 +1925,7 @@ class Qvm:
                     decStack.op_load2()
                 elif opc == OP_LOAD4:
                     decStack.op_load4()
-            # decompile
+            # decompile stuff
             elif opc == OP_STORE1:
                 decStack.op_store1()
                 decStr = decStack.result()
@@ -2015,6 +2029,20 @@ class Qvm:
             if count in self.commentsInline:
                 outputb("  ; %s" % self.commentsInline[count])
 
+            # decompile comments, need them since memory references are guesses
+            if comment or count in self.commentsInline:
+                outputdb("    ; %08x %s " % (count, name))
+                if parm != None:
+                    if parm < 0:
+                        outputdb(" -0x%x" % abs(parm))  # -parm pylint warning
+                    else:
+                        outputdb(" 0x%x" % parm)
+                if comment:
+                    outputdb(" ; %s" % comment)
+                if count in self.commentsInline:
+                    outputdb(" ; %s" % self.commentsInline[count])
+                outputdb("\n")
+
             # finish printing line
             outputb("\n")
 
@@ -2022,17 +2050,32 @@ class Qvm:
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][0]):
                         outputb("\n")
+                        outputdb("\n")
                 for line in self.commentsAfter[count]:
                     outputb("; %s\n" % line)
+                    outputdb("; %08x ]\n" % count)
+                    outputdb("; %s\n" % line)
                 if count in self.commentsAfterSpacing:
                     for i in range(self.commentsAfterSpacing[count][1]):
                         outputb("\n")
+                        outputdb("\n")
 
             if decStr != None:
-                outputb("    ;; dec: " + decStr + "\n")
-                outputb("\n")
+                #FIXME better check for valid decStr
+                if ReplaceDecompiled == False  or  (decStr == "----"  or  decStr == " -- size --"):
+                    outputb("    ;; dec: " + decStr + "\n")
+                    outputb("\n")
+                    outputBuffer.flush()
+                else:
+                    outputBuffer.clear()
+                    outputBufferDecompile.flush()
+                    outputb("    " + decStr + ";\n")
+                    outputBuffer.flush()
+                outputBufferDecompile.clear()
 
-            outputBuffer.flush()
+            if opc in (OP_ENTER, OP_LEAVE):
+                outputBuffer.flush()
+                outputBufferDecompile.clear()
 
     def print_data_disassembly (self):
         count = 0

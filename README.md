@@ -5,6 +5,7 @@
     optionally specify cgame, game, or ui qvm to match syscalls and function hashes
     --func-hash  :  only print function hash values
     --q          :  suppress warnings
+    -dr          :  replace code disassembly with decompiled output
 
     ex: qvmdis cgame.qvm cgame > cgame.dis
 ```

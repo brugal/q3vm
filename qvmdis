@@ -27,6 +27,7 @@ def usage ():
     sys.stderr.write("  optionally specify cgame, game, or ui qvm to match syscalls and function hashes\n")
     sys.stderr.write("  --func-hash  :  only print function hash values\n")
     sys.stderr.write("  -q           :  suppress warnings\n")
+    sys.stderr.write("  -dr          :  replace code disassembly with decompiled output\n")
     sys.stderr.write("\n")
     sys.stderr.write("  ex: %s cgame.qvm cgame > cgame.dis\n" % scriptName)
     sys.exit(1)
@@ -45,6 +46,8 @@ def main ():
             onlyPrintFunctionHashes = True
         elif arg == "-q"  and  parsingOptions:
             Qvm.SuppressWarnings = True
+        elif arg == "-dr"  and  parsingOptions:
+            Qvm.ReplaceDecompiled = True
         elif arg == "--"  and  parsingOptions:
             parsingOptions = False
         elif qvmFile == None:
