@@ -1769,7 +1769,10 @@ class Qvm:
                     b2 = xchr(self.dataData[parm + 2])
                     b3 = xchr(self.dataData[parm + 3])
 
-                    outputb("\n  ; %02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0]))
+                    dataStr = "%02x %02x %02x %02x  (0x%x)\n" % (xord(b0), xord(b1), xord(b2), xord(b3), struct.unpack("<L", self.dataData[parm:parm+4])[0])
+                    outputb("\n  ; %s" % dataStr)
+                    outputdb("    ; const 0x%x : %s\n" % (parm, dataStr))
+
                     if parm in self.symbols:
                         comment = self.symbols[parm]
                         localDecStr = "&" + comment
